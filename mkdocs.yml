@@ -92,9 +92,9 @@ plugins:
 
 nav:
   - Home: index.md
-  - Release Notes: RELEASE.md
-  - Getting started:
-      - getting_started.md
+  - Getting Started:
+      - Overview: getting_started.md
+      - Release Notes: RELEASE.md
   - Guides:
       - CLI & YAML: cli.md
       - Metrics: metrics.md
@@ -110,14 +110,11 @@ nav:
       - Configuration: configuration.md
       - Scenarios: scenarios.md
       - Integrations: integrations.md
-      - Known Issues: known_issues.md
-      - Bugs: BUGS.md
-      - vLLM Known Issues: VLLM_KNOWN_ISSUES.md
-  - Cookbook:
-      - LLM as Judge: cookbook/llm_judge.md
-      - RAG Pipeline: cookbook/rag_evaluation.md
-  - Best Practices:
-      - Writing Scorers: best_practices/scorers.md
+      - Best Practices:
+          - Writing Scorers: best_practices/scorers.md
+      - Cookbook:
+          - LLM as Judge: cookbook/llm_judge.md
+          - RAG Pipeline: cookbook/rag_evaluation.md
   - Examples:
       - Quickstart: examples/quickstart.md
       - Custom Scorer: examples/custom_scorer.md
@@ -131,6 +128,10 @@ nav:
   - Reference:
       - API: api.md
       - Development: development.md
+  - Troubleshooting:
+      - Known Issues: known_issues.md
+      - Bugs: BUGS.md
+      - vLLM Known Issues: VLLM_KNOWN_ISSUES.md
   - Community:
       - FAQ: community/faq.md
       - Roadmap: community/roadmap.md
