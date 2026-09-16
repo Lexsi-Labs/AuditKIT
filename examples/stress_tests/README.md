@@ -21,7 +21,7 @@ detail; summarized below.
 ## How to run
 
 ```bash
-cd "AuditKit-mirror"          # repo root
+cd AuditKIT                  # repo root
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[transformers,interop]"
 

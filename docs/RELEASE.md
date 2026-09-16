@@ -12,7 +12,7 @@
 
 AuditKIT (`auditkit`) is a standalone Python library for evaluating AI models. It unifies the fragmented world of model evaluation — academic benchmarks, LLM-as-judge, RAG scoring, and performance profiling — behind a **single API** and a **single, provenance-stamped result object**, so results from different techniques are directly comparable, cacheable, and reproducible by construction.
 
-- **Version:** 1.0.0 · **Python:** 3.10+ · **License:** Apache-2.0 · **Platforms:** Linux / macOS / Windows
+- **Version:** 1.0.0 · **Python:** 3.10+ · **License:** LSAL v1.2 · **Platforms:** Linux / macOS / Windows
 - **Zero required third-party dependencies** — the core runs on the standard library; every heavy backend and metric is an optional extra.
 
 ---
@@ -678,7 +678,7 @@ For the full, candid engineering reference — every config, backend, metric, an
 
 - **Repository:** https://github.com/Lexsi-Labs/AuditKIT
 - **Full technical guide:** [docs/GUIDE.md](GUIDE.md)
-- **License:** Apache-2.0
+- **License:** LSAL v1.2
 - **Built by** Lexsi Labs.
 
 *AuditKIT — one evaluation spine for every model, every dataset, every technique.*

@@ -21,7 +21,7 @@ evaluation — zero required deps.
 
 <p class="ak-chips">
 <span>v1.0.0</span>
-<span>Apache-2.0</span>
+<span>LSAL v1.2</span>
 <span>Python 3.10+</span>
 <span>zero required deps</span>
 <span>10 metric families</span>

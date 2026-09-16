@@ -1,12 +1,12 @@
 <!--
   AuditKIT — Complete Technical Guide
-  Verified against the `continue-removal-branch` source (auditkit 0.3.0).
+  Verified against the AuditKit 1.0.0 source.
   Renders on GitHub (mermaid + tables) and as a hosted page.
 -->
 
 # AuditKIT — Complete Technical Guide
 
-> **Version:** 0.3.0 · **Branch:** `continue-removal-branch` · **Python:** ≥ 3.10 · **License:** Apache-2.0
+> **Version:** 1.0.0 · **Python:** ≥ 3.10 · **License:** LSAL v1.2
 >
 > This guide is written **against the actual code on this branch**, not the marketing README. Where the code diverges from older docs (the top-level `README.md`, `CLAUDE.md`, the docstrings), this guide follows the code and calls the divergence out. This guide states limitations inline, in context, wherever they matter. Nothing is hidden to make a feature look better than it is.
 
@@ -63,7 +63,7 @@ Model evaluation today is fragmented: academic benchmarks (MMLU, GSM8K) live in 
 - **Provenance by default.** Every run produces a `RunResult` carrying a `fingerprint` (a sha256 over model + config + tasks + scorers). Identical inputs → identical fingerprint → a disk-cache hit. Change any knob and the fingerprint changes.
 - **The spine never changes to add a feature.** A new modality, technique, or backend is a new plugin file + one registry line — never an edit to `runner.py`/`score.py`/`sample.py`.
 
-> **Candor — what was recently removed.** This branch (`continue-removal-branch`) deliberately removed four feature families in commit `7ad8177`: **multimodal, agentic, conversation, and tabular** evaluation. Their modules and metrics are gone. If you read `CLAUDE.md` or older docs describing `Conversation`/`Turn`/`evaluate_conversation()` or agent traces — those are **stale**; none of it exists on this branch. This guide documents only what is present.
+> **Candor — what was recently removed.** AuditKit deliberately excludes four feature families: **multimodal, agentic, conversation, and tabular** evaluation. Their modules and metrics are gone. If you read `CLAUDE.md` or older docs describing `Conversation`/`Turn`/`evaluate_conversation()` or agent traces — those are **stale**; none of it exists in this release. This guide documents only what is present.
 
 ---
 
@@ -805,7 +805,7 @@ exp.log_mlflow(tracking_uri=...)  # optional, needs auditkit[mlflow]
 A first-class adversarial red-teaming suite — a probe/detector runner that
 *generates* attacks (prompt-injection / jailbreak / encoding / over-refusal),
 runs them against a model, and scores attack success — is **on the roadmap, not
-part of the v0.3.0 release**, so it isn't documented as a supported capability
+part of the v1.0.0 release**, so it isn't documented as a supported capability
 here. See [Future works](RELEASE.md#future-works).
 
 What *does* ship today for safety/security is a set of ordinary **metrics** you
@@ -1011,4 +1011,4 @@ flowchart TD
 
 ---
 
-*Generated against `continue-removal-branch` (auditkit 0.3.0). If a detail here ever disagrees with the code, the code wins — regenerate this guide.*
+*Generated against AuditKit 1.0.0. If a detail here ever disagrees with the code, the code wins — regenerate this guide.*
