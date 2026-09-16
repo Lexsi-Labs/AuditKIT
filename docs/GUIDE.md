@@ -8,7 +8,7 @@
 
 > **Version:** 1.0.0 · **Python:** ≥ 3.10 · **License:** LSAL v1.2
 >
-> This guide is written **against the actual code on this branch**, not the marketing README. Where the code diverges from older docs (the top-level `README.md`, `CLAUDE.md`, the docstrings), this guide follows the code and calls the divergence out. This guide states limitations inline, in context, wherever they matter. Nothing is hidden to make a feature look better than it is.
+> This guide is written **against the actual code on this branch**, not the marketing README. Where the code diverges from older docs (the top-level `README.md` and the docstrings), this guide follows the code and calls the divergence out. This guide states limitations inline, in context, wherever they matter. Nothing is hidden to make a feature look better than it is.
 
 ---
 
@@ -63,7 +63,7 @@ Model evaluation today is fragmented: academic benchmarks (MMLU, GSM8K) live in 
 - **Provenance by default.** Every run produces a `RunResult` carrying a `fingerprint` (a sha256 over model + config + tasks + scorers). Identical inputs → identical fingerprint → a disk-cache hit. Change any knob and the fingerprint changes.
 - **The spine never changes to add a feature.** A new modality, technique, or backend is a new plugin file + one registry line — never an edit to `runner.py`/`score.py`/`sample.py`.
 
-> **Candor — what was recently removed.** AuditKit deliberately excludes four feature families: **multimodal, agentic, conversation, and tabular** evaluation. Their modules and metrics are gone. If you read `CLAUDE.md` or older docs describing `Conversation`/`Turn`/`evaluate_conversation()` or agent traces — those are **stale**; none of it exists in this release. This guide documents only what is present.
+> **Candor — what was recently removed.** AuditKit deliberately excludes four feature families: **multimodal, agentic, conversation, and tabular** evaluation. Their modules and metrics are gone. If you read older docs describing `Conversation`/`Turn`/`evaluate_conversation()` or agent traces — those are **stale**; none of it exists in this release. This guide documents only what is present.
 
 ---
 
@@ -966,7 +966,7 @@ A single list of everything flagged inline above, for a quick pre-demo scan. Non
 - `CompareResult` runs an independent p-test per model pair with no multiple-comparisons correction; `winner()` ignores significance (picks the raw best mean).
 
 **Stale docs (not code issues)**
-- `CLAUDE.md` still describes the removed conversation/agent features; the README advertises `ollama:` (use `litellm:ollama/...`), "520 tests", and modality language. This branch removed multimodal/agent/conversation/tabular.
+- Older docs still describe the removed conversation/agent features; the README advertises `ollama:` (use `litellm:ollama/...`), "520 tests", and modality language. This branch removed multimodal/agent/conversation/tabular.
 
 **bert_score** hits an upstream `bert_score`-vs-`transformers>=5` tokenizer incompatibility on its own — `BertScore.score()` works around it with a scoped monkeypatch clamping the affected tokenizer's `model_max_length` (see `docs/BUGS.md`); `cosine_similarity` was never affected.
 
