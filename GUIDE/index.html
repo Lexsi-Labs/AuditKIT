@@ -247,25 +247,6 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../RELEASE/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Release Notes
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
     
     
       <li class="md-tabs__item">
@@ -275,7 +256,7 @@
   
     
   
-  Getting started
+  Getting Started
 
         </a>
       </li>
@@ -298,50 +279,6 @@
     
   
   Guides
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../cookbook/llm_judge/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  Cookbook
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../best_practices/scorers/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  Best Practices
 
         </a>
       </li>
@@ -408,6 +345,28 @@
     
   
   Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../known_issues/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Troubleshooting
 
         </a>
       </li>
@@ -520,35 +479,10 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../RELEASE/" class="md-nav__link">
+    
+    
+      
         
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Release Notes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
       
         
       
@@ -577,7 +511,7 @@
   <span class="md-ellipsis">
     
   
-    Getting started
+    Getting Started
   
 
     
@@ -604,8 +538,6 @@
   
     
     
-      
-        
       
         
       
@@ -665,118 +597,6 @@
     
   
     Guides
-  
-
-    
-  </span>
-  
-  
-
-      
-        <span class="md-nav__icon md-icon"></span>
-      
-    </a>
-  
-
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-      
-        
-        
-      
-    
-    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
-      
-        
-  
-  
-  
-    <a href="../cookbook/llm_judge/" class="md-nav__link">
-      
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Cookbook
-  
-
-    
-  </span>
-  
-  
-
-      
-        <span class="md-nav__icon md-icon"></span>
-      
-    </a>
-  
-
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-      
-        
-        
-      
-    
-    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
-      
-        
-  
-  
-  
-    <a href="../best_practices/scorers/" class="md-nav__link">
-      
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Best Practices
   
 
     
@@ -956,6 +776,65 @@
     
   
     Reference
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../known_issues/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
   
 
     
@@ -1683,7 +1562,7 @@
 <h1 id="auditkit-complete-technical-guide">AuditKIT — Complete Technical Guide<a class="headerlink" href="#auditkit-complete-technical-guide" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p><strong>Version:</strong> 1.0.0 · <strong>Python:</strong> ≥ 3.10 · <strong>License:</strong> LSAL v1.2</p>
-<p>This guide is written <strong>against the actual code on this branch</strong>, not the marketing README. Where the code diverges from older docs (the top-level <code>README.md</code>, <code>CLAUDE.md</code>, the docstrings), this guide follows the code and calls the divergence out. This guide states limitations inline, in context, wherever they matter. Nothing is hidden to make a feature look better than it is.</p>
+<p>This guide is written <strong>against the actual code on this branch</strong>, not the marketing README. Where the code diverges from older docs (the top-level <code>README.md</code> and the docstrings), this guide follows the code and calls the divergence out. This guide states limitations inline, in context, wherever they matter. Nothing is hidden to make a feature look better than it is.</p>
 </blockquote>
 <hr />
 <h2 id="table-of-contents">Table of contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
@@ -1781,7 +1660,7 @@
 <li><strong>The spine never changes to add a feature.</strong> A new modality, technique, or backend is a new plugin file + one registry line — never an edit to <code>runner.py</code>/<code>score.py</code>/<code>sample.py</code>.</li>
 </ul>
 <blockquote>
-<p><strong>Candor — what was recently removed.</strong> AuditKit deliberately excludes four feature families: <strong>multimodal, agentic, conversation, and tabular</strong> evaluation. Their modules and metrics are gone. If you read <code>CLAUDE.md</code> or older docs describing <code>Conversation</code>/<code>Turn</code>/<code>evaluate_conversation()</code> or agent traces — those are <strong>stale</strong>; none of it exists in this release. This guide documents only what is present.</p>
+<p><strong>Candor — what was recently removed.</strong> AuditKit deliberately excludes four feature families: <strong>multimodal, agentic, conversation, and tabular</strong> evaluation. Their modules and metrics are gone. If you read older docs describing <code>Conversation</code>/<code>Turn</code>/<code>evaluate_conversation()</code> or agent traces — those are <strong>stale</strong>; none of it exists in this release. This guide documents only what is present.</p>
 </blockquote>
 <hr />
 <h2 id="2-install-optional-extras">2. Install &amp; optional extras<a class="headerlink" href="#2-install-optional-extras" title="Permanent link">&para;</a></h2>
@@ -3413,7 +3292,7 @@ CLI flags override YAML values (when the flag is set).</p>
 - <code>paired_bootstrap</code> significance is a conservative heuristic (can under-report significance for low-variance differences), not an exact permutation/sign test.
 - <code>CompareResult</code> runs an independent p-test per model pair with no multiple-comparisons correction; <code>winner()</code> ignores significance (picks the raw best mean).</p>
 <p><strong>Stale docs (not code issues)</strong>
-- <code>CLAUDE.md</code> still describes the removed conversation/agent features; the README advertises <code>ollama:</code> (use <code>litellm:ollama/...</code>), "520 tests", and modality language. This branch removed multimodal/agent/conversation/tabular.</p>
+- Older docs still describe the removed conversation/agent features; the README advertises <code>ollama:</code> (use <code>litellm:ollama/...</code>), "520 tests", and modality language. This branch removed multimodal/agent/conversation/tabular.</p>
 <p><strong>bert_score</strong> hits an upstream <code>bert_score</code>-vs-<code>transformers&gt;=5</code> tokenizer incompatibility on its own — <code>BertScore.score()</code> works around it with a scoped monkeypatch clamping the affected tokenizer's <code>model_max_length</code> (see <code>docs/BUGS.md</code>); <code>cosine_similarity</code> was never affected.</p>
 <hr />
 <h2 id="19-appendix-glossary-file-map">19. Appendix: glossary &amp; file map<a class="headerlink" href="#19-appendix-glossary-file-map" title="Permanent link">&para;</a></h2>
