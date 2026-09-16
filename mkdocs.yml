@@ -131,15 +131,12 @@ nav:
   - Reference:
       - API: api.md
       - Development: development.md
-  - About:
-      - Product / PRD: about/product.md
-      - Landscape Comparison: COMPARISON.md
-      - Glossary: about/glossary.md
   - Community:
       - FAQ: community/faq.md
       - Roadmap: community/roadmap.md
       - Changelog: community/changelog.md
       - Contributing: community/contributing.md
+      - Glossary: about/glossary.md
 
 markdown_extensions:
   - admonition
