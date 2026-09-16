@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "auditkit"
+version = "1.0.0"
+description = "Evaluate any model on any dataset and any task — standalone, no platform required"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE.md" }
+authors = [{ name = "Lexsi Labs" }]
+dependencies = []   # zero required third-party deps by design
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.optional-dependencies]
+openai      = ["openai"]
+anthropic   = ["anthropic"]
+# torch/transformers/vllm are version-locked to each other. vLLM pins an EXACT
+# torch per release and drives the transformers floor, and transformers 5.x is a
+# breaking major this code is not yet validated against (developed on 4.44). We
+# therefore cap transformers below 5.x and pin vLLM to the 0.15–0.19 line, which
+# stays on transformers 4.x and pins torch 2.9–2.10 — a stack coherent with the
+# [transformers] extra so `auditkit[transformers,vllm]` co-resolves. torch is a
+# floor only (no upper cap) so users can bring their own CUDA build.
+transformers = ["torch>=2.4", "transformers>=4.44,<5"]
+lmeval      = ["lm-eval", "accelerate"]   # accelerate: required by lm-eval's hf model backend
+vision      = ["pillow", "torchmetrics"]
+interop     = ["datasets", "mlcroissant", "GitPython"]   # GitPython: mlcroissant needs it for git-based repo downloads but doesn't declare it itself
+mlflow      = ["mlflow"]
+requests    = ["requests"]
+vllm        = ["vllm>=0.15,<0.20"]   # 0.15→torch 2.9.1 … 0.19→torch 2.10.0, all transformers<5; 0.20+ moves to torch 2.11 + transformers 5.x
+litellm     = ["litellm"]
+bert-score  = ["bert-score", "torch>=2.4"]
+dev         = ["pytest", "pytest-asyncio", "pytest-mock"]
+all         = [
+    "auditkit[openai,anthropic,transformers,lmeval,vision,interop,mlflow,requests,vllm,litellm,bert-score,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/Lexsi-Labs/AuditKIT"
+Repository = "https://github.com/Lexsi-Labs/AuditKIT"
+
+[project.scripts]
+auditkit = "auditkit.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/auditkit"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/auditkit/assets/auditkit_logo.png" = "auditkit/assets/auditkit_logo.png"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"

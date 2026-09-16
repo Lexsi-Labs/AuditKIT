@@ -1,0 +1,54 @@
+# auditkit evaluation configuration
+# Usage: auditkit eval --config auditkit.yaml
+
+# Model backend
+model: openai:gpt-4o-mini
+# model: echo                      # for testing without API key
+# model: ollama:llama3.1:8b        # local model
+
+# Generation parameters
+temperature: 0.0
+max_tokens: 256
+seed: 42
+concurrency: 8
+
+# Dataset: inline prompts, CSV file, or built-in
+# Inline prompts:
+prompts:
+  - "What is the capital of France?"
+  - "Explain quantum computing in one paragraph."
+  - "Write a haiku about programming."
+
+# CSV dataset (alternative to prompts):
+# csv: ./data.csv
+# input_col: question
+# target_col: answer
+
+# Built-in dataset:
+# dataset: mmlu
+# subject: anatomy
+
+# Adapter configuration
+adapter: generation
+# adapter: chat
+# system_prompt: "You are a helpful assistant."
+# adapter: fewshot
+# num_fewshot: 3
+
+# Output
+output: results.json
+format: json
+
+# Experiment tracking
+experiment: my-eval
+tags:
+  - test
+  - v1
+
+# Dataset split
+# split:
+#   strategy: stratified
+#   train_ratio: 0.7
+#   val_ratio: 0.15
+#   test_ratio: 0.15
+#   seed: 0

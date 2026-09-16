@@ -1,0 +1,168 @@
+site_name: AuditKIT
+site_description: Evaluate any model on any dataset and any task — benchmark, judge, code, red-team, and performance metrics, all from a single spine.
+site_url: https://lexsi-labs.github.io/AuditKIT/
+repo_url: https://github.com/Lexsi-Labs/AuditKIT
+repo_name: Lexsi-Labs/AuditKIT
+edit_uri: edit/main/docs/
+copyright: >
+  Copyright &copy; 2026 <a href="https://lexsi.ai" target="_blank" rel="noopener">Lexsi Labs</a>
+
+theme:
+  name: material
+  logo: assets/icon.png
+  favicon: assets/favicon.png
+  font:
+    text: Schibsted Grotesk
+    code: IBM Plex Mono
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - navigation.prune
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+
+extra_css:
+  - assets/extra.css
+
+extra_javascript:
+  - assets/extra.js
+
+extra:
+  version:
+    provider: mike
+    default: latest
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Lexsi-Labs
+      name: Lexsi Labs on GitHub
+    - icon: fontawesome/brands/x-twitter
+      link: https://x.com/Lexsi_labs
+      name: Lexsi Labs on X
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/lexsi-labs/
+      name: Lexsi Labs on LinkedIn
+    - icon: simple/huggingface
+      link: https://huggingface.co/Lexsi
+      name: Lexsi Labs on Hugging Face
+    - icon: fontawesome/solid/globe
+      link: https://lexsi.ai
+      name: lexsi.ai
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: false
+            show_root_heading: true
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            merge_init_into_class: true
+            docstring_section_style: table
+
+nav:
+  - Home: index.md
+  - Release Notes: RELEASE.md
+  - Getting started:
+      - getting_started.md
+  - Guides:
+      - CLI & YAML: cli.md
+      - Metrics: metrics.md
+      - Scorer Reference: scorers_reference.md
+      - Annotators: annotators.md
+      - LLM-as-Judge Rendering: llm_judge_rendering.md
+      - Encoder Judge (BERT/DeBERTa/ELECTRA/...): encoder_judge.md
+      - Encoder Judge Prebuilts (Factuality/Sentiment): encoder_judge_prebuilts.md
+      - Guard Models (Safety): guard_models.md
+      - Model Backends: model_backends.md
+      - Experiments: experiments.md
+      - Reports: reports.md
+      - Configuration: configuration.md
+      - Scenarios: scenarios.md
+      - Integrations: integrations.md
+      - Known Issues: known_issues.md
+      - Bugs: BUGS.md
+      - vLLM Known Issues: VLLM_KNOWN_ISSUES.md
+  - Cookbook:
+      - LLM as Judge: cookbook/llm_judge.md
+      - RAG Pipeline: cookbook/rag_evaluation.md
+  - Best Practices:
+      - Writing Scorers: best_practices/scorers.md
+  - Examples:
+      - Quickstart: examples/quickstart.md
+      - Custom Scorer: examples/custom_scorer.md
+      - Experiment Tracking: examples/experiments.md
+      - Many Datasets: examples/many_datasets.md
+      - Model Comparison: examples/model_comparison.md
+  - Architecture:
+      - System Design: architecture/system-design.md
+      - Data Model: architecture/data-model.md
+      - Platform Integration: about/platform-integration.md
+  - Reference:
+      - API: api.md
+      - Development: development.md
+  - About:
+      - Product / PRD: about/product.md
+      - Landscape Comparison: COMPARISON.md
+      - Glossary: about/glossary.md
+  - Community:
+      - FAQ: community/faq.md
+      - Roadmap: community/roadmap.md
+      - Changelog: community/changelog.md
+      - Contributing: community/contributing.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - tables
+  - toc:
+      permalink: true

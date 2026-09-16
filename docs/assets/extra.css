@@ -1,0 +1,336 @@
+/* ============================================================================
+   AuditKIT — design system
+   Direction: refined editorial-technical. The product is rigor and provenance;
+   the site reads like an auditor's precisely set journal. Brand orange
+   dominates (matches the logo mark exactly), amber appears as a sharp,
+   deliberate accent.
+   Type: Bricolage Grotesque (display) · Schibsted Grotesk (text, via theme)
+         · IBM Plex Mono (code, via theme)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&display=swap');
+
+:root {
+  --ak-ink: #1a1f36;          /* wordmark navy */
+  --ak-ink-2: #2d3352;
+  --ak-blue: #ff4b0a;         /* primary accent -- exact logo-mark orange */
+  --ak-blue-dark: #cc3d09;    /* darker shade, AA-contrast-safe for body text links */
+  --ak-blue-bright: #ff8c5e;  /* lighter coral-orange, dark-scheme accent (matches the logo's secondary stripe tone) */
+  --ak-amber: #e8a33d;        /* sharp accent, used sparingly */
+  --ak-paper: #f8f9fc;        /* warm paper, light scheme */
+  --ak-display: "Bricolage Grotesque", "Schibsted Grotesk", sans-serif;
+}
+
+/* ── Palette: light ─────────────────────────────────────────────────────── */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--ak-ink);
+  --md-primary-fg-color--light: var(--ak-ink-2);
+  --md-primary-fg-color--dark: #0e1224;
+  --md-accent-fg-color: var(--ak-blue);
+  --md-typeset-a-color: var(--ak-blue-dark);
+  --md-default-bg-color: var(--ak-paper);
+  --md-code-bg-color: #eef0f5;
+  --md-footer-bg-color: var(--ak-ink);
+  --md-footer-bg-color--dark: #0e1224;
+}
+
+/* ── Palette: dark ──────────────────────────────────────────────── */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #0e1224;
+  --md-primary-fg-color--light: var(--ak-ink-2);
+  --md-primary-fg-color--dark: #0a0d1a;
+  --md-accent-fg-color: var(--ak-blue-bright);
+  --md-typeset-a-color: var(--ak-blue-bright);
+  --md-default-bg-color: #11152b;
+  --md-default-fg-color--lightest: rgba(180, 190, 220, 0.12);
+  --md-code-bg-color: #171d36;
+  --md-footer-bg-color: #0e1224;
+  --md-footer-bg-color--dark: #0a0d1a;
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3 {
+  font-family: var(--ak-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.md-typeset h1 {
+  color: var(--md-default-fg-color);
+  font-weight: 700;
+}
+
+.md-header__topic,
+.md-tabs__link {
+  font-family: var(--ak-display);
+  font-weight: 600;
+}
+
+/* ── Header & tabs ──────────────────────────────────────────────────────── */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 1.6rem;
+  width: auto;
+}
+
+.md-tabs {
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, var(--ak-blue) 0%, var(--ak-blue) 55%, var(--ak-amber) 100%) 1;
+}
+
+.md-header__title {
+  font-size: 0.95rem;
+}
+
+.md-tabs__link {
+  opacity: 0.78;
+  transition: color 125ms, opacity 125ms;
+}
+
+.md-tabs__link:hover {
+  color: var(--ak-amber);
+  opacity: 1;
+}
+
+.md-tabs__link--active {
+  color: #fff;
+  opacity: 1;
+  box-shadow: 0 2px 0 0 var(--ak-amber);
+}
+
+.md-search__form {
+  border-radius: 0.3rem;
+}
+
+/* ── Landing hero ───────────────────────────────────────────────────────── */
+.ak-hero {
+  position: relative;
+  text-align: center;
+  padding: 3.2rem 1rem 2.6rem;
+  margin: 0 0 1.6rem;
+  overflow: hidden;
+}
+
+.ak-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--ak-blue) 1px, transparent 1.5px);
+  background-size: 26px 26px;
+  opacity: 0.10;
+  -webkit-mask-image: radial-gradient(ellipse 75% 90% at 50% 35%, black 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 75% 90% at 50% 35%, black 30%, transparent 75%);
+  pointer-events: none;
+}
+
+.ak-hero::after {
+  content: "";
+  position: absolute;
+  top: 2.0rem;
+  left: 50%;
+  width: 4rem;
+  height: 0.4rem;
+  transform: translateX(-50%);
+  background-image:
+    radial-gradient(circle at 12% 50%, var(--ak-amber) 0 0.16rem, transparent 0.2rem),
+    radial-gradient(circle at 50% 50%, var(--ak-blue) 0 0.13rem, transparent 0.17rem),
+    radial-gradient(circle at 88% 50%, var(--ak-amber) 0 0.16rem, transparent 0.2rem);
+  pointer-events: none;
+}
+
+.ak-hero > * {
+  position: relative;
+}
+
+.ak-hero img.ak-hero-mark {
+  width: 4.6rem;
+  height: auto;
+  margin-bottom: 0.6rem;
+}
+
+.ak-hero h1.ak-hero-title {
+  font-family: var(--ak-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  margin: 0.2rem auto 0.7rem;
+  max-width: 34rem;
+}
+
+.ak-hero h1.ak-hero-title em {
+  font-style: normal;
+  color: var(--ak-blue);
+}
+
+[data-md-color-scheme="slate"] .ak-hero h1.ak-hero-title em {
+  color: var(--ak-blue-bright);
+}
+
+.ak-hero p.ak-tagline {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  max-width: 36rem;
+  margin: 0 auto 1.5rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.ak-hero .md-button {
+  margin: 0.2rem 0.3rem;
+}
+
+.ak-chips {
+  margin-top: 1.1rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--md-default-fg-color--light);
+}
+
+.ak-chips span {
+  display: inline-block;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 1rem;
+  padding: 0.15rem 0.65rem;
+  margin: 0.15rem 0.15rem;
+  background: var(--md-default-bg-color);
+}
+
+.ak-hero .md-button--primary {
+  background-color: var(--ak-blue);
+  border-color: var(--ak-blue);
+  transition: background-color 125ms, border-color 125ms, transform 125ms;
+}
+
+.ak-hero .md-button--primary:hover {
+  background-color: var(--ak-blue-dark);
+  border-color: var(--ak-amber);
+  transform: translateY(-1px);
+}
+
+[data-md-color-scheme="slate"] .ak-hero .md-button:not(.md-button--primary) {
+  color: var(--md-default-fg-color);
+  border-color: var(--md-default-fg-color--light);
+}
+
+[data-md-color-scheme="slate"] .ak-hero .md-button:not(.md-button--primary):hover {
+  color: var(--ak-blue-bright);
+  border-color: var(--ak-blue-bright);
+  background-color: transparent;
+}
+
+/* ── Mermaid ─────────────────────────────────────── */
+:root,
+[data-md-color-scheme="default"] {
+  --md-mermaid-node-bg-color: color-mix(in srgb, var(--ak-blue) 10%, #ffffff);
+  --md-mermaid-node-fg-color: var(--ak-ink);
+  --md-mermaid-edge-color: var(--ak-ink-2);
+  --md-mermaid-label-bg-color: var(--ak-paper);
+  --md-mermaid-label-fg-color: var(--ak-ink);
+  --md-mermaid-font-family: var(--md-text-font-family);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-mermaid-node-bg-color: #1a2142;
+  --md-mermaid-node-fg-color: #c8d0e8;
+  --md-mermaid-edge-color: #6b7ab8;
+  --md-mermaid-label-bg-color: #11152b;
+  --md-mermaid-label-fg-color: #c8d0e8;
+}
+
+/* ── Grid cards ───────────────────────────────────── */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border-radius: 0.35rem;
+  border-color: var(--md-default-fg-color--lightest);
+  transition: border-color 125ms, box-shadow 125ms, transform 125ms;
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  border-top: 2px solid var(--ak-amber);
+  box-shadow: 0 6px 18px rgba(26, 31, 54, 0.08);
+  transform: translateY(-2px);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .grid.cards > ul > li:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.md-typeset .grid.cards > ul > li .twemoji.lg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ak-blue) 12%, transparent);
+  vertical-align: middle;
+}
+
+.md-typeset .grid.cards > ul > li .twemoji svg {
+  color: var(--ak-blue);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .grid.cards > ul > li .twemoji.lg {
+  background: color-mix(in srgb, var(--ak-blue-bright) 16%, transparent);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .grid.cards > ul > li .twemoji svg {
+  color: var(--ak-blue-bright);
+}
+
+/* ── Content details ────────────────────────────────────────────────────── */
+.md-typeset table:not([class]) th {
+  font-family: var(--ak-display);
+  font-weight: 600;
+  background-color: transparent;
+  border-bottom: 2px solid var(--ak-blue);
+}
+
+.md-typeset code {
+  border-radius: 0.18rem;
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-left-color: var(--ak-blue);
+}
+
+.md-social__link:hover svg {
+  fill: var(--ak-amber);
+}
+
+/* ── Lexsi footer block (landing page) ──────────────────────────────────── */
+.ak-lexsi-footer {
+  text-align: center;
+  margin: 2.4rem 0 0.8rem;
+}
+
+.ak-lexsi-footer p {
+  margin: 0.25rem 0;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.74rem;
+}
+
+.ak-lexsi-on-dark { display: none; }
+[data-md-color-scheme="slate"] .ak-lexsi-on-light { display: none; }
+[data-md-color-scheme="slate"] .ak-lexsi-on-dark { display: inline; }
+
+/* staggered load reveal */
+@media (prefers-reduced-motion: no-preference) {
+  .ak-hero > * {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: ak-rise 480ms cubic-bezier(0.2, 0.6, 0.2, 1) forwards;
+  }
+  .ak-hero > *:nth-child(1) { animation-delay: 60ms; }
+  .ak-hero > *:nth-child(2) { animation-delay: 140ms; }
+  .ak-hero > *:nth-child(3) { animation-delay: 220ms; }
+  .ak-hero > *:nth-child(4) { animation-delay: 300ms; }
+  .ak-hero > *:nth-child(5) { animation-delay: 380ms; }
+}
+
+@keyframes ak-rise {
+  to { opacity: 1; transform: none; }
+}

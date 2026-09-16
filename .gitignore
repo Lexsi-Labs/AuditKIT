@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+site/
+
+# Claude Code
+CLAUDE.md

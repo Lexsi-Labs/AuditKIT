@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b5bdb"/>
+      <stop offset="100%" stop-color="#2c47b5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Shield -->
+  <path d="M90 16L152 50v40c0 37.2-27.2 70-62 79-34.8-9-62-41.8-62-79V50L90 16z"
+        fill="url(#g)" opacity="0.10" stroke="#3b5bdb" stroke-width="2.5"/>
+  <path d="M90 22L144 52v36c0 32.8-24 61.6-54 70-30-8.4-54-37.2-54-70V52L90 22z"
+        fill="url(#g)" opacity="0.05"/>
+
+  <!-- Checkmark -->
+  <path d="M64 88l16 16 30-36"
+        stroke="#3b5bdb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Three dots -->
+  <circle cx="108" cy="128" r="4" fill="#e8a33d" opacity="0.8"/>
+  <circle cx="122" cy="136" r="4" fill="#3b5bdb" opacity="0.5"/>
+  <circle cx="136" cy="128" r="4" fill="#e8a33d" opacity="0.8"/>
+</svg>
