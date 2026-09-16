@@ -1,0 +1,2590 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Evaluate any model on any dataset and any task — benchmark, judge, code, red-team, and performance metrics, all from a single spine.">
+      
+      
+      
+        <link rel="canonical" href="https://lexsi-labs.github.io/AuditKIT/VLLM_KNOWN_ISSUES/">
+      
+      
+        <link rel="prev" href="../BUGS/">
+      
+      
+        <link rel="next" href="../cookbook/llm_judge/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>vLLM Known Issues - AuditKIT</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Schibsted+Grotesk:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Schibsted Grotesk";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#vllm-backend-known-issues-bugs-and-gaps" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AuditKIT" class="md-header__button md-logo" aria-label="AuditKIT" data-md-component="logo">
+      
+  <img src="../assets/icon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AuditKIT
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              vLLM Known Issues
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Lexsi-Labs/AuditKIT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Lexsi-Labs/AuditKIT
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../RELEASE/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release Notes
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../cli/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../cookbook/llm_judge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Cookbook
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../best_practices/scorers/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Best Practices
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../examples/quickstart/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/system-design/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../about/product/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../community/faq/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Community
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AuditKIT" class="md-nav__button md-logo" aria-label="AuditKIT" data-md-component="logo">
+      
+  <img src="../assets/icon.png" alt="logo">
+
+    </a>
+    AuditKIT
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Lexsi-Labs/AuditKIT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Lexsi-Labs/AuditKIT
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../RELEASE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../getting_started/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI & YAML
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scorers_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scorer Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../annotators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm_judge_rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM-as-Judge Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../encoder_judge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoder Judge (BERT/DeBERTa/ELECTRA/...)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../encoder_judge_prebuilts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoder Judge Prebuilts (Factuality/Sentiment)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guard_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guard Models (Safety)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experiments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenarios
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../known_issues/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Known Issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../BUGS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bugs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    vLLM Known Issues
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    vLLM Known Issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#part-1-implementation-gaps-in-vllmmodel-itself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 1 — Implementation gaps in VLLMModel itself
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 1 — Implementation gaps in VLLMModel itself">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-no-chat-template-support-sends-the-raw-flat-prompt-always" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. No chat-template support — sends the raw flat prompt always
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-model_info-real-introspection-but-fallback-path-never-confirmed-to-resolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. model_info() — real introspection, but fallback path never confirmed to resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-gpu-memory-never-freed-by-evaluatecompare_models-alone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. GPU memory never freed by evaluate()/compare_models() alone
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-threadsafe-false-no-concurrent-request-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. threadsafe = False — no concurrent request execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-one-shared-samplingparams-per-batch-not-per-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. One shared SamplingParams per batch, not per-request
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-2-dependencyenvironment-issues-install-time-and-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 2 — Dependency/environment issues (install-time and runtime)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 2 — Dependency/environment issues (install-time and runtime)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed-permanently-in-vllmmodel-no-user-action-needed-any-platform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed permanently in VLLMModel (no user action needed, any platform)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fixed permanently in VLLMModel (no user action needed, any platform)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-cannot-re-initialize-cuda-in-forked-subprocess" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Cannot re-initialize CUDA in forked subprocess
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-sysstdoutfileno-unsupportedoperation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 sys.stdout.fileno(): UnsupportedOperation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-hf-hub-404-on-xet-storage-read-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 HF Hub 404 on Xet-storage read-token
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-fixable-from-library-code-documented-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not fixable from library code (documented only)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Not fixable from library code (documented only)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#24-libcudartso13-cannot-open-shared-object-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 libcudart.so.13: cannot open shared object file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-auditkit-modulenotfounderror-after-an-editable-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 auditkit ModuleNotFoundError after an editable install
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-re-verify-any-entry-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to re-verify any entry yourself
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../cookbook/llm_judge/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cookbook
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../best_practices/scorers/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../examples/quickstart/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../architecture/system-design/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../api/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../about/product/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../community/faq/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#part-1-implementation-gaps-in-vllmmodel-itself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 1 — Implementation gaps in VLLMModel itself
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 1 — Implementation gaps in VLLMModel itself">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-no-chat-template-support-sends-the-raw-flat-prompt-always" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. No chat-template support — sends the raw flat prompt always
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-model_info-real-introspection-but-fallback-path-never-confirmed-to-resolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. model_info() — real introspection, but fallback path never confirmed to resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-gpu-memory-never-freed-by-evaluatecompare_models-alone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. GPU memory never freed by evaluate()/compare_models() alone
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-threadsafe-false-no-concurrent-request-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. threadsafe = False — no concurrent request execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-one-shared-samplingparams-per-batch-not-per-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. One shared SamplingParams per batch, not per-request
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-2-dependencyenvironment-issues-install-time-and-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 2 — Dependency/environment issues (install-time and runtime)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 2 — Dependency/environment issues (install-time and runtime)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed-permanently-in-vllmmodel-no-user-action-needed-any-platform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed permanently in VLLMModel (no user action needed, any platform)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fixed permanently in VLLMModel (no user action needed, any platform)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-cannot-re-initialize-cuda-in-forked-subprocess" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Cannot re-initialize CUDA in forked subprocess
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-sysstdoutfileno-unsupportedoperation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 sys.stdout.fileno(): UnsupportedOperation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-hf-hub-404-on-xet-storage-read-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 HF Hub 404 on Xet-storage read-token
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-fixable-from-library-code-documented-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not fixable from library code (documented only)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Not fixable from library code (documented only)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#24-libcudartso13-cannot-open-shared-object-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 libcudart.so.13: cannot open shared object file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-auditkit-modulenotfounderror-after-an-editable-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 auditkit ModuleNotFoundError after an editable install
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-re-verify-any-entry-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to re-verify any entry yourself
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Lexsi-Labs/AuditKIT/edit/main/docs/VLLM_KNOWN_ISSUES.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="vllm-backend-known-issues-bugs-and-gaps"><code>vllm:</code> backend — known issues, bugs, and gaps<a class="headerlink" href="#vllm-backend-known-issues-bugs-and-gaps" title="Permanent link">&para;</a></h1>
+<p><code>VLLMModel</code> (<code>src/auditkit/model/vllm_gen.py</code>) had real, non-stub code and
+mocked unit-test coverage, but had never been run against a real, installed
+vLLM engine until it was live-tested for the first time on a real Colab L4
+GPU. That first run — and everything found since — is consolidated
+here: implementation-level gaps in <code>vllm_gen.py</code> itself, and separately, the
+dependency/environment issues that got in the way of running it at all.</p>
+<p>Companion to <a href="../BUGS/"><code>docs/BUGS.md</code></a> and
+<a href="../known_issues/"><code>docs/known_issues.md</code></a>, which each have one-line
+summaries of some of these — this file has the full reproduction and
+reasoning for every one of them, specific to <code>vllm:</code>.</p>
+<hr />
+<h2 id="part-1-implementation-gaps-in-vllmmodel-itself">Part 1 — Implementation gaps in <code>VLLMModel</code> itself<a class="headerlink" href="#part-1-implementation-gaps-in-vllmmodel-itself" title="Permanent link">&para;</a></h2>
+<h3 id="1-no-chat-template-support-sends-the-raw-flat-prompt-always">1. No chat-template support — sends the raw flat prompt always<a class="headerlink" href="#1-no-chat-template-support-sends-the-raw-flat-prompt-always" title="Permanent link">&para;</a></h3>
+<p><strong>Where:</strong> <code>VLLMModel.generate()</code>:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">prompt</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">prompt</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">prompt</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">requests</span><span class="p">]</span>
+</code></pre></div></p>
+<p>Unlike <code>HFGenModel._render_prompt()</code> (which checks the loaded model's own
+<code>tokenizer.chat_template</code> and formats structured <code>messages</code> through it when
+one exists, falling back to flat text only for genuine base models),
+<code>VLLMModel</code> never looks at a chat template at all — it always sends
+<code>request.prompt</code> as-is. For an instruct/chat-tuned model served via
+<code>vllm:</code>, this means the prompt is under-formatted compared to how the same
+checkpoint would be formatted via <code>hf:</code> or a hosted chat API
+(<code>openai:</code>/<code>anthropic:</code>/<code>groq:</code>/<code>litellm:</code>).</p>
+<p><strong>Status: real, open, unfixed.</strong> Documented in <code>docs/known_issues.md</code> and
+<code>docs/BUGS.md</code> prior to this session; confirmed still true by reading
+current code. <strong>Not yet demonstrated live</strong> — the obvious test (compare
+<code>hf:&lt;model&gt;</code> vs <code>vllm:&lt;model&gt;</code> prompts for the same instruct checkpoint)
+was attempted in <code>examples/10_vllm_smoke_test.ipynb</code> section 3, but using
+<code>gpt2</code> (a base model with no chat template at all) on both sides, which
+can't demonstrate this gap — see the note in that notebook section. A
+live demonstration needs an instruction-tuned model with a
+<code>tokenizer.chat_template</code> on the <code>hf:</code> side.</p>
+<p><strong>What a fix would look like:</strong> extend <code>VLLMModel</code> with the same
+chat-template detection/rendering <code>HFGenModel._render_prompt()</code> already
+does — vLLM's own tokenizer is reachable via <code>self._llm.get_tokenizer()</code>
+after the engine is constructed, which should expose the same
+<code>chat_template</code> attribute a <code>transformers</code> tokenizer does.</p>
+<h3 id="2-model_info-real-introspection-but-fallback-path-never-confirmed-to-resolve">2. <code>model_info()</code> — real introspection, but fallback path never confirmed to resolve<a class="headerlink" href="#2-model_info-real-introspection-but-fallback-path-never-confirmed-to-resolve" title="Permanent link">&para;</a></h3>
+<p><strong>Where:</strong> <code>VLLMModel._find_underlying_model()</code>/<code>model_info()</code>.</p>
+<p>Tries three known internal attribute paths (spanning vLLM's V0/V1 engine
+architectures) to reach the loaded <code>nn.Module</code>, for real
+parameter-count/size introspection matching <code>HFGenModel.model_info()</code>'s
+approach. Falls back to identity-only reporting (<code>{"is_local": True,
+"model_name": ...}</code>) if none resolve, rather than crashing or guessing.</p>
+<p><strong>Status: implemented, but which branch actually fires on a real install
+was never confirmed</strong> — <code>examples/10_vllm_smoke_test.ipynb</code> section 4
+(the live test for exactly this) has not been run yet as of this writing.
+Until it is, treat vLLM-side <code>model_info()</code> output as unverified: it may
+report real params/size, or may silently fall back to identity-only on
+the installed vLLM version (<code>0.26.0</code> at time of writing) — both are
+"working as designed," but which one actually happens hasn't been checked.</p>
+<h3 id="3-gpu-memory-never-freed-by-evaluatecompare_models-alone">3. GPU memory never freed by <code>evaluate()</code>/<code>compare_models()</code> alone<a class="headerlink" href="#3-gpu-memory-never-freed-by-evaluatecompare_models-alone" title="Permanent link">&para;</a></h3>
+<p><strong>Where:</strong> contrast <code>src/auditkit/api.py</code>'s <code>evaluate()</code> with
+<code>src/auditkit/model_compare.py</code>'s <code>compare_models()</code>.</p>
+<p><code>compare_models()</code> resolves each model itself and calls <code>.unload()</code> on it
+in a <code>finally</code> block once done (<code>model_compare.py:573</code>) —
+<code>VLLMModel.unload()</code> frees the loaded engine and clears the torch CUDA
+cache. <strong><code>evaluate()</code> has no equivalent.</strong> When <code>model=</code> is passed as a
+string spec (e.g. <code>"vllm:gpt2"</code>), <code>evaluate()</code> resolves a fresh model
+instance internally, uses it, and returns — the resolved instance (and
+whatever GPU memory it holds) is never exposed to the caller and never
+explicitly freed.</p>
+<p><strong>Confirmed live:</strong> constructing a <code>VLLMModel</code> directly (holding ~20GB of
+an L4's 22GB via vLLM's default <code>gpu_memory_utilization=0.9</code>), then
+calling <code>ak.evaluate(model="vllm:gpt2", ...)</code> in a later cell without
+freeing the first engine, fails:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ValueError: Free memory on device cuda:0 (1.43/22.03 GiB) on startup is
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>less than desired GPU memory utilization (0.92, 20.27 GiB). Decrease GPU
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>memory utilization or reduce GPU memory used by other processes.
+</code></pre></div>
+Any script/notebook calling <code>ak.evaluate(model="vllm:...")</code> (or any other
+large local model) more than once in the same process can hit this — not
+limited to two engines existing on purpose.</p>
+<p><strong>Status: real, open, unfixed.</strong> Workaround: construct the <code>Model</code>
+instance yourself instead of a bare string, and call <code>.unload()</code>
+explicitly when done:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.model.vllm_gen</span><span class="w"> </span><span class="kn">import</span> <span class="n">VLLMModel</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">model</span> <span class="o">=</span> <span class="n">VLLMModel</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt2&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">result</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">model</span><span class="o">.</span><span class="n">unload</span><span class="p">()</span>  <span class="c1"># free GPU memory before the next evaluate()/compare_models() call</span>
+</code></pre></div>
+<strong>What a fix would look like:</strong> <code>evaluate()</code> tracking whether it resolved
+the model itself (vs. received an already-constructed instance from the
+caller, which must never be unloaded out from under them — the same
+distinction <code>compare_models()</code> already makes) and calling <code>.unload()</code> in
+a <code>finally</code> block accordingly.</p>
+<h3 id="4-threadsafe-false-no-concurrent-request-execution">4. <code>threadsafe = False</code> — no concurrent request execution<a class="headerlink" href="#4-threadsafe-false-no-concurrent-request-execution" title="Permanent link">&para;</a></h3>
+<p><strong>Where:</strong> <code>VLLMModel.threadsafe = False</code> (class attribute).</p>
+<p><code>Runner.execute()</code> only parallelizes at <code>concurrency&gt;1</code> for models that
+declare <code>threadsafe=True</code>; <code>VLLMModel</code> doesn't, so every <code>vllm:</code> run is
+serial regardless of <code>RunConfig.concurrency</code>. This is arguably correct as
+a default (vLLM's own internal batching/scheduling provides throughput,
+not caller-side threading), but it does mean
+<code>concurrency=</code> has no effect for this backend — worth knowing rather than
+assuming a high <code>concurrency</code> will speed anything up.</p>
+<p><strong>Status: by design, not necessarily a bug</strong> — flagged here for
+completeness since it's a behavioral difference from threadsafe
+backends (<code>LiteLLMModel</code>, <code>CallableModel</code>, <code>PrecomputedModel</code>).</p>
+<h3 id="5-one-shared-samplingparams-per-batch-not-per-request">5. One shared <code>SamplingParams</code> per batch, not per-request<a class="headerlink" href="#5-one-shared-samplingparams-per-batch-not-per-request" title="Permanent link">&para;</a></h3>
+<p><strong>Where:</strong> <code>VLLMModel.generate()</code>:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># One shared SamplingParams for the whole batch -- same caveat as</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># HFGenModel: per-request variation isn&#39;t meaningful here.</span>
+</code></pre></div></p>
+<p>If a batch of requests somehow carried different
+<code>temperature</code>/<code>max_tokens</code>/etc. per sample, only the first request's
+params would apply to the whole batch. In practice this never happens
+(one <code>evaluate()</code> run shares one <code>RunConfig</code>, so every request in a batch
+already has identical params) — documented here as a known constraint,
+not an active bug, matching the identical, already-accepted behavior in
+<code>HFGenModel</code>.</p>
+<hr />
+<h2 id="part-2-dependencyenvironment-issues-install-time-and-runtime">Part 2 — Dependency/environment issues (install-time and runtime)<a class="headerlink" href="#part-2-dependencyenvironment-issues-install-time-and-runtime" title="Permanent link">&para;</a></h2>
+<p>Found while first getting <code>vllm:</code> running at all, on a real Colab L4 GPU.
+None of these are bugs in this repo's logic.</p>
+<h3 id="fixed-permanently-in-vllmmodel-no-user-action-needed-any-platform">Fixed permanently in <code>VLLMModel</code> (no user action needed, any platform)<a class="headerlink" href="#fixed-permanently-in-vllmmodel-no-user-action-needed-any-platform" title="Permanent link">&para;</a></h3>
+<h4 id="21-cannot-re-initialize-cuda-in-forked-subprocess">2.1 <code>Cannot re-initialize CUDA in forked subprocess</code><a class="headerlink" href="#21-cannot-re-initialize-cuda-in-forked-subprocess" title="Permanent link">&para;</a></h4>
+<p><strong>Where:</strong> vLLM's V1 engine, <code>EngineCoreClient.make_client()</code> → forks a
+separate worker process by default. CUDA contexts can't survive a
+<code>fork()</code> into a child process — if the parent has already touched CUDA
+(which vLLM's own init code does, early, regardless of what the caller
+does), the forked worker crashes on <code>torch.cuda.set_device()</code>.</p>
+<p><strong>Not Jupyter-specific</strong> — originates in vLLM's own internal init
+sequence, not from anything notebook-related.</p>
+<p><strong>Fix:</strong> <code>_apply_environment_defaults()</code> sets
+<code>VLLM_ENABLE_V1_MULTIPROCESSING=0</code> via <code>os.environ.setdefault(...)</code> at
+import time — runs the engine in-process instead of forking, sidestepping
+the problem unconditionally. <code>setdefault</code> so an explicit caller override
+still wins.</p>
+<h4 id="22-sysstdoutfileno-unsupportedoperation">2.2 <code>sys.stdout.fileno(): UnsupportedOperation</code><a class="headerlink" href="#22-sysstdoutfileno-unsupportedoperation" title="Permanent link">&para;</a></h4>
+<p><strong>Where:</strong> vLLM's <code>vllm/distributed/parallel_state.py</code>, <code>suppress_stdout()</code>
+— redirects real OS file descriptors during engine construction to
+silence noisy <code>gloo</code>/NCCL init logs.</p>
+<p><strong>Jupyter/Colab-specific.</strong> Jupyter/IPython kernels replace <code>sys.stdout</code>
+with a stream that forwards output over a socket instead of a real OS fd,
+so <code>.fileno()</code> raises. Never fires in a plain terminal.</p>
+<p><strong>Fix:</strong> <code>_ensure_llm()</code> wraps the <code>LLM(model=...)</code> construction call in a
+<code>_stdout_fix()</code> context manager that swaps <code>sys.stdout</code>/<code>sys.stderr</code> to
+<code>sys.__stdout__</code>/<code>sys.__stderr__</code> for the duration of that call. No-op in
+a plain terminal, so always safe to apply unconditionally.</p>
+<h4 id="23-hf-hub-404-on-xet-storage-read-token">2.3 HF Hub <code>404</code> on Xet-storage read-token<a class="headerlink" href="#23-hf-hub-404-on-xet-storage-read-token" title="Permanent link">&para;</a></h4>
+<p><strong>Where:</strong> <code>huggingface_hub</code>'s newer "Xet Storage" download path.</p>
+<p>404s in practice for some legacy repos (confirmed live: bare <code>"gpt2"</code>)
+not yet Xet-enabled server-side. <strong>Not Colab-specific</strong> — a server-side HF
+Hub/repo-migration issue.</p>
+<p><strong>Fix (best-effort):</strong> <code>_apply_environment_defaults()</code> also sets
+<code>HF_HUB_DISABLE_XET=1</code> via <code>setdefault</code>. <strong>Caveat:</strong> <code>huggingface_hub</code>
+caches its Xet-availability check at first import — only works if
+<code>auditkit.model.vllm_gen</code> is imported before the caller's own code
+imports <code>transformers</code>/<code>huggingface_hub</code> directly. If hit despite this,
+set <code>HF_HUB_DISABLE_XET=1</code> at the very top of your own script/notebook,
+before any other imports.</p>
+<h3 id="not-fixable-from-library-code-documented-only">Not fixable from library code (documented only)<a class="headerlink" href="#not-fixable-from-library-code-documented-only" title="Permanent link">&para;</a></h3>
+<h4 id="24-libcudartso13-cannot-open-shared-object-file">2.4 <code>libcudart.so.13: cannot open shared object file</code><a class="headerlink" href="#24-libcudartso13-cannot-open-shared-object-file" title="Permanent link">&para;</a></h4>
+<p><strong>Where:</strong> <code>vllm._C_stable_libtorch</code> (vLLM's own compiled CUDA
+extension), imported transitively the moment <code>import vllm</code> runs.</p>
+<p><strong>Root cause:</strong> a genuine version mismatch, not a missing library. Colab
+pre-ships <code>torch</code> built for CUDA 12.x. <code>vllm</code>'s own precompiled kernels
+want CUDA 13.x. <code>pip install vllm</code> doesn't force-replace an already-
+present <code>torch</code> that loosely satisfies its version bound, so the two
+disagree, and the real <code>.so</code> vLLM needs (present on disk, e.g.
+<code>/usr/local/lib/python3.12/dist-packages/nvidia/cu13/lib/libcudart.so.13</code>)
+never ends up on the search path the already-installed <code>torch</code> uses.</p>
+<p><strong>Not Colab-specific</strong> — could happen on any machine with a pre-existing
+mismatched <code>torch</code> before <code>vllm</code> is installed into it (a shared ML box, a
+Docker image with a pre-baked <code>torch</code>). A clean environment
+(no pre-existing <code>torch</code>) avoids it, since <code>pip install vllm</code> then
+resolves its own matching <code>torch</code> fresh.</p>
+<p><strong>Two failed workaround attempts, for the record (do not use these):</strong>
+- Setting <code>LD_LIBRARY_PATH</code> via <code>os.environ</code> from an already-running
+  process — doesn't work. glibc's dynamic linker reads it once, at
+  process startup, and caches it internally.
+- <code>ctypes.CDLL(path, mode=RTLD_GLOBAL)</code> preloading the <code>.so</code> — makes the
+  <em>import</em> succeed, but doesn't resolve the deeper ABI mismatch
+  underneath.</p>
+<p><strong>Real fix (manual, one-time per fresh environment), requires a full
+restart afterward.</strong> The mechanism: uninstall the pre-existing (mismatched)
+<code>torch</code> so <code>pip</code> can install the exact build <code>vllm</code> needs <em>fresh</em>, then
+install through <code>auditkit[vllm]</code> so the pinned <code>vllm</code> version (and therefore
+the exact <code>torch</code> it depends on) is what gets resolved:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;$ </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">_run</span><span class="p">([</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="s2">&quot;-m&quot;</span><span class="p">,</span> <span class="s2">&quot;pip&quot;</span><span class="p">,</span> <span class="s2">&quot;uninstall&quot;</span><span class="p">,</span> <span class="s2">&quot;-y&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>      <span class="s2">&quot;torch&quot;</span><span class="p">,</span> <span class="s2">&quot;torchvision&quot;</span><span class="p">,</span> <span class="s2">&quot;torchaudio&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>      <span class="s2">&quot;nvidia-cuda-runtime&quot;</span><span class="p">,</span> <span class="s2">&quot;nvidia-cuda-runtime-cu12&quot;</span><span class="p">])</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Install through the extra so the pyproject pin (vllm&gt;=0.15,&lt;0.20) drives</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># the version — NOT a bare `pip install vllm`, which pulls latest (0.26+,</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># CUDA 13) and defeats the pin.</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="n">_run</span><span class="p">([</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="s2">&quot;-m&quot;</span><span class="p">,</span> <span class="s2">&quot;pip&quot;</span><span class="p">,</span> <span class="s2">&quot;install&quot;</span><span class="p">,</span> <span class="s2">&quot;--no-cache-dir&quot;</span><span class="p">,</span> <span class="s2">&quot;auditkit[vllm]&quot;</span><span class="p">])</span>
+</code></pre></div></p>
+<blockquote>
+<p><strong>Why through the extra, and a re-verification caveat.</strong> <code>pyproject.toml</code>
+now pins <code>vllm&gt;=0.15,&lt;0.20</code> (see the <code>[project.optional-dependencies]</code> comment in <code>pyproject.toml</code>) to stay coherent with the
+<code>transformers&lt;5</code> cap the rest of the library needs. The <strong>original live
+confirmation of this fix used an <em>unpinned</em> <code>pip install vllm</code></strong>, which
+resolved to <code>torch==2.11.0+cu130</code> + <code>vllm==0.26.0</code> — the modern CUDA-13
+stack — and <code>VLLMModel(model="gpt2").generate(...)</code> then produced real
+text with zero further workarounds. With the current pin,
+<code>auditkit[vllm]</code> instead resolves to the <code>vllm 0.15–0.19</code> line
+(<code>torch 2.9.1–2.10.0</code>, CUDA 12.x). That older line is <strong>not yet
+live-verified in this repo</strong> — and, being CUDA-12-era, it may actually
+<em>match</em> Colab's pre-shipped CUDA-12 <code>torch</code> and sidestep this issue
+entirely rather than needing the uninstall dance at all. Both are
+plausible; <strong>re-verify on a fresh Colab GPU with the pinned combo</strong> and
+update this note with the result (which path actually fires) rather than
+assuming. The CUDA build tag (<code>+cu12x</code> vs <code>+cu13x</code>) is <em>not</em> expressible
+in a pyproject version pin, so this remains an environment-level fix no
+matter what we pin.</p>
+</blockquote>
+<h4 id="25-auditkit-modulenotfounderror-after-an-editable-install">2.5 <code>auditkit</code> <code>ModuleNotFoundError</code> after an editable install<a class="headerlink" href="#25-auditkit-modulenotfounderror-after-an-editable-install" title="Permanent link">&para;</a></h4>
+<p><strong>Where:</strong> any Colab/Jupyter bootstrap cell running
+<code>pip install -e /path/to/repo</code> from inside an already-running kernel.</p>
+<p><strong>Jupyter/Colab-notebook-bootstrap-specific — does not apply to normal
+local installs.</strong> <code>pip install -e</code> registers itself via a <code>.pth</code>/finder
+file Python's <code>site</code> module only reads once, at interpreter <em>startup</em>.
+Running the install from a live kernel means that process never re-reads
+<code>site-packages</code>, so <code>pip show auditkit</code> reports it installed (metadata on
+disk) while <code>import auditkit</code> still fails in that same process.</p>
+<p>A normal local install (<code>pip install -e '.[vllm]'</code> in a terminal, before
+starting Python) never hits this.</p>
+<p><strong>Fix (notebook-only):</strong> the bootstrap cell falls back to
+<code>sys.path.insert(0, f"{REPO_DIR}/src")</code> after <code>pip install -e</code>.</p>
+<hr />
+<h2 id="summary-table">Summary table<a class="headerlink" href="#summary-table" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Issue</th>
+<th>Kind</th>
+<th>Scope</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>No chat-template support</td>
+<td>Implementation gap</td>
+<td>Real limitation, always applies</td>
+<td><strong>Open</strong> — documented, not yet fixed</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>model_info()</code> fallback path unconfirmed</td>
+<td>Implementation gap</td>
+<td>Depends on installed vLLM version</td>
+<td><strong>Unverified</strong> — implemented, live test pending</td>
+</tr>
+<tr>
+<td>3</td>
+<td>GPU memory not freed via <code>evaluate()</code></td>
+<td>Implementation gap</td>
+<td>Any repeated local-model use via <code>evaluate()</code></td>
+<td><strong>Open</strong> — workaround documented</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>threadsafe=False</code>, no concurrency</td>
+<td>Implementation gap</td>
+<td>By design</td>
+<td>Not a bug — documented behavior</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Shared <code>SamplingParams</code> per batch</td>
+<td>Implementation gap</td>
+<td>Never actually triggered in practice</td>
+<td>Not a bug — documented constraint</td>
+</tr>
+<tr>
+<td>2.1</td>
+<td>CUDA re-init in forked subprocess</td>
+<td>Environment</td>
+<td>General (vLLM-internal)</td>
+<td><strong>Fixed</strong> in <code>VLLMModel</code></td>
+</tr>
+<tr>
+<td>2.2</td>
+<td><code>sys.stdout.fileno()</code> crash</td>
+<td>Environment</td>
+<td>Jupyter/Colab-specific</td>
+<td><strong>Fixed</strong> in <code>VLLMModel</code></td>
+</tr>
+<tr>
+<td>2.3</td>
+<td>HF Hub Xet <code>404</code></td>
+<td>Environment</td>
+<td>General (server-side/repo-specific)</td>
+<td><strong>Fixed</strong> (best-effort) in <code>VLLMModel</code></td>
+</tr>
+<tr>
+<td>2.4</td>
+<td><code>libcudart.so.13</code> version mismatch</td>
+<td>Environment</td>
+<td>General (pre-existing mismatched <code>torch</code>)</td>
+<td><strong>Not fixable from code / not fixable by version pins</strong> — manual reinstall + restart; re-verify with the pinned <code>vllm&lt;0.20</code> combo</td>
+</tr>
+<tr>
+<td>2.5</td>
+<td><code>ModuleNotFoundError</code> after editable install</td>
+<td>Environment</td>
+<td>Notebook-bootstrap-specific</td>
+<td><strong>Fixed</strong> in the notebook (not a library concern)</td>
+</tr>
+</tbody>
+</table>
+<p>See <code>examples/10_vllm_smoke_test.ipynb</code> for the live, working sequence
+incorporating the environment fixes (2.1–2.3, 2.5) and the
+still-open implementation gaps (1–3) demonstrated/flagged in context.</p>
+<h2 id="how-to-re-verify-any-entry-yourself">How to re-verify any entry yourself<a class="headerlink" href="#how-to-re-verify-any-entry-yourself" title="Permanent link">&para;</a></h2>
+<p>Every reproduction above is copy-pasteable, and requires a real CUDA/Linux
+GPU (Colab's free tier works). If one no longer reproduces by the time
+you're reading this, it's fixed — update or remove that entry rather than
+leaving a stale report in place.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../BUGS/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Bugs">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Bugs
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../cookbook/llm_judge/" class="md-footer__link md-footer__link--next" aria-label="Next: LLM as Judge">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                LLM as Judge
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 <a href="https://lexsi.ai" target="_blank" rel="noopener">Lexsi Labs</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Lexsi-Labs" target="_blank" rel="noopener" title="Lexsi Labs on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://x.com/Lexsi_labs" target="_blank" rel="noopener" title="Lexsi Labs on X" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://www.linkedin.com/company/lexsi-labs/" target="_blank" rel="noopener" title="Lexsi Labs on LinkedIn" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://huggingface.co/Lexsi" target="_blank" rel="noopener" title="Lexsi Labs on Hugging Face" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.025 1.13c-5.77 0-10.449 4.647-10.449 10.378 0 1.112.178 2.181.503 3.185.064-.222.203-.444.416-.577a.96.96 0 0 1 .524-.15c.293 0 .584.124.84.284.278.173.48.408.71.694.226.282.458.611.684.951v-.014c.017-.324.106-.622.264-.874s.403-.487.762-.543c.3-.047.596.06.787.203s.31.313.4.467c.15.257.212.468.233.542.01.026.653 1.552 1.657 2.54.616.605 1.01 1.223 1.082 1.912.055.537-.096 1.059-.38 1.572.637.121 1.294.187 1.967.187.657 0 1.298-.063 1.921-.178-.287-.517-.44-1.041-.384-1.581.07-.69.465-1.307 1.081-1.913 1.004-.987 1.647-2.513 1.657-2.539.021-.074.083-.285.233-.542.09-.154.208-.323.4-.467a1.08 1.08 0 0 1 .787-.203c.359.056.604.29.762.543s.247.55.265.874v.015c.225-.34.457-.67.683-.952.23-.286.432-.52.71-.694.257-.16.547-.284.84-.285a.97.97 0 0 1 .524.151c.228.143.373.388.43.625l.006.04a10.3 10.3 0 0 0 .534-3.273c0-5.731-4.678-10.378-10.449-10.378M8.327 6.583a1.5 1.5 0 0 1 .713.174 1.487 1.487 0 0 1 .617 2.013c-.183.343-.762-.214-1.102-.094-.38.134-.532.914-.917.71a1.487 1.487 0 0 1 .69-2.803m7.486 0a1.487 1.487 0 0 1 .689 2.803c-.385.204-.536-.576-.916-.71-.34-.12-.92.437-1.103.094a1.487 1.487 0 0 1 .617-2.013 1.5 1.5 0 0 1 .713-.174m-10.68 1.55a.96.96 0 1 1 0 1.921.96.96 0 0 1 0-1.92m13.838 0a.96.96 0 1 1 0 1.92.96.96 0 0 1 0-1.92M8.489 11.458c.588.01 1.965 1.157 3.572 1.164 1.607-.007 2.984-1.155 3.572-1.164.196-.003.305.12.305.454 0 .886-.424 2.328-1.563 3.202-.22-.756-1.396-1.366-1.63-1.32q-.011.001-.02.006l-.044.026-.01.008-.03.024q-.018.017-.035.036l-.032.04a1 1 0 0 0-.058.09l-.014.025q-.049.088-.11.19a1 1 0 0 1-.083.116 1.2 1.2 0 0 1-.173.18q-.035.029-.075.058a1.3 1.3 0 0 1-.251-.243 1 1 0 0 1-.076-.107c-.124-.193-.177-.363-.337-.444-.034-.016-.104-.008-.2.022q-.094.03-.216.087-.06.028-.125.063l-.13.074q-.067.04-.136.086a3 3 0 0 0-.135.096 3 3 0 0 0-.26.219 2 2 0 0 0-.12.121 2 2 0 0 0-.106.128l-.002.002a2 2 0 0 0-.09.132l-.001.001a1.2 1.2 0 0 0-.105.212q-.013.036-.024.073c-1.139-.875-1.563-2.317-1.563-3.203 0-.334.109-.457.305-.454m.836 10.354c.824-1.19.766-2.082-.365-3.194-1.13-1.112-1.789-2.738-1.789-2.738s-.246-.945-.806-.858-.97 1.499.202 2.362c1.173.864-.233 1.45-.685.64-.45-.812-1.683-2.896-2.322-3.295s-1.089-.175-.938.647 2.822 2.813 2.562 3.244-1.176-.506-1.176-.506-2.866-2.567-3.49-1.898.473 1.23 2.037 2.16c1.564.932 1.686 1.178 1.464 1.53s-3.675-2.511-4-1.297c-.323 1.214 3.524 1.567 3.287 2.405-.238.839-2.71-1.587-3.216-.642-.506.946 3.49 2.056 3.522 2.064 1.29.33 4.568 1.028 5.713-.624m5.349 0c-.824-1.19-.766-2.082.365-3.194 1.13-1.112 1.789-2.738 1.789-2.738s.246-.945.806-.858.97 1.499-.202 2.362c-1.173.864.233 1.45.685.64.451-.812 1.683-2.896 2.322-3.295s1.089-.175.938.647-2.822 2.813-2.562 3.244 1.176-.506 1.176-.506 2.866-2.567 3.49-1.898-.473 1.23-2.037 2.16c-1.564.932-1.686 1.178-1.464 1.53s3.675-2.511 4-1.297c.323 1.214-3.524 1.567-3.287 2.405.238.839 2.71-1.587 3.216-.642.506.946-3.49 2.056-3.522 2.064-1.29.33-4.568 1.028-5.713-.624"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://lexsi.ai" target="_blank" rel="noopener" title="lexsi.ai" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M351.9 280H161c2.9 64.5 17.2 123.9 37.5 167.4 11.4 24.5 23.7 41.8 35.1 52.4 11.2 10.5 18.9 12.2 22.9 12.2s11.7-1.7 22.9-12.2c11.4-10.6 23.7-28 35.1-52.4 20.3-43.5 34.6-102.9 37.5-167.4zm-191-48h190.9c-2.8-64.5-17.1-123.9-37.4-167.4-11.4-24.4-23.7-41.8-35.1-52.4C268.1 1.7 260.4 0 256.4 0s-11.7 1.7-22.9 12.2c-11.4 10.6-23.7 28-35.1 52.4-20.3 43.5-34.6 102.9-37.5 167.4m-48 0c3.5-85.6 25.6-165.1 57.9-217.3C78.7 47.3 10.9 131.2 1.5 232zM1.5 280c9.4 100.8 77.2 184.7 169.3 217.3-32.3-52.2-54.4-131.7-57.9-217.3zm398.4 0c-3.5 85.6-25.6 165.1-57.9 217.3 92.1-32.7 159.9-116.5 169.3-217.3zm111.4-48C501.9 131.2 434.1 47.3 342 14.7c32.3 52.2 54.4 131.7 57.9 217.3z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.top", "navigation.footer", "navigation.prune", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../assets/extra.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,7 @@
+# Documentation build toolchain (MkDocs Material site).
+# Install with:  pip install -r docs/requirements.txt
+# Build with:    mkdocs build --strict     (serve: mkdocs serve)
+mkdocs-material
+mkdocstrings[python]
+mike
+pymdown-extensions

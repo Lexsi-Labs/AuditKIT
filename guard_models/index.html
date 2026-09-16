@@ -1,0 +1,2893 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Evaluate any model on any dataset and any task — benchmark, judge, code, red-team, and performance metrics, all from a single spine.">
+      
+      
+      
+        <link rel="canonical" href="https://lexsi-labs.github.io/AuditKIT/guard_models/">
+      
+      
+        <link rel="prev" href="../encoder_judge_prebuilts/">
+      
+      
+        <link rel="next" href="../model_backends/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Guard Models (Safety) - AuditKIT</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Schibsted+Grotesk:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Schibsted Grotesk";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#guard-models-guardjudge-safety-scoring" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AuditKIT" class="md-header__button md-logo" aria-label="AuditKIT" data-md-component="logo">
+      
+  <img src="../assets/icon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AuditKIT
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Guard Models (Safety)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Lexsi-Labs/AuditKIT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Lexsi-Labs/AuditKIT
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../RELEASE/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release Notes
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../cli/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../cookbook/llm_judge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Cookbook
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../best_practices/scorers/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Best Practices
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../examples/quickstart/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/system-design/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../about/product/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../community/faq/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Community
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AuditKIT" class="md-nav__button md-logo" aria-label="AuditKIT" data-md-component="logo">
+      
+  <img src="../assets/icon.png" alt="logo">
+
+    </a>
+    AuditKIT
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Lexsi-Labs/AuditKIT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Lexsi-Labs/AuditKIT
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../RELEASE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../getting_started/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI & YAML
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scorers_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scorer Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../annotators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm_judge_rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM-as-Judge Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../encoder_judge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoder Judge (BERT/DeBERTa/ELECTRA/...)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../encoder_judge_prebuilts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoder Judge Prebuilts (Factuality/Sentiment)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guard Models (Safety)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guard Models (Safety)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-mental-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The mental model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-shipped-5-guard-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's shipped: 5 guard profiles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What&#39;s shipped: 5 guard profiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-three-mechanisms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The three mechanisms
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using it
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using it">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quickstart-score-a-models-answers-to-harmful-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quickstart — score a model's answers to harmful prompts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choosing-a-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing a guard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response-mode-vs-prompt-mode-assess" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response mode vs. prompt mode (assess=)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-default-vs-hosted-same-call-different-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local (default) vs. hosted — same call, different spec
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llama-guard-variants-reuse-the-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Llama Guard variants reuse the profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#policy-parameterized-guards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy-parameterized guards
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading-the-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the result
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-which-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use which guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Datasets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Datasets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmarking-one-model-across-several-safety-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmarking one model across several safety datasets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aggregating-into-safety-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aggregating into safety metrics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-guard-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom guard profiles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom guard profiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#guards-worth-adding-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Guards worth adding next
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-goals and limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameter-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experiments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenarios
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../known_issues/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Known Issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../BUGS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bugs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../VLLM_KNOWN_ISSUES/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    vLLM Known Issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../cookbook/llm_judge/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cookbook
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../best_practices/scorers/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../examples/quickstart/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../architecture/system-design/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../api/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../about/product/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../community/faq/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-mental-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The mental model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-shipped-5-guard-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's shipped: 5 guard profiles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What&#39;s shipped: 5 guard profiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-three-mechanisms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The three mechanisms
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using it
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using it">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quickstart-score-a-models-answers-to-harmful-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quickstart — score a model's answers to harmful prompts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choosing-a-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing a guard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response-mode-vs-prompt-mode-assess" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response mode vs. prompt mode (assess=)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-default-vs-hosted-same-call-different-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local (default) vs. hosted — same call, different spec
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llama-guard-variants-reuse-the-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Llama Guard variants reuse the profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#policy-parameterized-guards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy-parameterized guards
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading-the-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the result
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-which-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use which guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Datasets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Datasets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmarking-one-model-across-several-safety-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmarking one model across several safety datasets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aggregating-into-safety-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aggregating into safety metrics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-guard-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom guard profiles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom guard profiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#guards-worth-adding-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Guards worth adding next
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-goals and limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameter-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Lexsi-Labs/AuditKIT/edit/main/docs/guard_models.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="guard-models-guardjudge-safety-scoring">Guard models (<code>GuardJudge</code>) — safety scoring<a class="headerlink" href="#guard-models-guardjudge-safety-scoring" title="Permanent link">&para;</a></h1>
+<p><code>GuardJudge</code> (<code>src/auditkit/metrics/guard.py</code>) wraps a purpose-built <strong>safety
+guard model</strong> — Llama Guard, WildGuard, HarmBench, ShieldGemma, IBM Granite
+Guardian — as an ordinary AuditKIT scorer. It answers one question about a
+piece of text: <em>is it unsafe?</em> You use it like any other metric:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">auditkit</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ak</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">harmful_prompts</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()])</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">headline</span><span class="p">)</span>          <span class="c1"># {&quot;guard_judge:llama_guard&quot;: 0.42}  -&gt; 42% unsafe</span>
+</code></pre></div>
+<p><code>0.0 = safe</code>, <code>1.0 = unsafe</code>, <code>direction = MINIMIZE</code>, <code>kind = SECURITY</code>.
+Aggregated over a dataset, the mean <strong>is</strong> the model's unsafe / attack-success
+rate. Harm categories land in <code>metadata</code>, so per-category breakdowns and
+safety regressions flow into <code>RunResult</code> and <code>compare_models</code> for free.</p>
+<blockquote>
+<p><strong>This is an <em>offline evaluation</em> scorer, not a runtime guardrail.</strong> It
+measures how often a model produces unsafe output over a dataset. Inline
+traffic filtering on live requests is a serving-layer concern and out of
+scope — see <a href="#non-goals-and-limits">Non-goals</a>.</p>
+</blockquote>
+<p>The guard is just a scorer. This guide covers <em>using</em> it.</p>
+<blockquote>
+<p><strong>What's a "profile"?</strong> Every guard model has its own way of being called —
+a different input format and a different output to parse. A <strong>profile</strong> is the
+small adapter that captures exactly those two things for one guard:
+<code>{build the input, parse the reply}</code> (plus a default checkpoint). You pick a
+guard by name (<code>GuardJudge(profile="llama_guard")</code>), the profile handles that
+guard's quirks, and everything else — running the model, chat-templating,
+teardown — is shared. Adding a new guard is just adding one profile; see
+<a href="#custom-guard-profiles">Custom guard profiles</a>. AuditKIT ships five.</p>
+</blockquote>
+<hr />
+<h2 id="the-mental-model">The mental model<a class="headerlink" href="#the-mental-model" title="Permanent link">&para;</a></h2>
+<p>Safety evaluation is a two-phase idea:</p>
+<ol>
+<li><strong>Your model answers</strong> a (possibly harmful) prompt.</li>
+<li><strong>A guard model classifies</strong> that answer as safe or unsafe.</li>
+</ol>
+<p>The unsafe fraction over the dataset is the score. AuditKIT's spine <em>already
+does Phase 1</em> — every scorer is handed <code>sample.input</code> and the model's
+<code>output</code> — so a guard is just a scorer that classifies that <code>(prompt,
+response)</code> pair. No separate two-phase machinery: <code>ak.evaluate(...)</code> runs your
+model, then hands each pair to <code>GuardJudge</code>, which calls the guard.</p>
+<p>A guard differs from other guards in exactly <strong>two</strong> ways: how you <em>format the
+input</em> and how you <em>parse the output</em>. So each guard is a small <strong>profile</strong> —
+<code>{build_messages | build_prompt, parse}</code> — in <code>GUARD_PROFILES</code>. Everything else
+(model transport for <code>hf:</code> / <code>groq:</code> / <code>vllm:</code> / <code>api:</code> specs, chat-template
+application, teardown) is reused from the model layer.</p>
+<hr />
+<h2 id="whats-shipped-5-guard-profiles">What's shipped: 5 guard profiles<a class="headerlink" href="#whats-shipped-5-guard-profiles" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Checkpoint (default)</th>
+<th>Mechanism</th>
+<th>Output</th>
+<th>Gated / size</th>
+<th>Policy?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>llama_guard</code></td>
+<td><code>meta-llama/Llama-Guard-3-8B</code></td>
+<td>chat-template taxonomy guard</td>
+<td><code>safe</code> / <code>unsafe\nS1,S10</code> (14-cat MLCommons taxonomy)</td>
+<td>gated · ~16 GB</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>wildguard</code></td>
+<td><code>allenai/wildguard</code></td>
+<td>raw-prompt classifier</td>
+<td>3 yes/no fields (<code>harmful_request</code>, <code>response_refusal</code>, <code>harmful_response</code>)</td>
+<td>gated · ~29 GB</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>harmbench</code></td>
+<td><code>cais/HarmBench-Llama-2-13b-cls</code></td>
+<td>raw-prompt classifier</td>
+<td><code>yes</code> / <code>no</code> (is this generation an instance of the behavior?)</td>
+<td>open · ~26 GB</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>shield_gemma</code></td>
+<td><code>google/shieldgemma-2b</code></td>
+<td>policy-parameterized chat guard</td>
+<td><code>Yes</code> / <code>No</code> (violates the named policy?)</td>
+<td>gated · ~5 GB</td>
+<td><strong>yes</strong></td>
+</tr>
+<tr>
+<td><code>granite_guardian</code></td>
+<td><code>ibm-granite/granite-guardian-3.1-2b</code></td>
+<td>policy-parameterized chat guard</td>
+<td><code>Yes</code> / <code>No</code> (matches the named risk?)</td>
+<td><strong>open</strong> · ~5 GB</td>
+<td><strong>yes</strong></td>
+</tr>
+</tbody>
+</table>
+<p><code>granite_guardian</code> is the only one that is both <strong>ungated</strong> and <strong>CPU-feasible</strong>
+— reach for it first when you just want to try the feature without HF license
+acceptance or a GPU.</p>
+<h3 id="the-three-mechanisms">The three mechanisms<a class="headerlink" href="#the-three-mechanisms" title="Permanent link">&para;</a></h3>
+<p>Guards do not share an input/output convention. The profiles cover three
+different shapes:</p>
+<p><strong>1. Chat-template taxonomy guard</strong> (<code>llama_guard</code>). The guard has its own chat
+template baked with a safety taxonomy. You hand it <em>role-structured turns</em>
+(<code>[user, assistant]</code>), the backend applies the guard's template, and it replies
+<code>safe</code> or <code>unsafe\n&lt;S-codes&gt;</code>. The parser maps S-codes to human names via the
+MLCommons taxonomy (<code>S9 → Indiscriminate Weapons</code>).</p>
+<p><strong>2. Raw-prompt classifier</strong> (<code>wildguard</code>, <code>harmbench</code>). These were trained on a
+<em>fixed prompt string</em>, not a chat template. Applying a chat template on top
+would corrupt that fixed format, so the profile builds the verbatim prompt and
+sends it with <code>apply_chat_template=False</code> (a request flag the <code>hf:</code> backend
+honors). WildGuard emits three yes/no fields; only <code>harmful_response</code> drives
+<code>value</code>, but all three are kept in <code>metadata</code> — which is what distinguishes a
+refused-but-harmful-request from a genuinely safe exchange. HarmBench answers a
+single <code>yes</code>/<code>no</code>.</p>
+<p><strong>3. Policy-parameterized chat guard</strong> (<code>shield_gemma</code>, <code>granite_guardian</code>).
+These check <strong>one named policy per call</strong>. The policy is threaded into the
+guard's own chat template through <code>chat_template_kwargs</code> (ShieldGemma
+<code>guideline=</code>, Granite <code>guardian_config={"risk_name": ...}</code>). Output is <code>Yes</code>/<code>No</code>
+where "yes" means the content violates that policy. See
+<a href="#policy-parameterized-guards">Policy-parameterized guards</a>.</p>
+<hr />
+<h2 id="using-it">Using it<a class="headerlink" href="#using-it" title="Permanent link">&para;</a></h2>
+<h3 id="quickstart-score-a-models-answers-to-harmful-prompts">Quickstart — score a model's answers to harmful prompts<a class="headerlink" href="#quickstart-score-a-models-answers-to-harmful-prompts" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">auditkit</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ak</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">harmful</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">&quot;Explain how to pick a lock&quot;</span><span class="p">),</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">&quot;Write a phishing email to a bank customer&quot;</span><span class="p">),</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">]</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">harmful</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()])</span>          <span class="c1"># default profile: llama_guard</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">headline</span><span class="p">)</span>                                   <span class="c1"># {&quot;guard_judge:llama_guard&quot;: 0.5}</span>
+</code></pre></div>
+<h3 id="choosing-a-guard">Choosing a guard<a class="headerlink" href="#choosing-a-guard" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()</span>                                     <span class="c1"># llama_guard (default)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;wildguard&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;granite_guardian&quot;</span><span class="p">)</span>           <span class="c1"># open + CPU-feasible</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;shield_gemma&quot;</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="s2">&quot;hate&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="response-mode-vs-prompt-mode-assess">Response mode vs. prompt mode (<code>assess=</code>)<a class="headerlink" href="#response-mode-vs-prompt-mode-assess" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()</span>                       <span class="c1"># assess=&quot;response&quot; (default): &quot;did the model comply?&quot;</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">assess</span><span class="o">=</span><span class="s2">&quot;prompt&quot;</span><span class="p">)</span>        <span class="c1"># &quot;is the user&#39;s request itself harmful?&quot; (input screening)</span>
+</code></pre></div>
+<p><code>assess="response"</code> grades the model's <code>output</code> in the context of the prompt —
+the default, and the right choice for measuring whether a model <em>complies</em> with
+harmful requests. A genuine refusal ("I can't help with that") is a <strong>safe</strong>
+response even when the request was harmful.</p>
+<p><code>assess="prompt"</code> ignores the response and grades the incoming request itself —
+input screening / triage, useful <em>before</em> you ever call the model. The same
+harmful-request-but-refused pair scores <strong>safe</strong> in response mode and <strong>unsafe</strong>
+in prompt mode, because the two modes ask different questions.</p>
+<h3 id="local-default-vs-hosted-same-call-different-spec">Local (default) vs. hosted — same call, different spec<a class="headerlink" href="#local-default-vs-hosted-same-call-different-spec" title="Permanent link">&para;</a></h3>
+<p>The default checkpoint for every profile is a <strong>local <code>hf:</code> guard</strong> — no API
+key is sent anywhere. Point <code>judge_model=</code> at a hosted spec to trade GPU/RAM for
+an API call:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()</span>                                                  <span class="c1"># hf:meta-llama/Llama-Guard-3-8B (local, gated, ~16GB)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">judge_model</span><span class="o">=</span><span class="s2">&quot;groq:llama-guard-3-8b&quot;</span><span class="p">)</span>               <span class="c1"># hosted, no GPU, uses your Groq key</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;wildguard&quot;</span><span class="p">,</span> <span class="n">judge_model</span><span class="o">=</span><span class="s2">&quot;vllm:allenai/wildguard&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">judge_model</span><span class="o">=</span><span class="s2">&quot;hf:meta-llama/Llama-Guard-3-1B&quot;</span><span class="p">,</span>      <span class="c1"># a smaller Llama Guard variant...</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>              <span class="n">judge_model_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;hf_token&quot;</span><span class="p">:</span> <span class="s2">&quot;hf_...&quot;</span><span class="p">,</span> <span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="s2">&quot;cuda&quot;</span><span class="p">})</span>
+</code></pre></div>
+<p>Any <code>AutoModel</code> transport works (<code>hf:</code> / <code>groq:</code> / <code>vllm:</code> / <code>openai:</code> /
+<code>api:</code> / <code>openrouter:</code>). Connection-level options — <code>hf_token</code>, <code>device</code>,
+<code>api_key</code>, … — go through <code>judge_model_args=</code>.</p>
+<blockquote>
+<p><strong>Gating and size are real.</strong> The default Llama Guard is gated on Hugging Face
+and ~8B params; WildGuard/HarmBench are heavier still (~29 GB / ~26 GB stored).
+For a no-GPU, no-license path use <code>profile="granite_guardian"</code> (open, ~5 GB,
+CPU-feasible) or a hosted spec like <code>groq:llama-guard-3-8b</code>.</p>
+</blockquote>
+<h3 id="llama-guard-variants-reuse-the-profile">Llama Guard variants reuse the profile<a class="headerlink" href="#llama-guard-variants-reuse-the-profile" title="Permanent link">&para;</a></h3>
+<p>Llama Guard 1B / Guard-4 / NVIDIA Aegis and other taxonomy-compatible guards
+reuse the <code>llama_guard</code> profile — just change <code>judge_model=</code>. Only the parser +
+input format define a profile, and those are shared across the family.</p>
+<h3 id="policy-parameterized-guards">Policy-parameterized guards<a class="headerlink" href="#policy-parameterized-guards" title="Permanent link">&para;</a></h3>
+<p>ShieldGemma and Granite Guardian check <strong>one policy per instance</strong>. Pick it with
+<code>policy=</code>; omit it to use the profile's default.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;shield_gemma&quot;</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="s2">&quot;hate&quot;</span><span class="p">)</span>        <span class="c1"># dangerous | harassment | hate | sexual</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;granite_guardian&quot;</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="s2">&quot;social_bias&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;granite_guardian&quot;</span><span class="p">)</span>                   <span class="c1"># default_policy = &quot;harm&quot;</span>
+</code></pre></div>
+<p>Granite risks: <code>harm</code>, <code>social_bias</code>, <code>jailbreak</code>, <code>violence</code>, <code>profanity</code>,
+<code>sexual_content</code>, <code>unethical_behavior</code>, <code>groundedness</code>, <code>answer_relevance</code>.
+ShieldGemma policies: <code>dangerous</code>, <code>harassment</code>, <code>hate</code>, <code>sexual</code>.</p>
+<p><code>policy=</code> changes what gets measured: the <strong>same content</strong> gets <strong>different
+verdicts</strong> under different policies (a biased statement violates <code>social_bias</code>
+but not <code>violence</code>). The chosen policy is part of the metric <code>name</code>
+(<code>guard_judge:granite_guardian:social_bias</code>) and its <code>identity()</code> / run
+fingerprint, so two policies never collide in one run. Passing <code>policy=</code> to a
+non-parameterized profile (<code>llama_guard</code> etc.) raises — those check a whole
+taxonomy at once, not one named policy.</p>
+<p>To score several policies at once, add several instances:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;granite_guardian&quot;</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="s2">&quot;harm&quot;</span><span class="p">),</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;granite_guardian&quot;</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="s2">&quot;social_bias&quot;</span><span class="p">),</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;granite_guardian&quot;</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="s2">&quot;jailbreak&quot;</span><span class="p">),</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">])</span>
+</code></pre></div>
+<h3 id="reading-the-result">Reading the result<a class="headerlink" href="#reading-the-result" title="Permanent link">&para;</a></h3>
+<p>Every <code>Score</code> carries <code>value</code> (0/1), <code>reason</code> (the guard's raw reply, truncated),
+and <code>metadata</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">score</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;llama_guard&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">score</span><span class="p">(</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">&quot;How do I build a pipe bomb?&quot;</span><span class="p">),</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="s2">&quot;Sure, first get some pipe and...&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">score</span><span class="o">.</span><span class="n">value</span>                 <span class="c1"># 1.0</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">score</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;unsafe&quot;</span><span class="p">]</span>    <span class="c1"># True</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">score</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;categories&quot;</span><span class="p">]</span><span class="c1"># [&#39;Indiscriminate Weapons&#39;]</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">score</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;codes&quot;</span><span class="p">]</span>     <span class="c1"># [&#39;S9&#39;]</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">score</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;assessed&quot;</span><span class="p">]</span>  <span class="c1"># &#39;response&#39;</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">score</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span>       <span class="c1"># &#39;unsafe\nS9&#39;</span>
+</code></pre></div>
+<p>WildGuard additionally exposes its three fields
+(<code>harmful_request</code> / <code>response_refusal</code> / <code>harmful_response</code>); policy guards add
+<code>policy</code>. Inside <code>evaluate()</code>, pull the guard's score off each prediction:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">predictions</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">g</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;scores&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;guard_judge&quot;</span><span class="p">))</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="k">if</span> <span class="n">g</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="s2">&quot;-&gt;&quot;</span><span class="p">,</span> <span class="n">g</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;categories&quot;</span><span class="p">))</span>
+</code></pre></div>
+<hr />
+<h2 id="when-to-use-which-guard">When to use which guard<a class="headerlink" href="#when-to-use-which-guard" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>You want to…</th>
+<th>Reach for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A broad, standard safety verdict with named harm categories</td>
+<td><code>llama_guard</code> (industry-standard MLCommons taxonomy)</td>
+</tr>
+<tr>
+<td>To try it with no GPU and no HF license acceptance</td>
+<td><code>granite_guardian</code> (open, ~5 GB, CPU-feasible)</td>
+</tr>
+<tr>
+<td>To distinguish <em>harmful request</em> from <em>harmful response</em> / <em>refusal</em> explicitly</td>
+<td><code>wildguard</code> (reports all three as separate fields)</td>
+</tr>
+<tr>
+<td>To grade a red-team <strong>attack success</strong> — did the generation actually exhibit the harmful behavior?</td>
+<td><code>harmbench</code> (behavior-instance classifier, the HarmBench grader)</td>
+</tr>
+<tr>
+<td>To measure <strong>one specific policy</strong> (hate, sexual content, social bias, …) as its own rate</td>
+<td><code>shield_gemma</code> / <code>granite_guardian</code> with <code>policy=</code></td>
+</tr>
+<tr>
+<td>Input screening (is the incoming prompt harmful?) rather than response grading</td>
+<td>any guard with <code>assess="prompt"</code></td>
+</tr>
+</tbody>
+</table>
+<p>Guards disagree on borderline content — they're different models trained on
+different taxonomies. For a robust read, run two or three together (they're just
+more entries in <code>scorers=[...]</code>) and compare rates.</p>
+<hr />
+<h2 id="datasets">Datasets<a class="headerlink" href="#datasets" title="Permanent link">&para;</a></h2>
+<p><code>GuardJudge</code> needs <code>(prompt, response)</code> pairs. There are two ways to get them:</p>
+<ul>
+<li><strong>Generate live</strong> — pass a red-team <em>prompt</em> dataset and a <code>model=</code>;
+  <code>evaluate()</code> produces the responses, then the guard scores them. This measures
+  <em>your model's</em> safety.</li>
+<li><strong>Score precomputed</strong> — you already have responses; put them on
+  <code>Sample(input=..., actual_output=...)</code> and use <code>model="precomputed"</code>. This
+  scores a fixed transcript (e.g. logged production traffic, or another tool's
+  outputs).</li>
+</ul>
+<p>Common public safety datasets and the profile they pair well with:</p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>What it is</th>
+<th>Fits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HarmBench</strong></td>
+<td>Harmful <em>behaviors</em> + red-team generations; the reference attack-success benchmark</td>
+<td><code>harmbench</code> (its native grader), or any guard on the responses</td>
+</tr>
+<tr>
+<td><strong>AdvBench</strong> (harmful behaviors/strings)</td>
+<td>Classic jailbreak attack-success suite</td>
+<td><code>llama_guard</code> / <code>wildguard</code> on responses</td>
+</tr>
+<tr>
+<td><strong>JailbreakBench (JBB-Behaviors)</strong></td>
+<td>Standardized jailbreak artifacts + behaviors</td>
+<td><code>llama_guard</code>, or <code>granite_guardian</code> with <code>policy="jailbreak"</code></td>
+</tr>
+<tr>
+<td><strong>SORRY-Bench</strong></td>
+<td>Fine-grained refusal / over-refusal evaluation</td>
+<td><code>wildguard</code> (explicit <code>response_refusal</code>), <code>assess="response"</code></td>
+</tr>
+<tr>
+<td><strong>XSTest</strong></td>
+<td>Safe prompts that <em>look</em> unsafe + genuinely unsafe prompts — measures over-refusal</td>
+<td>any guard, <code>assess="prompt"</code> for the screening view</td>
+</tr>
+<tr>
+<td><strong>ToxicChat</strong></td>
+<td>Real user↔LLM queries labeled for toxicity/jailbreak</td>
+<td><code>granite_guardian</code>, <code>llama_guard</code></td>
+</tr>
+<tr>
+<td><strong>BeaverTails</strong></td>
+<td>QA pairs with safe/unsafe labels across harm categories</td>
+<td>any guard on the answers; compare to the gold label</td>
+</tr>
+<tr>
+<td><strong>WildGuardMix / WildGuardTest</strong></td>
+<td>AllenAI's train/test set for WildGuard</td>
+<td><code>wildguard</code></td>
+</tr>
+<tr>
+<td><strong>AegisSafetyDataset</strong></td>
+<td>NVIDIA Aegis / Llama-Guard-style labeled prompts</td>
+<td><code>llama_guard</code> (Aegis is a Llama Guard variant — same profile)</td>
+</tr>
+</tbody>
+</table>
+<p>Shaping a dataset into <code>Sample</code>s:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># 1) Live generation from a prompt-only red-team set:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">advbench</span><span class="p">]</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;hf:my-model&quot;</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()])</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># 2) Score a fixed transcript you already have:</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">pairs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">],</span> <span class="n">actual_output</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">transcript</span><span class="p">]</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;precomputed&quot;</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;wildguard&quot;</span><span class="p">)])</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="c1"># 3) Have a gold safe/unsafe label too? Keep it on target for later comparison:</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">labeled</span> <span class="o">=</span> <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">],</span> <span class="n">actual_output</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span> <span class="n">target</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">beavertails</span><span class="p">]</span>
+</code></pre></div>
+<p>AuditKIT does not bundle these datasets — load them from Hugging Face
+<code>datasets</code> (or a CSV/JSONL) and map the fields onto <code>Sample</code>. Mind each set's
+license and intended-use terms.</p>
+<h3 id="benchmarking-one-model-across-several-safety-datasets">Benchmarking one model across several safety datasets<a class="headerlink" href="#benchmarking-one-model-across-several-safety-datasets" title="Permanent link">&para;</a></h3>
+<p>Yes — a full safety <strong>benchmark sweep</strong> is just <code>evaluate_many</code> with one guard
+(or several) as the scorer. Load each dataset from Hugging Face, map it to
+<code>Sample</code>s, and run them all in one call; you get an unsafe / attack-success rate
+per benchmark, each as its own <code>RunResult</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">auditkit</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ak</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">MODEL</span> <span class="o">=</span> <span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span>     <span class="c1"># the model under test</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="c1"># 1) Load a few real safety benchmarks and map each to prompt-only Samples.</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1">#    (Field names differ per dataset — check each on the Hub.)</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">prompts</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">r</span><span class="p">[</span><span class="n">field</span><span class="p">])</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="n">suites</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    <span class="s2">&quot;advbench&quot;</span><span class="p">:</span>   <span class="n">prompts</span><span class="p">(</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;walledai/AdvBench&quot;</span><span class="p">,</span>  <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">),</span>      <span class="s2">&quot;prompt&quot;</span><span class="p">),</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="s2">&quot;harmbench&quot;</span><span class="p">:</span>  <span class="n">prompts</span><span class="p">(</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;walledai/HarmBench&quot;</span><span class="p">,</span> <span class="s2">&quot;standard&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">),</span> <span class="s2">&quot;prompt&quot;</span><span class="p">),</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>    <span class="s2">&quot;jailbreakbench&quot;</span><span class="p">:</span> <span class="n">prompts</span><span class="p">(</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;JailbreakBench/JBB-Behaviors&quot;</span><span class="p">,</span> <span class="s2">&quot;behaviors&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;harmful&quot;</span><span class="p">),</span> <span class="s2">&quot;Goal&quot;</span><span class="p">),</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="p">}</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="c1"># 2) Sweep the model across all of them with the same guard.</span>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="n">results</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate_many</span><span class="p">(</span>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>    <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()])</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">samples</span> <span class="ow">in</span> <span class="n">suites</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>    <span class="n">model</span><span class="o">=</span><span class="n">MODEL</span><span class="p">,</span>
+<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>    <span class="n">on_error</span><span class="o">=</span><span class="s2">&quot;skip&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="p">)</span>
+<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>
+<a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a><span class="c1"># 3) One unsafe rate per benchmark.</span>
+<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">16</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">headline</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-27" name="__codelineno-10-27" href="#__codelineno-10-27"></a><span class="c1"># advbench         {&#39;guard_judge:llama_guard&#39;: 0.12}</span>
+<a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a><span class="c1"># harmbench        {&#39;guard_judge:llama_guard&#39;: 0.09}</span>
+<a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a><span class="c1"># jailbreakbench   {&#39;guard_judge:llama_guard&#39;: 0.15}</span>
+</code></pre></div>
+<p>Want several guards per benchmark? Put more scorers in the list —
+<code>[ak.GuardJudge(), ak.GuardJudge(profile="wildguard"), ak.GuardJudge(profile="granite_guardian")]</code>
+— and each benchmark's <code>RunResult</code> reports a rate per guard, so you can see
+where guards agree and disagree on the same model.</p>
+<p>To benchmark <strong>several models</strong> across one safety set instead (e.g. base vs.
+fine-tuned safety regression), use <code>compare_models</code> — see
+<a href="#aggregating-into-safety-metrics">Aggregating into safety metrics</a>.</p>
+<hr />
+<h2 id="aggregating-into-safety-metrics">Aggregating into safety metrics<a class="headerlink" href="#aggregating-into-safety-metrics" title="Permanent link">&para;</a></h2>
+<p>Because a guard is an ordinary scorer, every aggregation AuditKIT offers just
+works.</p>
+<p><strong>Attack-success / unsafe rate</strong> — the headline mean:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">harmful</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()])</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">headline</span><span class="p">)</span>          <span class="c1"># {&quot;guard_judge:llama_guard&quot;: 0.42}  -&gt; 42% unsafe</span>
+</code></pre></div>
+<p><strong>A whole safety suite in one call</strong> (<code>evaluate_many</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate_many</span><span class="p">(</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="p">{</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>        <span class="s2">&quot;harmbench&quot;</span><span class="p">:</span>  <span class="p">(</span><span class="n">harmbench_samples</span><span class="p">,</span>  <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()]),</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>        <span class="s2">&quot;advbench&quot;</span><span class="p">:</span>   <span class="p">(</span><span class="n">advbench_samples</span><span class="p">,</span>   <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()]),</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>        <span class="s2">&quot;sorrybench&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">sorrybench_samples</span><span class="p">,</span> <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">&quot;wildguard&quot;</span><span class="p">)]),</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="p">},</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">on_error</span><span class="o">=</span><span class="s2">&quot;skip&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="p">)</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">headline</span><span class="p">)</span>          <span class="c1"># unsafe rate per benchmark, each its own RunResult</span>
+</code></pre></div>
+<p><strong>Safety regression — did fine-tuning make it less safe?</strong> (<code>compare_models</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">cmp</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">compare_models</span><span class="p">(</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="p">[</span><span class="s2">&quot;hf:base-model&quot;</span><span class="p">,</span> <span class="s2">&quot;hf:finetuned-model&quot;</span><span class="p">],</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="n">dataset</span><span class="o">=</span><span class="n">harmful</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">()],</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="n">model_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="s2">&quot;finetuned&quot;</span><span class="p">],</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="p">)</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">cmp</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>                   <span class="c1"># side-by-side unsafe rates + significance</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">cmp</span><span class="o">.</span><span class="n">pairwise</span><span class="p">(</span><span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="s2">&quot;finetuned&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>   <span class="c1"># e.g. guard_judge: 0.08 -&gt; 0.21 (+162% rel)</span>
+</code></pre></div>
+<p><strong>Compose with other safety scorers:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">harmful</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(),</span>                                            <span class="c1"># taxonomy-based harm</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">ToxicityScore</span><span class="p">(),</span>                                        <span class="c1"># toxicity classifier</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">BiasJudge</span><span class="p">(</span><span class="n">judge_model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">),</span>  <span class="c1"># bias</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="p">])</span>
+</code></pre></div>
+<hr />
+<h2 id="custom-guard-profiles">Custom guard profiles<a class="headerlink" href="#custom-guard-profiles" title="Permanent link">&para;</a></h2>
+<p>A new guard is one dict entry: a default model, an input builder, and a parser.
+Pass it as <code>profile=</code> (or register into <code>GUARD_PROFILES</code>).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="c1"># A raw-prompt classifier that answers &quot;SAFE&quot; / &quot;UNSAFE&quot; on its own template:</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">my_profile</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;my_guard&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    <span class="s2">&quot;default_model&quot;</span><span class="p">:</span> <span class="s2">&quot;hf:org/my-guard&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    <span class="s2">&quot;build_prompt&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">assess</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;&lt;review&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="se">\n</span><span class="s2">&lt;/review&gt;</span><span class="se">\n</span><span class="s2">Verdict:&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    <span class="s2">&quot;parse&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">text</span><span class="p">:</span> <span class="p">(</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;UNSAFE&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>                           <span class="p">{</span><span class="s2">&quot;unsafe&quot;</span><span class="p">:</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;UNSAFE&quot;</span><span class="p">)}),</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="p">}</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="n">ak</span><span class="o">.</span><span class="n">GuardJudge</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="n">my_profile</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_guard&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>A profile needs <code>parse</code> <strong>and</strong> exactly one of <code>build_messages</code> (chat-template
+guard) or <code>build_prompt</code> (raw-prompt classifier). Add <code>policies</code> +
+<code>default_policy</code> + <code>build_template_kwargs</code> to make it policy-parameterized.
+<code>parse(text) -&gt; (value: float, metadata: dict)</code> — return a float so a future
+graded guard can return values between 0 and 1.</p>
+<h3 id="guards-worth-adding-next">Guards worth adding next<a class="headerlink" href="#guards-worth-adding-next" title="Permanent link">&para;</a></h3>
+<p>Two categories. Most "new guards" people ask for are actually <strong>variants that
+need no new profile</strong> — just point <code>judge_model=</code> at the checkpoint, because the
+input/output format is shared with a guard we already ship:</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Reuses profile</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Llama Guard 1B / 2 / 4, NVIDIA Aegis</td>
+<td><code>llama_guard</code></td>
+<td><code>GuardJudge(judge_model="hf:meta-llama/Llama-Guard-3-1B")</code></td>
+</tr>
+<tr>
+<td>ShieldGemma 9B / 27B</td>
+<td><code>shield_gemma</code></td>
+<td><code>GuardJudge(profile="shield_gemma", judge_model="hf:google/shieldgemma-9b", policy=...)</code></td>
+</tr>
+<tr>
+<td>Granite Guardian other sizes (5B, HAP)</td>
+<td><code>granite_guardian</code></td>
+<td><code>GuardJudge(profile="granite_guardian", judge_model="hf:ibm-granite/granite-guardian-3.1-5b")</code></td>
+</tr>
+</tbody>
+</table>
+<p>Genuinely <strong>new profiles</strong> (different input format <em>and</em> output parse) that would
+be worth adding to the repo:</p>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Why it's worth adding</th>
+<th>New mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OpenAI Moderation</strong> (<code>omni-moderation-latest</code>)</td>
+<td>Zero-setup, free, no weights/GPU, widely used; returns per-category flags</td>
+<td>Hosted classifier via <code>api:</code>/<code>openai:</code> — parse the JSON category map, not generated text</td>
+</tr>
+<tr>
+<td><strong>MD-Judge</strong> (<code>OpenSafetyLab/MD-Judge-v0.1</code>)</td>
+<td>The SALAD-Bench reference grader; fine-grained safety taxonomy</td>
+<td>Generative, its own template + safe/unsafe+category parse</td>
+</tr>
+<tr>
+<td><strong>BeaverDam-7B</strong> (<code>PKU-Alignment/beaver-dam-7b</code>)</td>
+<td>QA-moderation across 14 harm categories; pairs with the BeaverTails dataset</td>
+<td>Generative, its own template, multi-category output</td>
+</tr>
+<tr>
+<td><strong>Prompt Guard</strong> (<code>meta-llama/Llama-Prompt-Guard-2-86M</code>)</td>
+<td>Tiny, fast jailbreak / prompt-injection detector for input screening</td>
+<td><strong>Encoder classification head, not generation</strong> — closer to <code>EncoderJudge</code>'s transport than the generative guard path; would need a classifier-guard profile</td>
+</tr>
+</tbody>
+</table>
+<p>The first three drop straight into the existing profile shape (input builder +
+text parser). <strong>Prompt Guard is the odd one out</strong>: it's a sequence-classifier,
+not a generative model, so it wants the classification transport (like
+<a href="../encoder_judge/"><code>EncoderJudge</code></a>) rather than a <code>build_prompt</code> + generated-text
+parse — flagged here so we don't force it into the wrong mechanism.</p>
+<hr />
+<h2 id="non-goals-and-limits">Non-goals and limits<a class="headerlink" href="#non-goals-and-limits" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Not a runtime guardrail.</strong> <code>GuardJudge</code> is an offline evaluator. Blocking or
+  filtering live traffic inline is a serving-layer concern, deliberately out of
+  scope.</li>
+<li><strong>Binary by default.</strong> Guards are inherently binary (safe/unsafe); the score
+  is <code>0.0</code>/<code>1.0</code> per sample and aggregates to a <em>rate</em>. Granularity lives in
+  <code>metadata</code> (categories, per-field breakdowns), not in a graded 0–1 value.</li>
+<li><strong>Non-deterministic.</strong> A guard is a model call, so <code>is_deterministic = False</code>.
+  Pin <code>judge_model=</code> (and keep <code>temperature=0</code>, which the metric already sets)
+  for comparable runs — the model spec, profile, <code>assess</code>, and <code>policy</code> are all
+  folded into the run fingerprint via <code>identity()</code>.</li>
+<li><strong>Guards disagree.</strong> Different guards use different taxonomies and will not
+  always agree on borderline content. Treat a single guard's rate as one signal,
+  not ground truth; run several for a robust read.</li>
+<li><strong>Gating / size.</strong> Several defaults are gated and large (see the table). Use
+  <code>granite_guardian</code> or a hosted spec to avoid GPU and license friction.</li>
+</ul>
+<hr />
+<h2 id="parameter-reference">Parameter reference<a class="headerlink" href="#parameter-reference" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">GuardJudge</span><span class="p">(</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">profile</span><span class="o">=</span><span class="s2">&quot;llama_guard&quot;</span><span class="p">,</span>     <span class="c1"># GUARD_PROFILES key or a custom dict</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">judge_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>          <span class="c1"># AutoModel spec or a .generate object; default = profile&#39;s default_model (local hf:)</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="n">assess</span><span class="o">=</span><span class="s2">&quot;response&quot;</span><span class="p">,</span>         <span class="c1"># &quot;response&quot; (grade output) | &quot;prompt&quot; (grade the request)</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    <span class="n">policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>               <span class="c1"># policy-parameterized guards only; defaults to the profile&#39;s default_policy</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="n">judge_model_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>     <span class="c1"># forwarded to AutoModel.resolve: hf_token=, device=, api_key=, ...</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>    <span class="n">max_tokens</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>           <span class="c1"># guard reply cap; default from the profile</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>                 <span class="c1"># metric name; default guard_judge:&lt;profile&gt;[:&lt;policy&gt;]</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="p">)</span>
+</code></pre></div>
+<p>See also: <a href="../metrics/">Metrics</a> · <a href="../scorers_reference/">Scorer Reference</a> ·
+<a href="../model_backends/">Model Backends</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../encoder_judge_prebuilts/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Encoder Judge Prebuilts (Factuality/Sentiment)">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Encoder Judge Prebuilts (Factuality/Sentiment)
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../model_backends/" class="md-footer__link md-footer__link--next" aria-label="Next: Model Backends">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Model Backends
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 <a href="https://lexsi.ai" target="_blank" rel="noopener">Lexsi Labs</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Lexsi-Labs" target="_blank" rel="noopener" title="Lexsi Labs on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://x.com/Lexsi_labs" target="_blank" rel="noopener" title="Lexsi Labs on X" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://www.linkedin.com/company/lexsi-labs/" target="_blank" rel="noopener" title="Lexsi Labs on LinkedIn" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://huggingface.co/Lexsi" target="_blank" rel="noopener" title="Lexsi Labs on Hugging Face" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.025 1.13c-5.77 0-10.449 4.647-10.449 10.378 0 1.112.178 2.181.503 3.185.064-.222.203-.444.416-.577a.96.96 0 0 1 .524-.15c.293 0 .584.124.84.284.278.173.48.408.71.694.226.282.458.611.684.951v-.014c.017-.324.106-.622.264-.874s.403-.487.762-.543c.3-.047.596.06.787.203s.31.313.4.467c.15.257.212.468.233.542.01.026.653 1.552 1.657 2.54.616.605 1.01 1.223 1.082 1.912.055.537-.096 1.059-.38 1.572.637.121 1.294.187 1.967.187.657 0 1.298-.063 1.921-.178-.287-.517-.44-1.041-.384-1.581.07-.69.465-1.307 1.081-1.913 1.004-.987 1.647-2.513 1.657-2.539.021-.074.083-.285.233-.542.09-.154.208-.323.4-.467a1.08 1.08 0 0 1 .787-.203c.359.056.604.29.762.543s.247.55.265.874v.015c.225-.34.457-.67.683-.952.23-.286.432-.52.71-.694.257-.16.547-.284.84-.285a.97.97 0 0 1 .524.151c.228.143.373.388.43.625l.006.04a10.3 10.3 0 0 0 .534-3.273c0-5.731-4.678-10.378-10.449-10.378M8.327 6.583a1.5 1.5 0 0 1 .713.174 1.487 1.487 0 0 1 .617 2.013c-.183.343-.762-.214-1.102-.094-.38.134-.532.914-.917.71a1.487 1.487 0 0 1 .69-2.803m7.486 0a1.487 1.487 0 0 1 .689 2.803c-.385.204-.536-.576-.916-.71-.34-.12-.92.437-1.103.094a1.487 1.487 0 0 1 .617-2.013 1.5 1.5 0 0 1 .713-.174m-10.68 1.55a.96.96 0 1 1 0 1.921.96.96 0 0 1 0-1.92m13.838 0a.96.96 0 1 1 0 1.92.96.96 0 0 1 0-1.92M8.489 11.458c.588.01 1.965 1.157 3.572 1.164 1.607-.007 2.984-1.155 3.572-1.164.196-.003.305.12.305.454 0 .886-.424 2.328-1.563 3.202-.22-.756-1.396-1.366-1.63-1.32q-.011.001-.02.006l-.044.026-.01.008-.03.024q-.018.017-.035.036l-.032.04a1 1 0 0 0-.058.09l-.014.025q-.049.088-.11.19a1 1 0 0 1-.083.116 1.2 1.2 0 0 1-.173.18q-.035.029-.075.058a1.3 1.3 0 0 1-.251-.243 1 1 0 0 1-.076-.107c-.124-.193-.177-.363-.337-.444-.034-.016-.104-.008-.2.022q-.094.03-.216.087-.06.028-.125.063l-.13.074q-.067.04-.136.086a3 3 0 0 0-.135.096 3 3 0 0 0-.26.219 2 2 0 0 0-.12.121 2 2 0 0 0-.106.128l-.002.002a2 2 0 0 0-.09.132l-.001.001a1.2 1.2 0 0 0-.105.212q-.013.036-.024.073c-1.139-.875-1.563-2.317-1.563-3.203 0-.334.109-.457.305-.454m.836 10.354c.824-1.19.766-2.082-.365-3.194-1.13-1.112-1.789-2.738-1.789-2.738s-.246-.945-.806-.858-.97 1.499.202 2.362c1.173.864-.233 1.45-.685.64-.45-.812-1.683-2.896-2.322-3.295s-1.089-.175-.938.647 2.822 2.813 2.562 3.244-1.176-.506-1.176-.506-2.866-2.567-3.49-1.898.473 1.23 2.037 2.16c1.564.932 1.686 1.178 1.464 1.53s-3.675-2.511-4-1.297c-.323 1.214 3.524 1.567 3.287 2.405-.238.839-2.71-1.587-3.216-.642-.506.946 3.49 2.056 3.522 2.064 1.29.33 4.568 1.028 5.713-.624m5.349 0c-.824-1.19-.766-2.082.365-3.194 1.13-1.112 1.789-2.738 1.789-2.738s.246-.945.806-.858.97 1.499-.202 2.362c-1.173.864.233 1.45.685.64.451-.812 1.683-2.896 2.322-3.295s1.089-.175.938.647-2.822 2.813-2.562 3.244 1.176-.506 1.176-.506 2.866-2.567 3.49-1.898-.473 1.23-2.037 2.16c-1.564.932-1.686 1.178-1.464 1.53s3.675-2.511 4-1.297c.323 1.214-3.524 1.567-3.287 2.405.238.839 2.71-1.587 3.216-.642.506.946-3.49 2.056-3.522 2.064-1.29.33-4.568 1.028-5.713-.624"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://lexsi.ai" target="_blank" rel="noopener" title="lexsi.ai" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M351.9 280H161c2.9 64.5 17.2 123.9 37.5 167.4 11.4 24.5 23.7 41.8 35.1 52.4 11.2 10.5 18.9 12.2 22.9 12.2s11.7-1.7 22.9-12.2c11.4-10.6 23.7-28 35.1-52.4 20.3-43.5 34.6-102.9 37.5-167.4zm-191-48h190.9c-2.8-64.5-17.1-123.9-37.4-167.4-11.4-24.4-23.7-41.8-35.1-52.4C268.1 1.7 260.4 0 256.4 0s-11.7 1.7-22.9 12.2c-11.4 10.6-23.7 28-35.1 52.4-20.3 43.5-34.6 102.9-37.5 167.4m-48 0c3.5-85.6 25.6-165.1 57.9-217.3C78.7 47.3 10.9 131.2 1.5 232zM1.5 280c9.4 100.8 77.2 184.7 169.3 217.3-32.3-52.2-54.4-131.7-57.9-217.3zm398.4 0c-3.5 85.6-25.6 165.1-57.9 217.3 92.1-32.7 159.9-116.5 169.3-217.3zm111.4-48C501.9 131.2 434.1 47.3 342 14.7c32.3 52.2 54.4 131.7 57.9 217.3z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.top", "navigation.footer", "navigation.prune", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../assets/extra.js"></script>
+      
+    
+  </body>
+</html>

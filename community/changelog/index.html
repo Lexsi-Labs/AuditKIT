@@ -1,0 +1,2164 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Evaluate any model on any dataset and any task — benchmark, judge, code, red-team, and performance metrics, all from a single spine.">
+      
+      
+      
+        <link rel="canonical" href="https://lexsi-labs.github.io/AuditKIT/community/changelog/">
+      
+      
+        <link rel="prev" href="../roadmap/">
+      
+      
+        <link rel="next" href="../contributing/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Changelog - AuditKIT</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Schibsted+Grotesk:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Schibsted Grotesk";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="AuditKIT" class="md-header__button md-logo" aria-label="AuditKIT" data-md-component="logo">
+      
+  <img src="../../assets/icon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AuditKIT
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Lexsi-Labs/AuditKIT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Lexsi-Labs/AuditKIT
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../RELEASE/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release Notes
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cli/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cookbook/llm_judge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Cookbook
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../best_practices/scorers/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Best Practices
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../examples/quickstart/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/system-design/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../about/product/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../faq/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Community
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="AuditKIT" class="md-nav__button md-logo" aria-label="AuditKIT" data-md-component="logo">
+      
+  <img src="../../assets/icon.png" alt="logo">
+
+    </a>
+    AuditKIT
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Lexsi-Labs/AuditKIT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Lexsi-Labs/AuditKIT
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../RELEASE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../getting_started/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../cli/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../cookbook/llm_judge/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cookbook
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../best_practices/scorers/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../examples/quickstart/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../architecture/system-design/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../api/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../about/product/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unreleased">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-annotators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New: Annotators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-openrouter-model-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New: OpenRouter model backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-encoderjudge-llm-as-judge-via-a-real-encoder-classifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New: EncoderJudge — LLM-as-judge via a real encoder classifier
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v030-2026-07-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.3.0 — 2026-07-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v0.3.0 — 2026-07-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#highlights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Highlights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v020-2026-06-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.2.0 — 2026-06-15
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unreleased">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-annotators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New: Annotators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-openrouter-model-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New: OpenRouter model backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-encoderjudge-llm-as-judge-via-a-real-encoder-classifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New: EncoderJudge — LLM-as-judge via a real encoder classifier
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v030-2026-07-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.3.0 — 2026-07-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v0.3.0 — 2026-07-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#highlights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Highlights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v020-2026-06-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.2.0 — 2026-06-15
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Lexsi-Labs/AuditKIT/edit/main/docs/community/changelog.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="api-changes">API changes<a class="headerlink" href="#api-changes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>CosineSimilarity</code> no longer depends on the <code>sentence-transformers</code>
+  package — the <code>[sentence-transformers]</code> extra is removed entirely.</strong>
+  <code>sentence-transformers</code> was used for exactly this one metric in the
+  whole library, and it transitively imports <code>transformers</code>' audio/video
+  processing modules and, in turn, <code>torchcodec</code> -- a live-confirmed
+  environment failure (<code>torch</code>/<code>torchcodec</code> version mismatch, missing
+  <code>libavutil</code>/FFmpeg shared libraries) on some platforms (confirmed:
+  Colab), with nothing to do with text embeddings at all. Reimplemented
+  directly on plain <code>transformers.AutoModel</code>/<code>AutoTokenizer</code> (mean-pooling</li>
+<li>L2-normalization -- the same recipe <code>sentence-transformers</code> uses
+  internally for MiniLM-family checkpoints, not an approximation),
+  already a core dependency for <code>EncoderJudge</code>/<code>HFGenModel</code> and confirmed
+  not to trigger the <code>torchcodec</code> import path. <code>model_name=</code> default is
+  now the full repo path (<code>sentence-transformers/all-MiniLM-L6-v2</code>, since
+  plain <code>transformers</code> doesn't know <code>sentence-transformers</code>' short-name
+  aliases). Needs <code>[transformers]</code> now, not a dedicated extra. Also fixed
+  a pre-existing doc bug found in the process: <code>BM25Similarity</code> was
+  listed everywhere as needing <code>[sentence-transformers]</code> despite its code
+  never having any embedding-model dependency at all (pure token-frequency
+  overlap, stdlib only) — corrected to "no extra needed".</li>
+<li><strong>New <code>guard_judge</code> (<code>GuardJudge</code>) — guard-model safety scoring.</strong> Wraps a
+  purpose-built safety classifier (default <code>hf:meta-llama/Llama-Guard-3-8B</code>;
+  any <code>AutoModel</code> spec works, including hosted <code>groq:llama-guard-3-8b</code>) as an
+  ordinary scorer: it classifies a model's output (or the prompt, via
+  <code>assess="prompt"</code>) as safe/unsafe. <code>MINIMIZE</code>, 0 = safe; harm categories land
+  in per-sample <code>metadata.categories</code>, so per-category rates and safety
+  regressions flow into <code>RunResult</code>/<code>compare_models</code>. Guards differ only in
+  input format + output parser, held in a per-family <code>profile</code> (<code>GUARD_PROFILES</code>;
+  v1 ships <code>llama_guard</code>, custom profiles accepted). Offline safety scoring, not
+  a runtime guardrail. Ships five profiles: <code>llama_guard</code> (chat-template
+  taxonomy guard); <code>wildguard</code>/<code>harmbench</code> (raw-prompt classifiers, via a new
+  <code>apply_chat_template=False</code> request flag the <code>hf:</code> backend honors, so a
+  classifier's fixed prompt isn't corrupted by the tokenizer's chat template);
+  and <code>shield_gemma</code>/<code>granite_guardian</code> (policy-parameterized — pass <code>policy=</code>
+  to pick a harm policy/risk, threaded into the guard's chat template via a new
+  <code>chat_template_kwargs</code> flag). Metric catalog is now 48 (the encoder judges
+  below were added the same cycle).</li>
+<li><strong>Bias metrics reworked.</strong> The old <code>bias_score</code> (<code>BiasScore</code>) was renamed to
+  <code>representation_skew</code> (<code>RepresentationSkew</code>) <em>and</em> rewritten: it now measures
+  demographic-representation balance per axis via total-variation distance from
+  balanced (<code>MINIMIZE</code>, 0 = balanced), instead of Shannon entropy over
+  individual tokens. The old version counted tokens and discarded group
+  structure, so all-male "he him his" scored the same 0.9 as a balanced "he and
+  she"; the rewrite scores those 1.0 vs 0.0. A new <strong><code>bias_judge</code></strong>
+  (<code>BiasJudge</code>, LLM-as-judge) reads <em>meaning</em> — it flags the fraction of the
+  output's own opinions that are biased, catching content ("women are too
+  emotional to lead") that any word-count metric misses. <code>hate_speech_score</code>'s
+  bias term was repolarized accordingly. For the deepest form (does the model
+  <em>treat groups differently</em>), run BBQ/CrowS-Pairs via <code>run_lmeval</code>.</li>
+<li><strong><code>compare_models(adapter=, annotators=, extract_with=)</code></strong> — previously
+  <code>compare_models()</code> had no way to configure the adapter/annotators at all
+  (every model silently got <code>evaluate()</code>'s bare defaults — <code>GenerationAdapter</code>,
+  no annotators — regardless of what was passed). Now these three are real
+  parameters, shared across every model by default, and <code>model_opts[name]</code>
+  can override any of them for one model only — the rest of that dict still
+  flows through to model construction unchanged. <code>scorers</code> remains a single
+  shared argument, deliberately not overridable per-model.</li>
+<li><strong><code>auditkit list annotators</code></strong> — the CLI's <code>list</code> subcommand previously
+  covered <code>metrics</code>/<code>datasets</code>/<code>adapters</code>/<code>models</code> but had no way to
+  enumerate registered <code>Annotator</code>s (<code>regex</code>, <code>llm</code>, <code>thinking_strip</code>);
+  it's now a resource type alongside the others, and included in the
+  default <code>auditkit list</code> (no argument) output.</li>
+<li><strong><code>"echo"</code> removed from the public API surface.</strong> <code>model=</code>/<code>--model</code> on
+  <code>evaluate()</code>, <code>generate()</code>, <code>evaluate_many()</code>, the CLI (<code>eval</code>/<code>redteam</code>),
+  and <code>RedTeamRunner</code> no longer default to it — <code>model=</code>/<code>--model</code> is now a
+  required argument everywhere. <code>EchoModel</code> still exists internally (used
+  by the test suite as a zero-dependency test double) but is no longer
+  documented, exported behavior, or resolvable as advertised public API;
+  use a plain <code>list[str] -&gt; list[str]</code> callable or <code>"precomputed"</code> instead.</li>
+<li><strong>Removed <code>ASR</code>, <code>ClaimPrecision</code>, and <code>EntailmentRatio</code> metrics.</strong> All
+  three were thin token-overlap heuristics whose names oversold what they
+  measured (see the removed entries in <code>docs/known_issues.md</code>'s prior
+  "Proxy metrics" section) — not real attack-success judgment, claim
+  verification, or entailment. <code>factual_consistency</code> (real NLI via
+  <code>transformers</code>) remains as the one real hallucination-detection metric;
+  <code>keyword_detector</code>/<code>DefconGrade</code> remain for security. Metric catalog is
+  39 (was 42).</li>
+<li><strong>Latency reporting collapsed to one figure (mean), not p50+p95.</strong>
+  <code>RunResult.summary()</code>, <code>CompareResult.performance_table()</code>/<code>summary()</code>,
+  and <code>RunComparison.summary()</code> previously showed <code>p50</code>/<code>p95</code> side by
+  side — almost always identical in practice, since <code>Runner</code> times whole
+  batched <code>generate()</code> calls, not individual requests, so <code>concurrency=1</code>
+  (the default) produces exactly one latency sample per run and every
+  percentile of a single value is trivially that same value.
+  <code>performance_table()</code>'s returned dicts now have one <code>latency_mean_ms</code>
+  key instead of <code>latency_p50_ms</code>/<code>latency_p95_ms</code>/<code>latency_mean_ms</code>. The
+  full percentile breakdown (<code>p50</code>/<code>p95</code>/<code>p99</code>/<code>min</code>/<code>max</code>/<code>std</code>) is still
+  computed and available via <code>RunResult.perf["latency_ms"]</code> for anyone
+  who wants it — only the default printed/tabular views were simplified.</li>
+<li><strong><code>ak.benchmark()</code> renamed to <code>ak.run_lmeval()</code>, and the <code>[benchmark]</code>
+  pip extra renamed to <code>[lmeval]</code> to match</strong> — makes explicit that this is
+  the dedicated, always-lm-eval front door (no native/lmeval switch,
+  unlike <code>evaluate(..., engine="lmeval")</code>, which reaches the same
+  underlying engine) pulling in <code>lm-eval</code>/<code>accelerate</code> specifically —
+  <code>[benchmark]</code> was ambiguous with the built-in benchmark <em>scenarios</em>
+  (MMLU/GSM8K/etc.), which actually only need <code>[interop]</code>. Install via
+  <code>pip install auditkit[lmeval]</code> now; the error message you'd get from
+  calling <code>run_lmeval()</code> without it installed says so too.</li>
+<li><strong>New <code>ak.evaluate_many()</code></strong> — runs one model across several datasets in
+  a single call (each as its own <code>evaluate()</code> call, its own fingerprint/
+  cache entry, sequentially), returning one <code>RunResult</code> per dataset.</li>
+<li><strong>Real token throughput</strong> (<code>output_tokens_per_sec</code>/<code>total_tokens_per_sec</code>)
+  now computed automatically in <code>RunResult.perf</code>, <code>RunComparison</code>, and
+  <code>CompareResult.performance_table()</code> from each run's own measured latency
+  and provider-reported <code>token_usage</code> — no separate opt-in needed.</li>
+<li><strong><code>HFGenModel</code></strong> no longer emits the <code>transformers</code> "Both <code>max_new_tokens</code>
+  and <code>max_length</code> seem to have been set" warning on every call — clears
+  the stale default on both the model's and the pipeline's own copy of
+  <code>generation_config</code> right after loading.</li>
+<li><strong>Examples restructured</strong>: the old numbered <code>.py</code>/<code>.sh</code> scripts in
+  <code>examples/</code> were replaced with Colab-ready <code>.ipynb</code> notebooks (real
+  models, real datasets). A new <code>applications/</code> folder holds end-to-end
+  real-world scenarios (pruned-model ship/no-ship decisions, healthcare,
+  finance, e-commerce, education, enterprise search, BERT-NLI-as-judge)
+  built the same way. Of these, only <code>applications/01_application_pruned_llama_boolq.ipynb</code>
+  uses the <code>lm-evaluation-harness</code> integration (<code>ak.run_lmeval()</code>) — as an
+  authoritative cross-check next to the native evaluation, needing
+  <code>auditkit[lmeval]</code>; no other notebook in <code>examples/</code> or <code>applications/</code>
+  depends on it.</li>
+</ul>
+<h3 id="new-annotators">New: Annotators<a class="headerlink" href="#new-annotators" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>RegexAnnotator</code>/<code>LLMAnnotator</code></strong> (<code>src/auditkit/annotator.py</code>) — pull a
+  clean value out of a model's raw output (e.g. <code>"FINAL ANSWER: 42"</code> → <code>"42"</code>)
+  as a separate, opt-in step from scoring. <code>RegexAnnotator</code> matches a
+  user-supplied pattern; <code>LLMAnnotator</code> asks a second model to extract the
+  value via a prompt, for cases with no fixed marker to anchor a regex to.
+  Multiple annotators can run in the same call; <code>extract_with="&lt;name&gt;"</code>
+  selects which one's extraction actually feeds the metrics — the rest still
+  run and stay inspectable via <code>Prediction.context</code>. See
+  <a href="../../annotators/">Annotators</a>.</li>
+<li>Both support <code>cast=</code>/<code>strict=</code> (convert the extracted string, e.g. to
+  <code>int</code>/<code>float</code>; degrade gracefully or raise on a bad conversion) and are
+  fully covered by run fingerprinting — changing a pattern/prompt/cast
+  invalidates any cached result.</li>
+</ul>
+<h3 id="new-openrouter-model-backend">New: OpenRouter model backend<a class="headerlink" href="#new-openrouter-model-backend" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>openrouter:</code> / <code>OpenRouterModel</code></strong> (<code>src/auditkit/model/openrouter_gen.py</code>)
+  — a new T1 model backend for <a href="https://openrouter.ai">OpenRouter</a>, an
+  OpenAI-API-compatible proxy in front of many providers. Mirrors
+  <code>GroqModel</code>'s implementation and lm-eval wiring exactly (fixed base URL
+  <code>https://openrouter.ai/api/v1</code>, Bearer auth, chat-only, no logprobs, maps
+  to lm-eval's <code>openai-chat-completions</code> backend with <code>OPENROUTER_API_KEY</code>
+  mirrored into <code>OPENAI_API_KEY</code> only for the run's duration). Models are
+  selected via OpenRouter's own <code>"provider/model"</code> naming, e.g.
+  <code>"openrouter:openai/gpt-4o-mini"</code> or
+  <code>"openrouter:anthropic/claude-3.5-sonnet"</code> — the internal <code>/</code> doesn't
+  conflict with <code>AutoModel.resolve()</code>'s prefix-splitting, which only splits
+  on the first <code>:</code>. Adds two optional constructor params with no Groq
+  equivalent — <code>site_url=</code>/<code>app_name=</code> — sent as <code>HTTP-Referer</code>/<code>X-Title</code>
+  attribution headers when set. Rides the <code>requests</code> extra, same as
+  <code>groq:</code>/<code>api:</code>.</li>
+</ul>
+<h3 id="new-encoderjudge-llm-as-judge-via-a-real-encoder-classifier">New: <code>EncoderJudge</code> — LLM-as-judge via a real encoder classifier<a class="headerlink" href="#new-encoderjudge-llm-as-judge-via-a-real-encoder-classifier" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>EncoderJudge</code></strong> (<code>src/auditkit/metrics/encoder_judge.py</code>) — a judge
+  backed by a real <code>AutoModelForSequenceClassification</code> encoder (BERT,
+  RoBERTa, DeBERTa, ELECTRA, ...) instead of a prompted generative model.
+  Classifies a (candidate, reference) pair in one forward pass via the
+  tokenizer's real pair-sequence encoding — no free-text generation, no
+  regex parsing. <code>label_map=</code> auto-detects from common NLI/sentiment-style
+  label names, or raises (never guesses) for checkpoints with only generic
+  <code>LABEL_0</code>/<code>LABEL_1</code> labels. <code>aggregation="probability"</code> (default, a
+  confidence-weighted score) or <code>"argmax"</code>. Fully compatible with
+  <code>Annotator</code>s (<code>extract_with=</code>) with no special-casing needed, since
+  extraction happens before any metric is invoked. Verified live across 8
+  real checkpoints spanning 5 architecture families (BERT, RoBERTa,
+  DeBERTa v1/v3, ELECTRA, DistilBERT), including a real independent
+  multi-label classifier. See <a href="../../encoder_judge/">Encoder Judge</a>.</li>
+<li>Found and fixed one bug during testing: BERT/RoBERTa/ELECTRA-style
+  checkpoints (absolute position embeddings, hard 512-token limit) crashed
+  outright on long combined input (<code>RuntimeError: tensor size mismatch</code>);
+  DeBERTa (relative position embeddings, no hard limit) never hit this,
+  which is why it wasn't caught until deliberately testing long inputs
+  specifically. Fixed by always calling the classification pipeline with
+  <code>truncation=True</code>.</li>
+<li><strong>2 prebuilt <code>EncoderJudge</code> subclasses</strong> — <code>FactualityEncoderJudge</code>
+  (entailment/factual-consistency) and <code>SentimentEncoderJudge</code> (2-way
+  sentiment) — each with the correct, checkpoint-specific
+  <code>model_name</code>/<code>label_map</code>/template shape baked in as defaults (same
+  pattern as <code>Factuality</code>/<code>ClosedQA</code>/<code>Relevance</code> for <code>LLMJudge</code>), fully
+  overridable.
+  <strong>Originally shipped as 6, reduced in two rounds.</strong> First,
+  <code>DebertaNLIJudge</code>/<code>DebertaV3NLIJudge</code>/<code>RobertaNLIJudge</code> were collapsed
+  into one, <code>FactualityEncoderJudge</code> (keeping DeBERTa v1, the strongest of
+  the three: no hard input-length limit, and empirically more
+  confident/discriminative than DeBERTa-v3 on ambiguous pairs) — all three
+  used checkpoints with real, auto-detectable labels, so having three
+  separate classes added a name each but no real behavior difference over
+  passing <code>model_name=</code> to one class directly. Then <code>BertNLIJudge</code>/
+  <code>ElectraNLIJudge</code> were removed entirely: both did the exact same <em>task</em>
+  as <code>FactualityEncoderJudge</code> (entailment/factual-consistency) — their
+  only distinguishing feature was an unrecoverable, empirically-verified
+  generic label order on their specific checkpoints (confirmed opposite
+  conventions from each other), which is real knowledge but not a
+  distinct enough task to justify two more classes. That knowledge is
+  preserved as a worked example in <code>docs/encoder_judge.md</code>
+  (<code>EncoderJudge(model_name=..., label_map=...)</code>) instead of two more
+  classes with no real behavior difference beyond which checkpoint.
+  <code>SentimentEncoderJudge</code> (renamed from <code>DistilBertSentimentJudge</code>) is the
+  only prebuilt with a genuinely different task from <code>FactualityEncoderJudge</code>.</li>
+</ul>
+<h3 id="fixes">Fixes<a class="headerlink" href="#fixes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>Runner.score_one()</code></strong> no longer silently converts a missing optional
+  dependency (<code>ExtraNotInstalled</code>, e.g. <code>cosine_similarity</code> without
+  <code>[transformers]</code>) into a fake <code>0.0</code> score indistinguishable from a
+  genuinely bad model output — it now surfaces via <code>result.errors</code>/
+  <code>failed_count</code> instead.</li>
+<li><strong><code>Perplexity</code></strong> no longer returns <code>nan</code> on short (single-token) outputs.</li>
+<li><strong><code>WordErrorRate</code></strong> clamped to <code>[0, 1]</code> (could previously go negative).</li>
+<li><strong><code>Faithfulness</code>/<code>ContextPrecision</code></strong> (RAG) fixed from plain substring
+  matching (a short output word like <code>"an"</code> could match inside an unrelated
+  word like <code>"banana"</code>) to word-boundary matching.</li>
+<li><strong><code>ToxicityScore</code></strong> now runs a real classifier (<code>unitary/toxic-bert</code>) by
+  default instead of a small keyword blacklist, which missed most real
+  toxic phrasing and false-flagged safe text merely mentioning a listed
+  word. <code>blacklist=</code>/<code>use_model=False</code> still available as the old
+  dependency-free fallback.</li>
+<li><strong><code>RunConfig.concurrency</code> default changed from <code>8</code> to <code>1</code>.</strong> <code>Runner._chunk()</code>
+  always splits requests into exactly <code>concurrency</code> chunks regardless of
+  request count — with fewer samples than the configured concurrency, this
+  produced empty chunks and wasted real model/API calls on them. <code>1</code> takes
+  a no-chunking code path entirely, sidestepping the bug unconditionally.
+  If you need real parallelism, pass a higher <code>concurrency=</code> explicitly —
+  it's safe as long as your sample count is at least that value.</li>
+<li><strong><code>identity()</code>/fingerprint correctness</strong>: 14 built-in metrics had real
+  constructor config that never affected <code>RunSpec.fingerprint()</code> (e.g.
+  <code>Bleu(max_n=...)</code>, <code>EloScore(k=...)</code>, <code>ToxicityScore(
+  use_model=...)</code>) — two differently-configured instances could silently
+  share one cached <code>RunResult</code>. Fixed for all 14; <code>Annotator</code>/<code>Adapter</code>/
+  <code>Metric</code> now also warn at class-definition time if a <em>custom</em> subclass
+  looks like it has the same gap.</li>
+<li><strong><code>load_croissant()</code> always crashed</strong> — it called <code>mlcroissant.load(...)</code>,
+  a function that doesn't exist in the real <code>mlcroissant</code> package (100%
+  failure rate for any input, never caught since its only test checked the
+  "extra not installed" path and lacked the <code>skipif</code> guard that would have
+  made it actually run). Fixed to use the real
+  <code>mlcroissant.Dataset(jsonld=...).records(record_set)</code> API — now takes a
+  required <code>record_set</code> parameter (a Croissant file can describe several;
+  there's no universally correct default) and decodes field values (the
+  real API returns <code>bytes</code>). Verified against a real 918-row dataset,
+  matching <code>load_hf()</code> on the same data exactly. <code>GitPython</code> added to the
+  <code>[interop]</code> extra — <code>mlcroissant</code> needs it for some datasets' git-based
+  downloads but doesn't declare it itself.</li>
+<li><strong><code>bert_score</code> fixed</strong> — previously documented as blocked by a genuine,
+  unfixable <code>bert_score</code>/<code>transformers&gt;=5</code> incompatibility
+  (<code>OverflowError: int too big to convert</code>). Root cause: the default
+  tokenizer (<code>microsoft/deberta-xlarge-mnli</code>) reports <code>model_max_length</code> as
+  HuggingFace's "no limit configured" sentinel (<code>~1e30</code>), which
+  <code>transformers&gt;=5</code>'s Rust-backed truncation setup can't convert to a
+  bounded int. <code>BertScore.score()</code> now applies a scoped monkeypatch of
+  <code>bert_score</code>'s own <code>get_tokenizer</code> (reached via
+  <code>sys.modules["bert_score.score"]</code>, since <code>bert_score/__init__.py</code>'s <code>from
+  .score import score</code> shadows the plain attribute path) that clamps
+  <code>model_max_length</code> to <code>512</code> before use, restoring the original function
+  afterward. Verified live through the real <code>evaluate()</code> pipeline for both
+  correctness (identical text → F1 ≈ 0.99999988) and discriminating power
+  (unrelated text → F1 ≈ 0.43, not a degenerate always-high result). See
+  <code>docs/BUGS.md</code>.</li>
+<li><strong><code>HFGenModel</code> now honors <code>stop_sequences</code>/<code>seed</code></strong> — <code>stop_sequences</code> maps
+  to <code>generate()</code>'s real <code>stop_strings</code> kwarg (with the tokenizer
+  auto-attached, which that kwarg needs); <code>seed</code> calls transformers'
+  <code>set_seed()</code> (a global RNG reset — the only per-call reproducibility knob
+  <code>generate()</code>/<code>pipeline()</code> actually offers) right before generating.
+  Verified live: a stop sequence truncates output exactly at the match, and
+  the same seed + prompt + settings reproduces identical output across
+  separate <code>evaluate()</code> calls. See <code>docs/BUGS.md</code>.</li>
+<li><strong><code>VLLMModel.model_info()</code> implemented</strong> — previously always reported
+  identity-only despite <code>is_local=True</code>. Now attempts real parameter
+  count/size introspection (same approach as <code>HFGenModel.model_info()</code>) via
+  a few known vLLM-internal engine access paths, falling back to the
+  previous identity-only reporting if none resolve on the installed vLLM
+  version (its internal structure varies across V0/V1 engines and
+  releases). See <code>docs/VLLM_KNOWN_ISSUES.md</code>.</li>
+<li><strong><code>vllm:</code> backend verified live for the first time</strong> (Colab L4 GPU) —
+  real generation confirmed working end to end, closing a gap that had
+  existed since the backend was first written (mocked unit tests only).
+  Surfaced three environment/dependency crashes along the way, now
+  fixed permanently inside <code>VLLMModel</code> itself (<code>_apply_environment_defaults()</code>/
+  <code>_stdout_fix()</code> in <code>src/auditkit/model/vllm_gen.py</code>), so no user needs to
+  work around them on any platform: vLLM's V1 engine forking a worker
+  process that can't inherit an already-initialized CUDA context
+  (<code>VLLM_ENABLE_V1_MULTIPROCESSING=0</code>), Jupyter/Colab's <code>sys.stdout</code> having
+  no real file descriptor for vLLM's internal log-suppression code
+  (<code>sys.stdout</code>/<code>sys.stderr</code> swap around engine construction), and
+  <code>huggingface_hub</code>'s newer Xet Storage download path 404ing on some
+  legacy repos (<code>HF_HUB_DISABLE_XET=1</code>, best-effort). New
+  <code>docs/VLLM_KNOWN_ISSUES.md</code> consolidates these, the still-open real gaps
+  found in the process (no chat-template support, GPU memory never freed
+  by <code>evaluate()</code> when resolving a model from a string spec), and the one
+  unfixable-from-code issue (a <code>torch</code>/<code>vllm</code> CUDA version
+  mismatch on environments with a pre-existing <code>torch</code>, e.g. Colab's
+  default image). 5 new regression tests in <code>tests/test_generation_kwargs.py</code>.</li>
+<li><strong><code>ExtraNotInstalled</code>'s message was self-contradictory</strong> — every one of its
+  ~16 call sites already passes a complete, ready-to-run instruction (e.g.
+  <code>"pip install auditkit[vllm]"</code>), but the class always prefixed a second,
+  separately-generated <code>"install auditkit[{extra}]"</code> in front of it,
+  producing <code>"install auditkit[vllm] for pip install auditkit[vllm]"</code>. Now
+  uses the passed hint verbatim, falling back to the generated form only
+  when no hint is given at all. New <code>tests/test_errors.py</code>.</li>
+<li><strong><code>ChatAdapter</code>'s stale source comment fixed</strong> — no runtime behavior
+  change; the comment claimed no backend reads <code>request.params["messages"]</code>,
+  which stopped being true once <code>resolve_messages()</code> was wired into 5
+  backends.</li>
+<li><strong>New <code>tests/test_metrics_via_pipeline.py</code></strong>: every one of the 39
+  registered metrics now has at least one test through the real
+  <code>ak.evaluate()</code> pipeline (<code>Runner</code>/<code>Adapter</code>/fingerprinting/<code>context</code>
+  wiring), not just a direct <code>Metric.score()</code> call — previously only
+  <code>exact_match</code> (plus one <code>Bleu()</code> instance) had that coverage, leaving 37
+  metrics unverified beyond their own isolated math. A representative
+  metric from each family (generation quality, embedding, toxicity, RAG,
+  judge, deterministic) is also run through <code>compare_models()</code>/<code>ak.compare()</code>
+  specifically, confirming the comparison layer handles every metric
+  <em>kind</em> correctly, not just <code>exact_match</code>.</li>
+</ul>
+<h2 id="v030-2026-07-01">v0.3.0 — 2026-07-01<a class="headerlink" href="#v030-2026-07-01" title="Permanent link">&para;</a></h2>
+<h3 id="highlights">Highlights<a class="headerlink" href="#highlights" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Model comparison.</strong> <code>compare_models()</code> runs the same dataset against multiple
+  models, producing side-by-side results with bootstrap significance tests.</li>
+<li><strong>CLI subcommands.</strong> <code>auditkit init</code> scaffolds projects, <code>auditkit list</code> shows
+  available resources, <code>auditkit compare</code> compares models.</li>
+<li><strong>YAML config support.</strong> Define evaluations in YAML files with <code>prompts:</code>,
+  model config, tags, and split strategies. Load via <code>--config</code>.</li>
+<li><strong>Documentation rewrite.</strong> Full MKDocs site with Material theme, cookbook case
+  studies, best practices guides, and Lexsi-branded design system.</li>
+</ul>
+<h3 id="new-metrics">New metrics<a class="headerlink" href="#new-metrics" title="Permanent link">&para;</a></h3>
+<ul>
+<li>RAG: <code>Faithfulness</code>, <code>ContextRecall</code>, <code>ContextPrecision</code>, <code>ResponseRelevancy</code></li>
+<li>Generation: <code>Bleu</code>, <code>RogueL</code>, <code>ChrF</code>, <code>BertScore</code>, <code>Perplexity</code>, <code>WordErrorRate</code></li>
+<li>Embedding: <code>CosineSimilarity</code>, <code>TokenOverlap</code>, <code>BM25Similarity</code></li>
+<li>Hallucination: <code>FactualConsistency</code>, <code>ClaimPrecision</code>, <code>EntailmentRatio</code></li>
+<li>Toxicity: <code>ToxicityScore</code>, <code>BiasScore</code>, <code>HateSpeechScore</code></li>
+<li>Pairwise: <code>WinRate</code>, <code>EloScore</code>, <code>PreferenceAccuracy</code></li>
+<li>Security: <code>ASR</code>, <code>DefconGrade</code>, <code>KeywordDetector</code>, <code>ThreatCategory</code></li>
+<li>Performance: <code>LatencyStats</code>, <code>Throughput</code></li>
+</ul>
+<p>Conversation (<code>Coherence</code>/<code>TurnTaking</code>/<code>ContextAdherence</code>/<code>RepetitionPenalty</code>),
+agent (<code>ToolCorrectness</code>/<code>TrajectoryMatch</code>/<code>StepEfficiency</code>/<code>GoalAccuracy</code>),
+multimodal (<code>VQAAccuracy</code>/<code>ANLS</code>), and tabular
+(<code>SchemaConformance</code>/<code>ExecutionAccuracy</code>/<code>DenotationAccuracy</code>) metrics were
+added and then removed within this same version cycle (see
+<code>logs/REMOVE_MULTIMODAL_AGENT_CONVERSATION_TABULAR_2026-07-17.md</code>) — none
+of them exist in the current codebase.</p>
+<h3 id="fixes_1">Fixes<a class="headerlink" href="#fixes_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Bleu <code>max_n</code> clamped to <code>min(len(ref), len(hyp))</code> — exact match returns 1.0</li>
+<li>CLI <code>concurrency=None</code> no longer crashes Runner (defaulted to <code>8</code> at the
+  time; see Unreleased above — the default later changed to <code>1</code>)</li>
+<li>DiskCache invalidation for stale <code>~/.cache/auditkit/runs/</code> entries</li>
+</ul>
+<h3 id="known-issues">Known issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h3>
+<ul>
+<li>CI workflow requires PAT with <code>workflow</code> scope</li>
+</ul>
+<h2 id="v020-2026-06-15">v0.2.0 — 2026-06-15<a class="headerlink" href="#v020-2026-06-15" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Initial public release</li>
+<li>Core evaluation spine (Sample, Metric, Model, Runner)</li>
+<li>Benchmark metrics (exact match, F1, quasi-exact match)</li>
+<li>CLI for basic evaluations</li>
+<li>Experiment tracking with ExperimentDB</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../roadmap/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Roadmap">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Roadmap
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../contributing/" class="md-footer__link md-footer__link--next" aria-label="Next: Contributing">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Contributing
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 <a href="https://lexsi.ai" target="_blank" rel="noopener">Lexsi Labs</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Lexsi-Labs" target="_blank" rel="noopener" title="Lexsi Labs on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://x.com/Lexsi_labs" target="_blank" rel="noopener" title="Lexsi Labs on X" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://www.linkedin.com/company/lexsi-labs/" target="_blank" rel="noopener" title="Lexsi Labs on LinkedIn" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://huggingface.co/Lexsi" target="_blank" rel="noopener" title="Lexsi Labs on Hugging Face" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.025 1.13c-5.77 0-10.449 4.647-10.449 10.378 0 1.112.178 2.181.503 3.185.064-.222.203-.444.416-.577a.96.96 0 0 1 .524-.15c.293 0 .584.124.84.284.278.173.48.408.71.694.226.282.458.611.684.951v-.014c.017-.324.106-.622.264-.874s.403-.487.762-.543c.3-.047.596.06.787.203s.31.313.4.467c.15.257.212.468.233.542.01.026.653 1.552 1.657 2.54.616.605 1.01 1.223 1.082 1.912.055.537-.096 1.059-.38 1.572.637.121 1.294.187 1.967.187.657 0 1.298-.063 1.921-.178-.287-.517-.44-1.041-.384-1.581.07-.69.465-1.307 1.081-1.913 1.004-.987 1.647-2.513 1.657-2.539.021-.074.083-.285.233-.542.09-.154.208-.323.4-.467a1.08 1.08 0 0 1 .787-.203c.359.056.604.29.762.543s.247.55.265.874v.015c.225-.34.457-.67.683-.952.23-.286.432-.52.71-.694.257-.16.547-.284.84-.285a.97.97 0 0 1 .524.151c.228.143.373.388.43.625l.006.04a10.3 10.3 0 0 0 .534-3.273c0-5.731-4.678-10.378-10.449-10.378M8.327 6.583a1.5 1.5 0 0 1 .713.174 1.487 1.487 0 0 1 .617 2.013c-.183.343-.762-.214-1.102-.094-.38.134-.532.914-.917.71a1.487 1.487 0 0 1 .69-2.803m7.486 0a1.487 1.487 0 0 1 .689 2.803c-.385.204-.536-.576-.916-.71-.34-.12-.92.437-1.103.094a1.487 1.487 0 0 1 .617-2.013 1.5 1.5 0 0 1 .713-.174m-10.68 1.55a.96.96 0 1 1 0 1.921.96.96 0 0 1 0-1.92m13.838 0a.96.96 0 1 1 0 1.92.96.96 0 0 1 0-1.92M8.489 11.458c.588.01 1.965 1.157 3.572 1.164 1.607-.007 2.984-1.155 3.572-1.164.196-.003.305.12.305.454 0 .886-.424 2.328-1.563 3.202-.22-.756-1.396-1.366-1.63-1.32q-.011.001-.02.006l-.044.026-.01.008-.03.024q-.018.017-.035.036l-.032.04a1 1 0 0 0-.058.09l-.014.025q-.049.088-.11.19a1 1 0 0 1-.083.116 1.2 1.2 0 0 1-.173.18q-.035.029-.075.058a1.3 1.3 0 0 1-.251-.243 1 1 0 0 1-.076-.107c-.124-.193-.177-.363-.337-.444-.034-.016-.104-.008-.2.022q-.094.03-.216.087-.06.028-.125.063l-.13.074q-.067.04-.136.086a3 3 0 0 0-.135.096 3 3 0 0 0-.26.219 2 2 0 0 0-.12.121 2 2 0 0 0-.106.128l-.002.002a2 2 0 0 0-.09.132l-.001.001a1.2 1.2 0 0 0-.105.212q-.013.036-.024.073c-1.139-.875-1.563-2.317-1.563-3.203 0-.334.109-.457.305-.454m.836 10.354c.824-1.19.766-2.082-.365-3.194-1.13-1.112-1.789-2.738-1.789-2.738s-.246-.945-.806-.858-.97 1.499.202 2.362c1.173.864-.233 1.45-.685.64-.45-.812-1.683-2.896-2.322-3.295s-1.089-.175-.938.647 2.822 2.813 2.562 3.244-1.176-.506-1.176-.506-2.866-2.567-3.49-1.898.473 1.23 2.037 2.16c1.564.932 1.686 1.178 1.464 1.53s-3.675-2.511-4-1.297c-.323 1.214 3.524 1.567 3.287 2.405-.238.839-2.71-1.587-3.216-.642-.506.946 3.49 2.056 3.522 2.064 1.29.33 4.568 1.028 5.713-.624m5.349 0c-.824-1.19-.766-2.082.365-3.194 1.13-1.112 1.789-2.738 1.789-2.738s.246-.945.806-.858.97 1.499-.202 2.362c-1.173.864.233 1.45.685.64.451-.812 1.683-2.896 2.322-3.295s1.089-.175.938.647-2.822 2.813-2.562 3.244 1.176-.506 1.176-.506 2.866-2.567 3.49-1.898-.473 1.23-2.037 2.16c-1.564.932-1.686 1.178-1.464 1.53s3.675-2.511 4-1.297c.323 1.214-3.524 1.567-3.287 2.405.238.839 2.71-1.587 3.216-.642.506.946-3.49 2.056-3.522 2.064-1.29.33-4.568 1.028-5.713-.624"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://lexsi.ai" target="_blank" rel="noopener" title="lexsi.ai" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M351.9 280H161c2.9 64.5 17.2 123.9 37.5 167.4 11.4 24.5 23.7 41.8 35.1 52.4 11.2 10.5 18.9 12.2 22.9 12.2s11.7-1.7 22.9-12.2c11.4-10.6 23.7-28 35.1-52.4 20.3-43.5 34.6-102.9 37.5-167.4zm-191-48h190.9c-2.8-64.5-17.1-123.9-37.4-167.4-11.4-24.4-23.7-41.8-35.1-52.4C268.1 1.7 260.4 0 256.4 0s-11.7 1.7-22.9 12.2c-11.4 10.6-23.7 28-35.1 52.4-20.3 43.5-34.6 102.9-37.5 167.4m-48 0c3.5-85.6 25.6-165.1 57.9-217.3C78.7 47.3 10.9 131.2 1.5 232zM1.5 280c9.4 100.8 77.2 184.7 169.3 217.3-32.3-52.2-54.4-131.7-57.9-217.3zm398.4 0c-3.5 85.6-25.6 165.1-57.9 217.3 92.1-32.7 159.9-116.5 169.3-217.3zm111.4-48C501.9 131.2 434.1 47.3 342 14.7c32.3 52.2 54.4 131.7 57.9 217.3z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.top", "navigation.footer", "navigation.prune", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/extra.js"></script>
+      
+    
+  </body>
+</html>

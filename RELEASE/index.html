@@ -1,0 +1,2829 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Evaluate any model on any dataset and any task — benchmark, judge, code, red-team, and performance metrics, all from a single spine.">
+      
+      
+      
+        <link rel="canonical" href="https://lexsi-labs.github.io/AuditKIT/RELEASE/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../getting_started/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Release Notes - AuditKIT</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Schibsted+Grotesk:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Schibsted Grotesk";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#auditkit-100-release-overview" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AuditKIT" class="md-header__button md-logo" aria-label="AuditKIT" data-md-component="logo">
+      
+  <img src="../assets/icon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AuditKIT
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Release Notes
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Lexsi-Labs/AuditKIT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Lexsi-Labs/AuditKIT
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release Notes
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../cli/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../cookbook/llm_judge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Cookbook
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../best_practices/scorers/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Best Practices
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../examples/quickstart/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/system-design/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../about/product/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../community/faq/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Community
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AuditKIT" class="md-nav__button md-logo" aria-label="AuditKIT" data-md-component="logo">
+      
+  <img src="../assets/icon.png" alt="logo">
+
+    </a>
+    AuditKIT
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Lexsi-Labs/AuditKIT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Lexsi-Labs/AuditKIT
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-auditkit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why AuditKIT
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-highlights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release highlights
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#60-second-quickstart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        60-second quickstart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-unified-api-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The unified API at a glance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-tour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature tour
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feature tour">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-any-model-one-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Any model, one interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-adapters-annotators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Adapters &amp; annotators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-metrics-39-across-10-families" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Metrics: 39 across 10 families
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-custom-scorers-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Custom scorers &amp; metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-academic-benchmarks-with-lm-eval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Academic benchmarks with lm-eval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-llm-as-judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. LLM-as-judge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-rag-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. RAG evaluation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-model-comparison-base-vs-prunedquantized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Model comparison (base vs pruned/quantized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-evaluate-across-many-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Evaluate across many datasets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-performance-size-cost-measured-automatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Performance, size &amp; cost — measured automatically
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-provenance-caching-reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Provenance, caching &amp; reproducibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-command-line-yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Command line &amp; YAML
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-extending-auditkit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Extending AuditKIT
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example notebooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example notebooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        examples/
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examplesapplications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        examples/applications/
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optional-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional dependencies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#links-license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Links &amp; license
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../getting_started/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../cli/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../cookbook/llm_judge/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cookbook
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../best_practices/scorers/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../examples/quickstart/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../architecture/system-design/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../api/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../about/product/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../community/faq/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-auditkit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why AuditKIT
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-highlights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release highlights
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#60-second-quickstart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        60-second quickstart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-unified-api-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The unified API at a glance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-tour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature tour
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feature tour">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-any-model-one-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Any model, one interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-adapters-annotators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Adapters &amp; annotators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-metrics-39-across-10-families" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Metrics: 39 across 10 families
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-custom-scorers-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Custom scorers &amp; metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-academic-benchmarks-with-lm-eval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Academic benchmarks with lm-eval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-llm-as-judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. LLM-as-judge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-rag-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. RAG evaluation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-model-comparison-base-vs-prunedquantized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Model comparison (base vs pruned/quantized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-evaluate-across-many-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Evaluate across many datasets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-performance-size-cost-measured-automatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Performance, size &amp; cost — measured automatically
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-provenance-caching-reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Provenance, caching &amp; reproducibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-command-line-yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Command line &amp; YAML
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-extending-auditkit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Extending AuditKIT
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example notebooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example notebooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        examples/
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examplesapplications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        examples/applications/
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optional-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional dependencies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#links-license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Links &amp; license
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Lexsi-Labs/AuditKIT/edit/main/docs/RELEASE.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<!--
+  AuditKIT — Release Overview (v1.0.0)
+  A feature-forward launch document: what AuditKIT offers and how to use it,
+  with runnable code for every capability. For the exhaustive internal
+  reference (with candid limitations), see docs/GUIDE.md.
+-->
+
+<h1 id="auditkit-100-release-overview">AuditKIT 1.0.0 — Release Overview<a class="headerlink" href="#auditkit-100-release-overview" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Evaluate any model, on any dataset, across any technique — from one <code>ak.evaluate()</code> call.</strong>
+Benchmark · LLM-as-judge · RAG · performance — one library, one result object, zero required dependencies.</p>
+</blockquote>
+<p>AuditKIT (<code>auditkit</code>) is a standalone Python library for evaluating AI models. It unifies the fragmented world of model evaluation — academic benchmarks, LLM-as-judge, RAG scoring, and performance profiling — behind a <strong>single API</strong> and a <strong>single, provenance-stamped result object</strong>, so results from different techniques are directly comparable, cacheable, and reproducible by construction.</p>
+<ul>
+<li><strong>Version:</strong> 1.0.0 · <strong>Python:</strong> 3.10+ · <strong>License:</strong> LSAL v1.2 · <strong>Platforms:</strong> Linux / macOS / Windows</li>
+<li><strong>Zero required third-party dependencies</strong> — the core runs on the standard library; every heavy backend and metric is an optional extra.</li>
+</ul>
+<hr />
+<h2 id="why-auditkit">Why AuditKIT<a class="headerlink" href="#why-auditkit" title="Permanent link">&para;</a></h2>
+<p>Evaluating models today means stitching together a different tool for every question. Academic accuracy? One harness. Is the answer actually <em>good</em>? A judge framework. Does the RAG pipeline hallucinate? Another library. How fast and how expensive? Yet another profiler. None of them share a data model, so you can never line the results up next to each other.</p>
+<p>AuditKIT collapses all of that into <strong>one evaluation spine</strong>. Every technique — a benchmark, a judge, a RAG check, a latency profile — flows through the same pipeline and returns the same <code>RunResult</code>, carrying a stable fingerprint. That means:</p>
+<ul>
+<li><strong>One thing to learn.</strong> <code>ak.evaluate(dataset, model, scorers)</code> covers every case.</li>
+<li><strong>Everything is comparable.</strong> A benchmark run and a judge run are the same shape, so <code>ak.compare(...)</code> works across them.</li>
+<li><strong>Everything is reproducible.</strong> Each run is identified by a sha256 over its full configuration; identical inputs hit a disk cache instead of recomputing.</li>
+<li><strong>Nothing is forced on you.</strong> The core has zero third-party dependencies. Install only the backends and metrics you use.</li>
+</ul>
+<hr />
+<h2 id="release-highlights">Release highlights<a class="headerlink" href="#release-highlights" title="Permanent link">&para;</a></h2>
+<ul>
+<li>🧩 <strong>One API, two engines.</strong> <code>ak.evaluate()</code> runs AuditKIT's own spine; <code>ak.run_lmeval()</code> drives the full <a href="https://github.com/EleutherAI/lm-evaluation-harness">lm-evaluation-harness</a> — both return the identical <code>RunResult</code>.</li>
+<li>🤖 <strong>10 model backends</strong> behind one resolver: any Python callable, <code>openai:</code>, <code>anthropic:</code>, <code>hf:</code> (HuggingFace), <code>vllm:</code>, <code>litellm:</code> (Ollama &amp; 100+ providers), <code>api:</code> (any OpenAI-compatible endpoint), <code>groq:</code>, <code>lexsi:</code>, and <code>precomputed</code>.</li>
+<li>📊 <strong>48 metrics across 10 families</strong> — exact/fuzzy match, BLEU/ROUGE/ChrF, embedding similarity, RAG faithfulness/context, hallucination, toxicity/representation, an LLM-as-judge bias detector, guard-model safety scoring, pairwise/preference — all stdlib-first, heavy variants optional.</li>
+<li>⚖️ <strong>LLM-as-judge</strong> with a generic classifier/numeric judge plus prebuilt <code>Factuality</code>, <code>ClosedQA</code>, <code>Relevance</code>, and rubric-driven <code>GEval</code>.</li>
+<li>🔬 <strong>Model comparison</strong> — <code>ak.compare()</code> (base vs pruned/quantized), <code>compare_models()</code> (N-model bake-off, memory-efficient), and <code>evaluate_many()</code> (one model across many datasets), with paired-bootstrap significance and quality-vs-size/latency tradeoffs.</li>
+<li>⚡ <strong>Performance, size &amp; cost measured automatically</strong> on every run — latency, throughput, real model size (params/sparsity/MB), provider token usage, and dollar cost.</li>
+<li>🔒 <strong>Provenance by default</strong> — every run is fingerprinted; results are cached and comparable by that fingerprint.</li>
+<li>💻 <strong>CLI + YAML</strong> — <code>auditkit eval|compare|list|init</code>, configurable from a single YAML file.</li>
+</ul>
+<hr />
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>auditkit<span class="w">                       </span><span class="c1"># core — zero third-party deps</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;auditkit[openai]&quot;</span><span class="w">             </span><span class="c1"># + OpenAI backend</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;auditkit[all]&quot;</span><span class="w">                </span><span class="c1"># everything</span>
+</code></pre></div>
+<p>Install from source:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;auditkit @ git+https://github.com/Lexsi-Labs/AuditKIT.git&quot;</span>
+</code></pre></div>
+<p>Pick exactly the extras you need (full matrix <a href="#optional-dependencies">below</a>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;auditkit[transformers]&quot;</span><span class="w">           </span><span class="c1"># HuggingFace models + several ML metrics, incl. embedding similarity</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;auditkit[lmeval]&quot;</span><span class="w">                 </span><span class="c1"># the lm-eval benchmark engine</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;auditkit[anthropic]&quot;</span><span class="w">              </span><span class="c1"># Anthropic backend</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;auditkit[requests]&quot;</span><span class="w">               </span><span class="c1"># groq: / api: / lexsi: backends</span>
+</code></pre></div>
+<p>Requires Python 3.10+.</p>
+<hr />
+<h2 id="60-second-quickstart">60-second quickstart<a class="headerlink" href="#60-second-quickstart" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">auditkit</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ak</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">samples</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">&quot;What is 2+2?&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;4&quot;</span><span class="p">),</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">&quot;Capital of France?&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;Paris&quot;</span><span class="p">),</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">]</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># A plain callable needs no keys or downloads — great for first contact.</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># (Deliberately gets one right, one wrong, so the headline below isn&#39;t trivial.)</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">toy_model</span><span class="p">(</span><span class="n">prompts</span><span class="p">):</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;4&quot;</span> <span class="k">if</span> <span class="s2">&quot;2+2&quot;</span> <span class="ow">in</span> <span class="n">p</span> <span class="k">else</span> <span class="s2">&quot;London&quot;</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">]</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">result</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">toy_model</span><span class="p">)</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">headline</span><span class="p">)</span>        <span class="c1"># {&#39;exact_match&#39;: 0.5}</span>
+</code></pre></div>
+<p>Swap the callable for a real model — nothing else changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">)</span>   <span class="c1"># hosted API</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;hf:gpt2&quot;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>          <span class="c1"># local HuggingFace</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="k">lambda</span> <span class="n">prompts</span><span class="p">:</span> <span class="p">[</span><span class="n">call_my_app</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">])</span>  <span class="c1"># your own app</span>
+</code></pre></div>
+<p>Every call returns a <code>RunResult</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>headline</code></td>
+<td>per-metric averages, e.g. <code>{"exact_match": 0.82}</code></td>
+</tr>
+<tr>
+<td><code>predictions</code></td>
+<td>per-sample records (input, output, expected, score) — the answer browser</td>
+</tr>
+<tr>
+<td><code>stats</code></td>
+<td>full distributions (mean, std, min, max, percentiles)</td>
+</tr>
+<tr>
+<td><code>perf</code> / <code>model_size</code> / <code>token_usage</code></td>
+<td>auto-measured latency/throughput, real model size, provider tokens</td>
+</tr>
+<tr>
+<td><code>fingerprint</code></td>
+<td>stable sha256 for caching &amp; comparison</td>
+</tr>
+<tr>
+<td><code>errors</code></td>
+<td>anything that went wrong, isolated per-sample (never aborts the run)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="the-unified-api-at-a-glance">The unified API at a glance<a class="headerlink" href="#the-unified-api-at-a-glance" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ak.evaluate(dataset, model, scorers, ...)</code></td>
+<td>The front door. Runs a model on a dataset with any scorers → <code>RunResult</code>.</td>
+</tr>
+<tr>
+<td><code>ak.run_lmeval(tasks, model, ...)</code></td>
+<td>Run academic benchmarks through the real lm-eval-harness → the same <code>RunResult</code>.</td>
+</tr>
+<tr>
+<td><code>ak.evaluate_many(datasets, model, ...)</code></td>
+<td>One model across <strong>many datasets</strong> in a single call → <code>{name: RunResult}</code>.</td>
+</tr>
+<tr>
+<td><code>ak.generate(dataset, model, ...)</code></td>
+<td>Generate once, score many times — returns samples with outputs attached.</td>
+</tr>
+<tr>
+<td><code>ak.compare(baseline, candidate)</code></td>
+<td>Baseline-vs-candidate diff with per-metric percentage differences → <code>RunComparison</code>.</td>
+</tr>
+<tr>
+<td><code>ak.compare_models([...], dataset, ...)</code></td>
+<td>Run several models on one dataset → leaderboard + pairwise significance.</td>
+</tr>
+<tr>
+<td><code>@ak.scorer(direction=...)</code></td>
+<td>Turn any <code>(sample, output) -&gt; float</code> function into a metric.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="feature-tour">Feature tour<a class="headerlink" href="#feature-tour" title="Permanent link">&para;</a></h2>
+<h3 id="1-any-model-one-interface">1. Any model, one interface<a class="headerlink" href="#1-any-model-one-interface" title="Permanent link">&para;</a></h3>
+<p><code>AutoModel</code> resolves a string spec, a callable, or a <code>Model</code> instance — so the <em>same</em> evaluation code runs against a local checkpoint, a hosted API, or your own application.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">auditkit</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ak</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Hosted APIs (keys read from the usual provider env vars)</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;openai:gpt-4o-mini&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;anthropic:claude-sonnet-4-20250514&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">)</span>           <span class="c1"># GROQ_API_KEY</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;litellm:ollama/llama3&quot;</span><span class="p">)</span>                  <span class="c1"># local Ollama &amp; 100+ providers</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;api:my-model&quot;</span><span class="p">,</span> <span class="n">api_base</span><span class="o">=</span><span class="s2">&quot;https://my-host/v1&quot;</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;…&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Local HuggingFace (auto device: CUDA &gt; MPS &gt; CPU; pass device= to pin it)</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;hf:meta-llama/Llama-3.2-1B&quot;</span><span class="p">,</span> <span class="n">hf_token</span><span class="o">=</span><span class="s2">&quot;hf_…&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;vllm:meta-llama/Llama-3.2-1B&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="c1"># Your own app — any list[str] -&gt; list[str] callable</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="k">lambda</span> <span class="n">prompts</span><span class="p">:</span> <span class="p">[</span><span class="n">my_rag_pipeline</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">])</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Prefix</th>
+<th>Backend</th>
+<th>Capabilities</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>callable / <code>precomputed</code></td>
+<td>your code &amp; pre-generated outputs</td>
+<td>generate</td>
+<td>core</td>
+</tr>
+<tr>
+<td><code>openai:</code></td>
+<td>OpenAI</td>
+<td>generate</td>
+<td><code>openai</code></td>
+</tr>
+<tr>
+<td><code>anthropic:</code></td>
+<td>Anthropic</td>
+<td>generate</td>
+<td><code>anthropic</code></td>
+</tr>
+<tr>
+<td><code>hf:</code></td>
+<td>HuggingFace transformers</td>
+<td>generate <strong>+ loglikelihood</strong> (MCQ)</td>
+<td><code>transformers</code></td>
+</tr>
+<tr>
+<td><code>vllm:</code></td>
+<td>vLLM</td>
+<td>generate</td>
+<td><code>vllm</code></td>
+</tr>
+<tr>
+<td><code>litellm:</code></td>
+<td>LiteLLM (Ollama, …)</td>
+<td>generate</td>
+<td><code>litellm</code></td>
+</tr>
+<tr>
+<td><code>api:</code></td>
+<td>any OpenAI-compatible server</td>
+<td>generate</td>
+<td><code>requests</code></td>
+</tr>
+<tr>
+<td><code>groq:</code></td>
+<td>Groq</td>
+<td>generate</td>
+<td><code>requests</code></td>
+</tr>
+<tr>
+<td><code>lexsi:</code></td>
+<td>Lexsi gateway</td>
+<td>generate</td>
+<td><code>requests</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="2-adapters-annotators">2. Adapters &amp; annotators<a class="headerlink" href="#2-adapters-annotators" title="Permanent link">&para;</a></h3>
+<p><strong>Adapters</strong> turn a <code>Sample</code> into a model-ready prompt/request. <code>adapter=None</code>
+(the default) uses <code>GenerationAdapter</code> — renders <code>sample.input</code> as-is. Pass
+<code>adapter="auto"</code> to route by the sample's <em>shape</em> instead, via <code>route_adapter()</code>:
+<code>choices</code> present → <code>MCQAdapter</code>; <code>retrieval_context</code> present → <code>RAGAdapter</code>;
+otherwise → <code>GenerationAdapter</code>. Routing looks only at what the sample carries,
+never at the model — chat-vs-base prompt formatting is applied downstream by the
+model backend, so the same adapter works correctly on both instruct and base
+models without routing having to know or probe which one it is.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">adapter</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>            <span class="c1"># route by sample shape</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">adapter</span><span class="o">=</span><span class="s2">&quot;mcq&quot;</span><span class="p">)</span>              <span class="c1"># explicit adapter by name</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">adapter</span><span class="o">=</span><span class="n">ak</span><span class="o">.</span><span class="n">ChatAdapter</span><span class="p">(</span><span class="n">system_prompt</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">))</span>  <span class="c1"># instance</span>
+</code></pre></div>
+<p><code>ChatAdapter</code> is intentionally <strong>never</strong> auto-selected — injecting a system
+prompt is an explicit choice, not something routing should guess.</p>
+<p>Built-in adapters cover the common shapes (<code>generation</code>, <code>mcq</code>, <code>rag</code>, <code>chat</code>,
+<code>instruction</code>, <code>fewshot</code>, <code>template</code>), but a custom adapter is a one-liner:
+subclass <code>Adapter</code>, register it, implement <code>adapt(sample, config) -&gt; list[Request]</code>.
+Set <code>method</code> to something specific to your adapter — it feeds the run
+fingerprint, so a config change (e.g. a different <code>prefix</code>) is never silently
+served from a stale cache:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">Adapter</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">ADAPTERS</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nd">@ADAPTERS</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;prefixed&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">PrefixAdapter</span><span class="p">(</span><span class="n">Adapter</span><span class="p">):</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Answer concisely: &quot;</span><span class="p">):</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;prefixed&quot;</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">adapt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>        <span class="k">return</span> <span class="p">[</span><span class="n">Request</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">sample</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">request_type</span><span class="o">=</span><span class="s2">&quot;generate&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{})]</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">identity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">,</span> <span class="s2">&quot;prefix&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">}</span>   <span class="c1"># -&gt; fingerprint</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">adapter</span><span class="o">=</span><span class="n">PrefixAdapter</span><span class="p">(</span><span class="s2">&quot;Reply in one word: &quot;</span><span class="p">))</span>
+</code></pre></div>
+<p><strong>Annotators</strong> pull a clean value out of a model's raw output as a separate,
+opt-in step from scoring — e.g. extracting <code>"42"</code> out of a longer
+chain-of-thought reply ending in <code>"FINAL ANSWER: 42"</code>. <code>annotators=None</code> (the
+default) runs none. Multiple annotators can run in the same call;
+<code>extract_with="&lt;name&gt;"</code> picks which one's extraction actually feeds the
+metrics — the rest still run and stay inspectable via <code>Prediction.context</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">extractor</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">RegexAnnotator</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;FINAL ANSWER:\s*(\d+)&quot;</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;final_answer&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">],</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>                 <span class="n">annotators</span><span class="o">=</span><span class="p">[</span><span class="n">extractor</span><span class="p">],</span> <span class="n">extract_with</span><span class="o">=</span><span class="s2">&quot;final_answer&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">r</span><span class="o">.</span><span class="n">predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;final_answer&quot;</span><span class="p">]</span>   <span class="c1"># {&quot;extracted&quot;: &quot;42&quot;, &quot;matched&quot;: True, &quot;raw&quot;: &quot;...&quot;}</span>
+</code></pre></div>
+<p>Two more built-ins ship alongside <code>RegexAnnotator</code>: <code>LLMAnnotator</code> (asks a
+<em>second</em> model to extract the value — for cases with no fixed marker a regex
+can anchor to) and <code>ThinkingStripAnnotator</code> (drops a <code>&lt;think&gt;...&lt;/think&gt;</code>
+reasoning block some models emit). A custom annotator is the same shape as a
+custom adapter — subclass <code>Annotator</code>, register it, implement
+<code>annotate(sample, results) -&gt; dict</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.annotator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotator</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">ANNOTATORS</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nd">@ANNOTATORS</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;word_count_flag&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">WordCountFlagAnnotator</span><span class="p">(</span><span class="n">Annotator</span><span class="p">):</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_words</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;word_count_flag&quot;</span><span class="p">):</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_words</span> <span class="o">=</span> <span class="n">max_words</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">annotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">results</span><span class="p">):</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="n">text</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span> <span class="k">if</span> <span class="n">results</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;word_count&quot;</span><span class="p">:</span> <span class="n">n</span><span class="p">,</span> <span class="s2">&quot;over_limit&quot;</span><span class="p">:</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_words</span><span class="p">}</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">identity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;max_words&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_words</span><span class="p">}</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">],</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>                 <span class="n">annotators</span><span class="o">=</span><span class="p">[</span><span class="n">WordCountFlagAnnotator</span><span class="p">(</span><span class="n">max_words</span><span class="o">=</span><span class="mi">5</span><span class="p">)])</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="n">r</span><span class="o">.</span><span class="n">predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;word_count_flag&quot;</span><span class="p">]</span>   <span class="c1"># {&quot;word_count&quot;: 13, &quot;over_limit&quot;: True}</span>
+</code></pre></div>
+<h3 id="3-metrics-39-across-10-families">3. Metrics: 39 across 10 families<a class="headerlink" href="#3-metrics-39-across-10-families" title="Permanent link">&para;</a></h3>
+<p>Pass a metric by <strong>name</strong> (for zero-config metrics) or as an <strong>instance</strong> (to configure it). When you pass <code>scorers=None</code>, AuditKIT auto-selects <code>exact_match</code> for samples that have a <code>target</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">,</span> <span class="s2">&quot;f1_score&quot;</span><span class="p">,</span> <span class="s2">&quot;bleu&quot;</span><span class="p">,</span> <span class="s2">&quot;rouge_l&quot;</span><span class="p">])</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">Contains</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">),</span> <span class="n">ak</span><span class="o">.</span><span class="n">Regex</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\d+&quot;</span><span class="p">),</span> <span class="n">ak</span><span class="o">.</span><span class="n">IsJson</span><span class="p">()])</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Metrics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Built-in</strong></td>
+<td><code>exact_match</code>, <code>quasi_exact_match</code>, <code>acc</code>, <code>acc_norm</code></td>
+</tr>
+<tr>
+<td><strong>Code / deterministic</strong></td>
+<td><code>equals</code>, <code>contains</code>, <code>starts_with</code>, <code>ends_with</code>, <code>regex</code>, <code>levenshtein</code>, <code>word_count</code>, <code>is_json</code>, <code>f1_score</code></td>
+</tr>
+<tr>
+<td><strong>Generation quality</strong></td>
+<td><code>bleu</code>, <code>rouge_l</code>, <code>chrf</code>, <code>word_error_rate</code>, <code>perplexity</code><em>, <code>bert_score</code></em></td>
+</tr>
+<tr>
+<td><strong>Embedding similarity</strong></td>
+<td><code>cosine_similarity</code>*, <code>token_overlap</code>, <code>bm25_similarity</code></td>
+</tr>
+<tr>
+<td><strong>RAG</strong></td>
+<td><code>lexical_groundedness</code>, <code>context_coverage</code>, <code>context_overlap</code>, <code>answer_overlap</code></td>
+</tr>
+<tr>
+<td><strong>Hallucination</strong></td>
+<td><code>factual_consistency</code>*</td>
+</tr>
+<tr>
+<td><strong>Toxicity / representation</strong></td>
+<td><code>toxicity_score</code><em>, <code>representation_skew</code>, <code>hate_speech_score</code></em></td>
+</tr>
+<tr>
+<td><strong>Pairwise / preference</strong></td>
+<td><code>win_rate</code>, <code>elo_score</code>, <code>preference_accuracy</code></td>
+</tr>
+<tr>
+<td><strong>Security</strong></td>
+<td><code>keyword_detector</code>, <code>guard_judge</code> (guard-model safety scoring)</td>
+</tr>
+<tr>
+<td><strong>LLM-as-judge</strong></td>
+<td><code>llm_judge</code>, <code>g_eval</code>, <code>factuality</code>, <code>closed_qa</code>, <code>relevance</code>, <code>bias_judge</code></td>
+</tr>
+</tbody>
+</table>
+<p><sub><code>*</code> loads a model and needs an optional extra; everything else is stdlib-only.</sub></p>
+<p>Every metric declares a <strong>direction</strong> (higher-is-better vs lower-is-better), which the comparison layer uses so a drop in accuracy and a rise in latency are both understood correctly. Two more things every metric carries:</p>
+<ul>
+<li><strong><code>required_fields</code></strong> — the sample fields a metric needs (e.g. <code>lexical_groundedness</code>
+  needs <code>retrieval_context</code>, <code>factual_consistency</code> needs <code>target</code>). A metric is
+  silently skipped (not scored, not counted as a failure) for any sample
+  missing one of its required fields via <code>Metric.applicable(sample)</code> — so
+  mixing tasks in one dataset (some with <code>retrieval_context</code>, some without)
+  never crashes a run; it just scopes each metric to the samples it can
+  actually judge.</li>
+<li><strong><code>kind</code></strong> (a <code>ScoreKind</code>: <code>BENCHMARK</code>, <code>JUDGE</code>, <code>CODE</code>, <code>SECURITY</code>, <code>PERF</code>,
+  <code>HUMAN</code>, <code>RAG</code>) — labels <em>how</em> a score was produced, independent of its
+  value or direction, so a report can distinguish "a deterministic string
+  match said this passed" from "a model judged this as good."</li>
+</ul>
+<p>A <code>Score</code> also carries an optional <code>weight</code> — <code>ak.WeightedSum().compute(scores)</code>
+folds several <code>Score</code>s into one weighted-average <code>Score</code> — and an optional
+<code>threshold</code>, which turns a raw value into a <code>passed: bool</code>. <code>ak.ScoreGate(metric,
+weight=..., threshold=...)</code> wraps any existing metric to set both without
+touching the metric's own code:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">gated</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">ScoreGate</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">Contains</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">),</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">score</span> <span class="o">=</span> <span class="n">gated</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">output</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">score</span><span class="o">.</span><span class="n">passed</span>   <span class="c1"># True/False, gated on threshold</span>
+</code></pre></div>
+<h3 id="4-custom-scorers-metrics">4. Custom scorers &amp; metrics<a class="headerlink" href="#4-custom-scorers-metrics" title="Permanent link">&para;</a></h3>
+<p>Your own metric is a one-liner. <code>direction</code> is required, so comparisons always know which way is better:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nd">@ak</span><span class="o">.</span><span class="n">scorer</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">ak</span><span class="o">.</span><span class="n">Direction</span><span class="o">.</span><span class="n">MAXIMIZE</span><span class="p">)</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">mentions_price</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="k">return</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="s2">&quot;$&quot;</span> <span class="ow">in</span> <span class="n">output</span> <span class="k">else</span> <span class="mf">0.0</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">mentions_price</span><span class="p">])</span>
+</code></pre></div>
+<p>For anything richer, subclass <code>Metric</code> and register it — the spine picks it up by name, no core changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.metric</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.score</span><span class="w"> </span><span class="kn">import</span> <span class="n">Score</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Direction</span><span class="p">,</span> <span class="n">ScoreKind</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">auditkit.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">METRICS</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="nd">@METRICS</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;under_limit&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">UnderLimit</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="n">direction</span> <span class="o">=</span> <span class="n">Direction</span><span class="o">.</span><span class="n">MAXIMIZE</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">280</span><span class="p">):</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;under_limit(</span><span class="si">{</span><span class="n">max_len</span><span class="si">}</span><span class="s2">)&quot;</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>        <span class="k">return</span> <span class="n">Score</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">),</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>                     <span class="n">kind</span><span class="o">=</span><span class="n">ScoreKind</span><span class="o">.</span><span class="n">CODE</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="5-academic-benchmarks-with-lm-eval">5. Academic benchmarks with lm-eval<a class="headerlink" href="#5-academic-benchmarks-with-lm-eval" title="Permanent link">&para;</a></h3>
+<p><code>ak.run_lmeval()</code> drives the real lm-evaluation-harness — its task templates, filters, and metrics — and maps the results back into the same <code>RunResult</code>. Point it at <strong>one task or a list</strong>, and it runs them in a single call with a per-task breakdown.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># one model, several benchmarks, one call</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">run_lmeval</span><span class="p">(</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="p">[</span><span class="s2">&quot;arc_easy&quot;</span><span class="p">,</span> <span class="s2">&quot;hellaswag&quot;</span><span class="p">,</span> <span class="s2">&quot;gsm8k&quot;</span><span class="p">],</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;hf:meta-llama/Llama-3.2-1B&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="p">)</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">headline</span><span class="p">)</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="c1"># {&#39;arc_easy:acc&#39;: 0.61, &#39;hellaswag:acc_norm&#39;: 0.58, &#39;gsm8k:exact_match&#39;: 0.34, ...}</span>
+</code></pre></div>
+<ul>
+<li><strong>Backends:</strong> <code>hf:</code>, <code>vllm:</code>, <code>openai:</code>, <code>anthropic:</code>, <code>groq:</code>, <code>api:</code> (+ <code>base_url</code>).</li>
+<li>MCQ tasks (arc, hellaswag, mmlu) are scored by log-likelihood and need a logprob-capable backend (<code>hf:</code>/<code>vllm:</code>/<code>api:</code>); generative tasks (gsm8k) run on any backend, including chat-only APIs.</li>
+<li>Pass lm-eval knobs straight through: <code>apply_chat_template=True</code>, <code>system_instruction=...</code>, <code>gen_kwargs="temperature=0,max_gen_toks=256"</code>, gated-model <code>hf_token=...</code>.</li>
+</ul>
+<p>Requires <code>auditkit[lmeval]</code>.</p>
+<h3 id="6-llm-as-judge">6. LLM-as-judge<a class="headerlink" href="#6-llm-as-judge" title="Permanent link">&para;</a></h3>
+<p>Grade open-ended output with another model — as a classifier, a numeric score, or a weighted rubric. Judges plug in exactly like any other scorer.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Generic judge: classifier mode</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">quality</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">LLMJudge</span><span class="p">(</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="n">judge_model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Question: </span><span class="si">{input}</span><span class="se">\n</span><span class="s2">Answer: </span><span class="si">{output}</span><span class="se">\n</span><span class="s2">Is the answer correct and clear?&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="n">choices</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;yes&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;partial&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;no&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    <span class="n">use_cot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;quality&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="p">)</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">qa</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;hf:gpt2&quot;</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">quality</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="c1"># Prebuilt judges</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">qa</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">Factuality</span><span class="p">(</span><span class="n">judge_model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">)])</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">qa</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">Relevance</span><span class="p">(</span><span class="n">judge_model</span><span class="o">=</span><span class="s2">&quot;openai:gpt-4o-mini&quot;</span><span class="p">)])</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="c1"># Rubric-driven G-Eval (chain-of-thought, 1–5 scale)</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="n">rubric</span> <span class="o">=</span> <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">RubricItem</span><span class="p">(</span><span class="s2">&quot;Correctness&quot;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;factually right&quot;</span><span class="p">),</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>          <span class="n">ak</span><span class="o">.</span><span class="n">RubricItem</span><span class="p">(</span><span class="s2">&quot;Clarity&quot;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)]</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">qa</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">GEval</span><span class="p">(</span><span class="n">rubric</span><span class="p">,</span> <span class="n">judge_model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">)])</span>
+</code></pre></div>
+<p>The judge parses its verdict from a marker line, ignores chain-of-thought reasoning above it, and emits an explicit <strong>Unknown</strong> (never a silent midpoint) when it can't parse — and the judge model + prompt are folded into the run fingerprint, so changing the "ruler" never silently reuses a cached score.</p>
+<h3 id="7-rag-evaluation">7. RAG evaluation<a class="headerlink" href="#7-rag-evaluation" title="Permanent link">&para;</a></h3>
+<p>Give a sample its <code>retrieval_context</code> and the RAG metrics score groundedness and retrieval quality. AuditKIT auto-routes RAG-shaped samples to the right adapter.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">Sample</span><span class="p">(</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="nb">input</span><span class="o">=</span><span class="s2">&quot;When was the Eiffel Tower completed?&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">target</span><span class="o">=</span><span class="s2">&quot;1889&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="n">retrieval_context</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;The Eiffel Tower was completed in 1889 for the World&#39;s Fair.&quot;</span><span class="p">],</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="p">)]</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">adapter</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>            <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;lexical_groundedness&quot;</span><span class="p">,</span> <span class="s2">&quot;context_coverage&quot;</span><span class="p">,</span> <span class="s2">&quot;context_overlap&quot;</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="8-model-comparison-base-vs-prunedquantized">8. Model comparison (base vs pruned/quantized)<a class="headerlink" href="#8-model-comparison-base-vs-prunedquantized" title="Permanent link">&para;</a></h3>
+<p>Compare two runs and get a per-metric, per-task breakdown — reported as <strong>percentage differences</strong>, not an imposed pass/fail verdict, because what counts as "acceptable" depends on your metric. You decide.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">base</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;hf:my-base-model&quot;</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">])</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">pruned</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;hf:my-pruned-model&quot;</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">])</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="n">cmp</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">compare</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">pruned</span><span class="p">)</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">cmp</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="c1"># exact_match: 0.8200 -&gt; 0.7900  delta=-0.0300 (-3.7% rel)  (n=500-&gt;500, std=…)</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="n">cmp</span><span class="o">.</span><span class="n">retention</span><span class="p">(</span><span class="s2">&quot;exact_match&quot;</span><span class="p">)</span>     <span class="c1"># fraction of baseline quality kept</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="n">cmp</span><span class="o">.</span><span class="n">significance</span><span class="p">()</span>               <span class="c1"># paired bootstrap, aligned by sample_id</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="n">cmp</span><span class="o">.</span><span class="n">tradeoff</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s2">&quot;exact_match&quot;</span><span class="p">)</span>   <span class="c1"># quality vs measured size/latency</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="n">cmp</span><span class="o">.</span><span class="n">regressed</span><span class="p">()</span>                  <span class="c1"># the exact samples that got worse</span>
+</code></pre></div>
+<p>Run several models on the same dataset in one call — memory-efficient (each local model is freed before the next loads, so peak GPU stays at one model):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">res</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">compare_models</span><span class="p">(</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="p">[</span><span class="s2">&quot;hf:base&quot;</span><span class="p">,</span> <span class="s2">&quot;hf:pruned&quot;</span><span class="p">,</span> <span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">],</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">dataset</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">],</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="n">model_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="s2">&quot;pruned&quot;</span><span class="p">,</span> <span class="s2">&quot;prod&quot;</span><span class="p">],</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="p">)</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>             <span class="c1"># leaderboard + per-task tables + pairwise significance</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="n">res</span><span class="o">.</span><span class="n">winner</span><span class="p">(</span><span class="s2">&quot;exact_match&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="n">cmp</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">pairwise</span><span class="p">(</span><span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="s2">&quot;pruned&quot;</span><span class="p">)</span>   <span class="c1"># zoom into any two → RunComparison</span>
+</code></pre></div>
+<p>Each model in the list can also run under <strong>its own</strong> configuration — useful when
+the candidates aren't interchangeable (a quantized checkpoint needs a
+different <code>dtype</code>, or one candidate only needs a quick sanity-check subset):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">res</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">compare_models</span><span class="p">(</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="p">[</span><span class="s2">&quot;hf:base&quot;</span><span class="p">,</span> <span class="s2">&quot;hf:pruned&quot;</span><span class="p">,</span> <span class="s2">&quot;hf:pruned&quot;</span><span class="p">],</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">dataset</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">],</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="n">model_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="s2">&quot;pruned_fp16&quot;</span><span class="p">,</span> <span class="s2">&quot;pruned_int8&quot;</span><span class="p">],</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="n">configs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;pruned_fp16&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">RunConfig</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">200</span><span class="p">)},</span>        <span class="c1"># this one only needs a quick subset</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>    <span class="n">model_opts</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;pruned_int8&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="s2">&quot;int8&quot;</span><span class="p">}},</span>           <span class="c1"># this one loads quantized</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="p">)</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+</code></pre></div>
+<ul>
+<li><code>configs={name: RunConfig(...)}</code> overrides the shared <code>config=</code> for one model by
+  name (falls back to <code>config</code> when a name is absent) — e.g. a different <code>limit</code>,
+  <code>temperature</code>, or <code>concurrency</code> per candidate.</li>
+<li><code>model_opts={name: {...}}</code> overrides the shared <code>**opts</code> for one model by name —
+  backend construction kwargs like <code>dtype=</code>/<code>device=</code>, layered on top of whatever's
+  passed to every model.</li>
+<li><strong>Performance stays honest across mismatched configs.</strong> <code>RunComparison</code>/
+  <code>CompareResult</code> never assume the runs are comparable in <em>size</em> — latency,
+  throughput, and model size are each measured independently per run as it
+  actually executes, not inferred from the shared config. So <code>pruned_fp16</code>
+  running on 200 samples and <code>pruned_int8</code> running on the full set still each
+  report their own real, correctly-scoped <code>performance()</code>/<code>tradeoff()</code> numbers —
+  the sample-count difference shows up in each run's own <code>n</code>, never silently
+  blended into a shared average.</li>
+</ul>
+<p><strong>When candidates need their own adapter or annotators</strong> — e.g. one model
+answers directly while a more talkative one needs an <code>extractor</code> to pull the
+final answer out of its reasoning — pass <code>adapter=</code>/<code>annotators=</code>/
+<code>extract_with=</code> to <code>compare_models()</code> itself (shared across every model,
+same as <code>evaluate()</code>'s own defaults), and override any of them for one
+model only via that model's <code>model_opts</code> entry:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">extractor</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">RegexAnnotator</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;FINAL ANSWER:\s*(.+)&quot;</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;final_answer&quot;</span><span class="p">)</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="n">res</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">compare_models</span><span class="p">(</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>    <span class="p">[</span><span class="s2">&quot;hf:base-model&quot;</span><span class="p">,</span> <span class="s2">&quot;hf:verbose-finetune&quot;</span><span class="p">],</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>    <span class="n">dataset</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">],</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>    <span class="n">model_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="s2">&quot;verbose_candidate&quot;</span><span class="p">],</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>    <span class="n">model_opts</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>        <span class="s2">&quot;verbose_candidate&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;annotators&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">extractor</span><span class="p">],</span> <span class="s2">&quot;extract_with&quot;</span><span class="p">:</span> <span class="s2">&quot;final_answer&quot;</span><span class="p">},</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>    <span class="p">},</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="p">)</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="n">res</span><span class="o">.</span><span class="n">pairwise</span><span class="p">(</span><span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="s2">&quot;verbose_candidate&quot;</span><span class="p">)</span>   <span class="c1"># -&gt; RunComparison, same as always</span>
+</code></pre></div>
+<p><code>model_opts[name]</code> can override <code>adapter</code>/<code>annotators</code>/<code>extract_with</code> for that
+model only — anything else in that dict (<code>dtype</code>, <code>device</code>, <code>api_key</code>, ...)
+still flows through to model construction unchanged, exactly like before.
+<code>scorers</code> stays a single shared argument, not overridable per-model — a
+comparison assumes one metric set across every model. If you need a
+per-model override this mechanism can't express, the
+fallback is still available: run <code>ak.evaluate()</code> yourself per model and hand
+the <code>RunResult</code>s to <code>ak.CompareResult(runs=..., dataset_size=..., scorers=...)</code>
+directly — a plain dataclass, so nothing about the leaderboard/<code>.pairwise()</code>/
+significance is lost either way.</p>
+<p>Opt-in threshold gating is still available if you <em>want</em> a pass/fail gate — you pick the thresholds: <code>ak.compare(base, cand, pass_threshold=0.05).grade()</code>.</p>
+<h3 id="9-evaluate-across-many-datasets">9. Evaluate across many datasets<a class="headerlink" href="#9-evaluate-across-many-datasets" title="Permanent link">&para;</a></h3>
+<p><code>evaluate_many()</code> runs <strong>one model across a list of datasets</strong> in a single call — ideal for "evaluate my model on SORRY-Bench <em>and</em> OR-Bench <em>and</em> GSM8K," where each benchmark needs its own scorer. It runs them sequentially and returns one <code>RunResult</code> per dataset (its own headline, fingerprint, and cache entry — never a blended mean).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate_many</span><span class="p">(</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>    <span class="p">{</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>        <span class="s2">&quot;refusal_bench&quot;</span><span class="p">:</span>  <span class="p">(</span><span class="n">refusal_samples</span><span class="p">,</span>  <span class="p">[</span><span class="n">refusal_judge</span><span class="p">]),</span>      <span class="c1"># refusal is good</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>        <span class="s2">&quot;over_refusal&quot;</span><span class="p">:</span>   <span class="p">(</span><span class="n">over_ref_samples</span><span class="p">,</span> <span class="p">[</span><span class="n">over_refusal_judge</span><span class="p">]),</span> <span class="c1"># over-refusal is bad</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>        <span class="s2">&quot;gsm8k_local&quot;</span><span class="p">:</span>    <span class="p">(</span><span class="n">gsm_samples</span><span class="p">,</span>      <span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">]),</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>    <span class="p">},</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>    <span class="n">on_error</span><span class="o">=</span><span class="s2">&quot;skip&quot;</span><span class="p">,</span>   <span class="c1"># one bad dataset load doesn&#39;t lose the rest</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="p">)</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">headline</span><span class="p">)</span>
+</code></pre></div>
+<p>The model is resolved once and reused across every dataset, so a local checkpoint loads a single time.</p>
+<h3 id="10-performance-size-cost-measured-automatically">10. Performance, size &amp; cost — measured automatically<a class="headerlink" href="#10-performance-size-cost-measured-automatically" title="Permanent link">&para;</a></h3>
+<p>Every run measures performance with no extra work — it lands on the <code>RunResult</code> and flows into comparisons.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">qa</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;groq:llama-3.3-70b-versatile&quot;</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="n">quality</span><span class="p">])</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="n">r</span><span class="o">.</span><span class="n">perf</span><span class="p">[</span><span class="s2">&quot;latency_ms&quot;</span><span class="p">]</span>        <span class="c1"># {count, mean, min, max, p50, p95, p99, std}</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="n">r</span><span class="o">.</span><span class="n">perf</span><span class="p">[</span><span class="s2">&quot;throughput&quot;</span><span class="p">]</span>        <span class="c1"># {rps, output_tokens_per_sec, total_tokens_per_sec}</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="n">r</span><span class="o">.</span><span class="n">model_size</span>               <span class="c1"># local: real params/nonzero/sparsity/size_mb; hosted: identity</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="n">r</span><span class="o">.</span><span class="n">token_usage</span>              <span class="c1"># provider-reported {prompt_tokens, completion_tokens, total_tokens}</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="n">r</span><span class="o">.</span><span class="n">cost</span><span class="p">({</span><span class="s2">&quot;input_per_1m&quot;</span><span class="p">:</span> <span class="mf">0.59</span><span class="p">,</span> <span class="s2">&quot;output_per_1m&quot;</span><span class="p">:</span> <span class="mf">0.79</span><span class="p">})</span>   <span class="c1"># real tokens × your pricing</span>
+</code></pre></div>
+<ul>
+<li><strong>Latency &amp; throughput</strong> are timed by the runner as it runs.</li>
+<li><strong>Model size</strong> is introspected from the loaded checkpoint for local backends (real parameter count, sparsity — so a pruned model reads differently from its base — and on-disk-equivalent MB).</li>
+<li><strong>Token usage</strong> is the provider's own reported count (never estimated); <strong>cost</strong> multiplies it by pricing you supply (no bundled price table to go stale).</li>
+</ul>
+<p><code>RunComparison.tradeoff()</code> and <code>CompareResult.performance_table()</code>/<code>size_table()</code>/<code>cost_table()</code> turn these into quality-vs-cost views for base-vs-compressed comparisons.</p>
+<h3 id="11-provenance-caching-reproducibility">11. Provenance, caching &amp; reproducibility<a class="headerlink" href="#11-provenance-caching-reproducibility" title="Permanent link">&para;</a></h3>
+<p>Every run is identified by a <strong>fingerprint</strong> — a stable sha256 over the model, config, tasks, scorers, and adapter. Re-running an identical configuration returns a cached <code>RunResult</code> from disk instead of recomputing, and any change to any knob changes the fingerprint.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;hf:gpt2&quot;</span><span class="p">,</span> <span class="n">scorers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;exact_match&quot;</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="n">r</span><span class="o">.</span><span class="n">fingerprint</span>                 <span class="c1"># &#39;a1b2c3d4…&#39;</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="n">r</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;run.json&quot;</span><span class="p">)</span>            <span class="c1"># persist</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="n">loaded</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">Result</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;run.json&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="c1"># Track named experiments across runs</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="n">r</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;hf:gpt2&quot;</span><span class="p">,</span> <span class="n">experiment_name</span><span class="o">=</span><span class="s2">&quot;math-v1&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="n">exp</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">ExperimentDB</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;math-v1&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="n">exp</span><span class="o">.</span><span class="n">leaderboard</span><span class="p">();</span> <span class="n">exp</span><span class="o">.</span><span class="n">significance</span><span class="p">(</span><span class="s2">&quot;exact_match&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="12-command-line-yaml">12. Command line &amp; YAML<a class="headerlink" href="#12-command-line-yaml" title="Permanent link">&para;</a></h3>
+<p>Everything the Python API does is a command away.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>auditkit<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>--model<span class="w"> </span>groq:llama-3.3-70b-versatile<span class="w"> </span>--csv<span class="w"> </span>data.csv<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">              </span>--input-col<span class="w"> </span>question<span class="w"> </span>--target-col<span class="w"> </span>answer<span class="w"> </span>-o<span class="w"> </span>results.json
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>auditkit<span class="w"> </span>compare<span class="w"> </span>--models<span class="w"> </span><span class="s2">&quot;hf:base,hf:pruned&quot;</span><span class="w"> </span>--dataset<span class="w"> </span>gsm8k<span class="w"> </span>--baseline<span class="w"> </span>hf:base
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>auditkit<span class="w"> </span>list<span class="w"> </span>metrics
+</code></pre></div>
+<p>Or drive a run from a single YAML file:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai:gpt-4o-mini</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="nt">prompts</span><span class="p">:</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;What</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">capital</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">France?&quot;</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="nt">adapter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generation</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">results.json</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="nt">experiment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-eval</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>auditkit<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>--config<span class="w"> </span>auditkit.yaml
+</code></pre></div>
+<h3 id="13-extending-auditkit">13. Extending AuditKIT<a class="headerlink" href="#13-extending-auditkit" title="Permanent link">&para;</a></h3>
+<p>The library's core invariant: <strong>a new modality, technique, or backend is a new plugin file plus one registry line — never a change to the evaluation spine.</strong> Custom scorers, metrics, model backends, and adapters all register the same way and are picked up by name. See the <a href="../GUIDE/">complete technical guide</a> for the extension points.</p>
+<hr />
+<h2 id="example-notebooks">Example notebooks<a class="headerlink" href="#example-notebooks" title="Permanent link">&para;</a></h2>
+<p>Every capability above has a runnable, Colab-ready notebook with real models
+and real datasets — no example here is a toy. <code>examples/</code> tours individual
+features; <code>examples/applications/</code> answers one specific real-world question end to end.</p>
+<h3 id="examples"><code>examples/</code><a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Notebook</th>
+<th>Covers</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td>Full pipeline: adapter, 5 metrics, LLM judge, LLM annotator</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/01_full_evaluation_pipeline.ipynb"><code>01_full_evaluation_pipeline.ipynb</code></a></td>
+</tr>
+<tr>
+<td>02</td>
+<td>Generation across two real HF model families, compared</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/02_generation_across_hf_families.ipynb"><code>02_generation_across_hf_families.ipynb</code></a></td>
+</tr>
+<tr>
+<td>03</td>
+<td>Custom annotators (regex, LLM-backed, fully custom) — §2 above</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/03_custom_annotators.ipynb"><code>03_custom_annotators.ipynb</code></a></td>
+</tr>
+<tr>
+<td>04</td>
+<td>Metrics deep dive: built-in, custom, LLM-as-judge, RAG — §3/§4/§6/§7 above</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/04_metrics_deep_dive.ipynb"><code>04_metrics_deep_dive.ipynb</code></a></td>
+</tr>
+<tr>
+<td>05</td>
+<td>Every data type/task kind: generative, MCQ, RAG, precomputed, chat — §2 above</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/05_data_types.ipynb"><code>05_data_types.ipynb</code></a></td>
+</tr>
+<tr>
+<td>06</td>
+<td>Model comparison deep dive: <code>compare_models()</code> + <code>RunComparison</code> — §8 above</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/06_model_comparison.ipynb"><code>06_model_comparison.ipynb</code></a></td>
+</tr>
+<tr>
+<td>07</td>
+<td>Annotators across 4 real model families, then compared together — §2/§8 above</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/07_annotators_across_models.ipynb"><code>07_annotators_across_models.ipynb</code></a></td>
+</tr>
+<tr>
+<td>11</td>
+<td>Performance metrics, model comparison — §10 above</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/11_performance_metrics_demo.ipynb"><code>11_performance_metrics_demo.ipynb</code></a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="examplesapplications"><code>examples/applications/</code><a class="headerlink" href="#examplesapplications" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Notebook</th>
+<th>Real-world question answered</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td>How much does pruning severity (20%/40%/60%) degrade a model? Real BoolQ, real annotator, ship/no-ship verdicts, cross-checked via <code>ak.run_lmeval()</code></td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/01_application_pruned_llama_boolq.ipynb"><code>01_application_pruned_llama_boolq.ipynb</code></a></td>
+</tr>
+<tr>
+<td>02</td>
+<td>Healthcare: clinical QA correctness vs. grounding (PubMedQA)</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/02_application_healthcare_pubmedqa.ipynb"><code>02_application_healthcare_pubmedqa.ipynb</code></a></td>
+</tr>
+<tr>
+<td>03</td>
+<td>Finance: QA grounded in real SEC 10-K filings</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/03_application_finance_10k_qa.ipynb"><code>03_application_finance_10k_qa.ipynb</code></a></td>
+</tr>
+<tr>
+<td>04</td>
+<td>E-commerce: review-sentiment triage at scale</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/04_application_ecommerce_review_triage.ipynb"><code>04_application_ecommerce_review_triage.ipynb</code></a></td>
+</tr>
+<tr>
+<td>05</td>
+<td>Education: auto-graded tutoring, correctness vs. explanation</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/05_application_education_arc_tutor.ipynb"><code>05_application_education_arc_tutor.ipynb</code></a></td>
+</tr>
+<tr>
+<td>06</td>
+<td>Enterprise search: internal knowledge assistant (real retrieval + RAG grounding)</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/06_application_enterprise_search_rag.ipynb"><code>06_application_enterprise_search_rag.ipynb</code></a></td>
+</tr>
+<tr>
+<td>07</td>
+<td>LLM-as-judge via a real BERT NLI classifier, not a generative model</td>
+<td><a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/07_application_bert_nli_judge.ipynb"><code>07_application_bert_nli_judge.ipynb</code></a></td>
+</tr>
+</tbody>
+</table>
+<p>Full, current lists (with fuller per-notebook descriptions) live in
+<a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/README.md"><code>examples/README.md</code></a> and
+<a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/README.md"><code>examples/applications/README.md</code></a>.</p>
+<hr />
+<h2 id="optional-dependencies">Optional dependencies<a class="headerlink" href="#optional-dependencies" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Extra</th>
+<th>Installs</th>
+<th>Unlocks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>openai</code></td>
+<td><code>openai</code></td>
+<td><code>openai:</code> backend</td>
+</tr>
+<tr>
+<td><code>anthropic</code></td>
+<td><code>anthropic</code></td>
+<td><code>anthropic:</code> backend</td>
+</tr>
+<tr>
+<td><code>transformers</code></td>
+<td><code>torch</code>, <code>transformers</code></td>
+<td><code>hf:</code> backend + <code>perplexity</code>, <code>factual_consistency</code>, <code>cosine_similarity</code>, model-based toxicity</td>
+</tr>
+<tr>
+<td><code>lmeval</code></td>
+<td><code>lm-eval</code>, <code>accelerate</code></td>
+<td>the lm-eval benchmark engine (<code>ak.run_lmeval</code>)</td>
+</tr>
+<tr>
+<td><code>requests</code></td>
+<td><code>requests</code></td>
+<td><code>groq:</code> / <code>api:</code> / <code>lexsi:</code> backends</td>
+</tr>
+<tr>
+<td><code>vllm</code></td>
+<td><code>vllm</code></td>
+<td><code>vllm:</code> backend</td>
+</tr>
+<tr>
+<td><code>litellm</code></td>
+<td><code>litellm</code></td>
+<td><code>litellm:</code> backend (Ollama &amp; 100+ providers)</td>
+</tr>
+<tr>
+<td><code>bert-score</code></td>
+<td><code>bert-score</code>, <code>torch</code></td>
+<td><code>bert_score</code> metric</td>
+</tr>
+<tr>
+<td><code>interop</code></td>
+<td><code>datasets</code>, <code>mlcroissant</code></td>
+<td>HuggingFace / Croissant dataset loaders</td>
+</tr>
+<tr>
+<td><code>mlflow</code></td>
+<td><code>mlflow</code></td>
+<td>MLflow experiment logging</td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td>all of the above</td>
+<td>everything</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="design-principles">Design principles<a class="headerlink" href="#design-principles" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Zero required dependencies.</strong> The core is stdlib-only. Heavy backends and metrics are optional extras, imported lazily; a missing one raises a clear, actionable <code>ExtraNotInstalled</code> — never an import-time crash.</li>
+<li><strong>One spine, many plugins.</strong> Every technique flows through <code>Scenario → Adapter → Model → Metric → RunResult</code>. Adding a capability means adding a plugin, not editing the spine.</li>
+<li><strong>Reproducible by construction.</strong> Runs are pure functions of their fingerprint; caching and comparison key off it.</li>
+<li><strong>Report facts, not verdicts.</strong> Comparisons surface the numbers (deltas, percentages, retention, significance) and leave the accept/reject judgment to you — with opt-in gating when you want it.</li>
+<li><strong>Measure, don't guess.</strong> Model size, token usage, and cost are introspected or provider-reported, never estimated.</li>
+</ul>
+<hr />
+<h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h2>
+<p>We'd rather you hear these from us than discover them:</p>
+<ul>
+<li><strong>The native built-in scenario loaders</strong> (<code>mmlu</code>/<code>arc</code>/…) reference some stale HuggingFace dataset IDs; use <code>ak.run_lmeval()</code> for academic benchmarks — that's the maintained path.</li>
+<li><strong>Latency is call-level</strong> (one timing per batched model call), so percentiles are only meaningful at <code>concurrency &gt; 1</code>; a single-call run reports one latency sample.</li>
+<li><strong><code>vllm:</code> model-size introspection</strong> is not implemented yet (it reports identity only, while <code>hf:</code> reports real size).</li>
+<li><strong>Bootstrap significance</strong> is a conservative heuristic, not a full permutation test — treat it as a guard, not a proof.</li>
+<li>A <code>Model</code> object doesn't yet serialize cleanly into a saved <code>RunResult</code> (everything else round-trips).</li>
+</ul>
+<p>For the full, candid engineering reference — every config, backend, metric, and caveat — see <strong><a href="../GUIDE/">docs/GUIDE.md</a></strong>.</p>
+<hr />
+<h2 id="future-works">Future works<a class="headerlink" href="#future-works" title="Permanent link">&para;</a></h2>
+<p><strong>Evaluation capabilities on the roadmap — not part of this release:</strong></p>
+<ul>
+<li><strong>Multimodal evaluation</strong> — image/audio inputs and vision-language models.</li>
+<li><strong>Tabular-data evaluation</strong> — structured/tabular model outputs and datasets.</li>
+<li><strong>Agentic &amp; multi-turn evaluation</strong> — tool-use traces and conversations.</li>
+<li><strong>Red-teaming &amp; safety</strong> — a first-class adversarial-probing suite (prompt-injection / jailbreak / encoding / over-refusal probes, detectors, and attack-success scoring).</li>
+</ul>
+<p><strong>Engineering refinements:</strong></p>
+<ul>
+<li>Lineage-based automatic baseline selection for comparisons.</li>
+<li>First-class per-request latency and streaming metrics (TTFT/TPOT).</li>
+<li>Real <code>vllm:</code> model-size introspection.</li>
+<li>A rigorous permutation/sign test alongside the bootstrap.</li>
+<li>Cost/energy accounting and a Pareto quality-vs-cost view.</li>
+</ul>
+<hr />
+<h2 id="links-license">Links &amp; license<a class="headerlink" href="#links-license" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Repository:</strong> https://github.com/Lexsi-Labs/AuditKIT</li>
+<li><strong>Full technical guide:</strong> <a href="../GUIDE/">docs/GUIDE.md</a></li>
+<li><strong>License:</strong> LSAL v1.2</li>
+<li><strong>Built by</strong> Lexsi Labs.</li>
+</ul>
+<p><em>AuditKIT — one evaluation spine for every model, every dataset, every technique.</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Home
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../getting_started/" class="md-footer__link md-footer__link--next" aria-label="Next: Getting Started">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Getting Started
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 <a href="https://lexsi.ai" target="_blank" rel="noopener">Lexsi Labs</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Lexsi-Labs" target="_blank" rel="noopener" title="Lexsi Labs on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://x.com/Lexsi_labs" target="_blank" rel="noopener" title="Lexsi Labs on X" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://www.linkedin.com/company/lexsi-labs/" target="_blank" rel="noopener" title="Lexsi Labs on LinkedIn" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://huggingface.co/Lexsi" target="_blank" rel="noopener" title="Lexsi Labs on Hugging Face" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.025 1.13c-5.77 0-10.449 4.647-10.449 10.378 0 1.112.178 2.181.503 3.185.064-.222.203-.444.416-.577a.96.96 0 0 1 .524-.15c.293 0 .584.124.84.284.278.173.48.408.71.694.226.282.458.611.684.951v-.014c.017-.324.106-.622.264-.874s.403-.487.762-.543c.3-.047.596.06.787.203s.31.313.4.467c.15.257.212.468.233.542.01.026.653 1.552 1.657 2.54.616.605 1.01 1.223 1.082 1.912.055.537-.096 1.059-.38 1.572.637.121 1.294.187 1.967.187.657 0 1.298-.063 1.921-.178-.287-.517-.44-1.041-.384-1.581.07-.69.465-1.307 1.081-1.913 1.004-.987 1.647-2.513 1.657-2.539.021-.074.083-.285.233-.542.09-.154.208-.323.4-.467a1.08 1.08 0 0 1 .787-.203c.359.056.604.29.762.543s.247.55.265.874v.015c.225-.34.457-.67.683-.952.23-.286.432-.52.71-.694.257-.16.547-.284.84-.285a.97.97 0 0 1 .524.151c.228.143.373.388.43.625l.006.04a10.3 10.3 0 0 0 .534-3.273c0-5.731-4.678-10.378-10.449-10.378M8.327 6.583a1.5 1.5 0 0 1 .713.174 1.487 1.487 0 0 1 .617 2.013c-.183.343-.762-.214-1.102-.094-.38.134-.532.914-.917.71a1.487 1.487 0 0 1 .69-2.803m7.486 0a1.487 1.487 0 0 1 .689 2.803c-.385.204-.536-.576-.916-.71-.34-.12-.92.437-1.103.094a1.487 1.487 0 0 1 .617-2.013 1.5 1.5 0 0 1 .713-.174m-10.68 1.55a.96.96 0 1 1 0 1.921.96.96 0 0 1 0-1.92m13.838 0a.96.96 0 1 1 0 1.92.96.96 0 0 1 0-1.92M8.489 11.458c.588.01 1.965 1.157 3.572 1.164 1.607-.007 2.984-1.155 3.572-1.164.196-.003.305.12.305.454 0 .886-.424 2.328-1.563 3.202-.22-.756-1.396-1.366-1.63-1.32q-.011.001-.02.006l-.044.026-.01.008-.03.024q-.018.017-.035.036l-.032.04a1 1 0 0 0-.058.09l-.014.025q-.049.088-.11.19a1 1 0 0 1-.083.116 1.2 1.2 0 0 1-.173.18q-.035.029-.075.058a1.3 1.3 0 0 1-.251-.243 1 1 0 0 1-.076-.107c-.124-.193-.177-.363-.337-.444-.034-.016-.104-.008-.2.022q-.094.03-.216.087-.06.028-.125.063l-.13.074q-.067.04-.136.086a3 3 0 0 0-.135.096 3 3 0 0 0-.26.219 2 2 0 0 0-.12.121 2 2 0 0 0-.106.128l-.002.002a2 2 0 0 0-.09.132l-.001.001a1.2 1.2 0 0 0-.105.212q-.013.036-.024.073c-1.139-.875-1.563-2.317-1.563-3.203 0-.334.109-.457.305-.454m.836 10.354c.824-1.19.766-2.082-.365-3.194-1.13-1.112-1.789-2.738-1.789-2.738s-.246-.945-.806-.858-.97 1.499.202 2.362c1.173.864-.233 1.45-.685.64-.45-.812-1.683-2.896-2.322-3.295s-1.089-.175-.938.647 2.822 2.813 2.562 3.244-1.176-.506-1.176-.506-2.866-2.567-3.49-1.898.473 1.23 2.037 2.16c1.564.932 1.686 1.178 1.464 1.53s-3.675-2.511-4-1.297c-.323 1.214 3.524 1.567 3.287 2.405-.238.839-2.71-1.587-3.216-.642-.506.946 3.49 2.056 3.522 2.064 1.29.33 4.568 1.028 5.713-.624m5.349 0c-.824-1.19-.766-2.082.365-3.194 1.13-1.112 1.789-2.738 1.789-2.738s.246-.945.806-.858.97 1.499-.202 2.362c-1.173.864.233 1.45.685.64.451-.812 1.683-2.896 2.322-3.295s1.089-.175.938.647-2.822 2.813-2.562 3.244 1.176-.506 1.176-.506 2.866-2.567 3.49-1.898-.473 1.23-2.037 2.16c-1.564.932-1.686 1.178-1.464 1.53s3.675-2.511 4-1.297c.323 1.214-3.524 1.567-3.287 2.405.238.839 2.71-1.587 3.216-.642.506.946-3.49 2.056-3.522 2.064-1.29.33-4.568 1.028-5.713-.624"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://lexsi.ai" target="_blank" rel="noopener" title="lexsi.ai" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M351.9 280H161c2.9 64.5 17.2 123.9 37.5 167.4 11.4 24.5 23.7 41.8 35.1 52.4 11.2 10.5 18.9 12.2 22.9 12.2s11.7-1.7 22.9-12.2c11.4-10.6 23.7-28 35.1-52.4 20.3-43.5 34.6-102.9 37.5-167.4zm-191-48h190.9c-2.8-64.5-17.1-123.9-37.4-167.4-11.4-24.4-23.7-41.8-35.1-52.4C268.1 1.7 260.4 0 256.4 0s-11.7 1.7-22.9 12.2c-11.4 10.6-23.7 28-35.1 52.4-20.3 43.5-34.6 102.9-37.5 167.4m-48 0c3.5-85.6 25.6-165.1 57.9-217.3C78.7 47.3 10.9 131.2 1.5 232zM1.5 280c9.4 100.8 77.2 184.7 169.3 217.3-32.3-52.2-54.4-131.7-57.9-217.3zm398.4 0c-3.5 85.6-25.6 165.1-57.9 217.3 92.1-32.7 159.9-116.5 169.3-217.3zm111.4-48C501.9 131.2 434.1 47.3 342 14.7c32.3 52.2 54.4 131.7 57.9 217.3z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.top", "navigation.footer", "navigation.prune", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../assets/extra.js"></script>
+      
+    
+  </body>
+</html>
