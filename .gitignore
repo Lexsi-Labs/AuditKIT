@@ -15,6 +15,3 @@ dist/
 .idea/
 .vscode/
 site/
-
-# Claude Code
-CLAUDE.md
