@@ -3,8 +3,7 @@
 `EncoderJudge` (`src/auditkit/metrics/encoder_judge.py`) ships with two
 zero-config subclasses — `FactualityEncoderJudge` and
 `SentimentEncoderJudge`. This doc explains what each one actually does,
-when to reach for which, and why the library used to ship six of these
-and now ships two. For the full mechanism (templating, label auto-
+and when to reach for which. For the full mechanism (templating, label auto-
 detection, aggregation modes, edge cases), see
 [Encoder Judge](encoder_judge.md); this doc is specifically about the two
 prebuilts.
@@ -115,41 +114,22 @@ neutral option.
 
 ---
 
-## Why only two (not six)
+## Checkpoints with generic labels
 
-The library originally shipped 6 prebuilts. The reduction happened in two
-rounds, each removing classes that didn't earn a separate name:
+Some entailment checkpoints only expose generic `LABEL_0/1/2`, which
+`EncoderJudge` won't guess. Use plain `EncoderJudge` with an explicit `label_map`;
+two checkpoints, verified to have **opposite** orders:
 
-1. **`DebertaNLIJudge`/`DebertaV3NLIJudge`/`RobertaNLIJudge` → collapsed
-   into `FactualityEncoderJudge`.** All three used checkpoints with real,
-   auto-detectable labels — having three class names added nothing over
-   passing `model_name=` to one class directly. DeBERTa v1 was kept as
-   the default: no hard input-length limit, and empirically more
-   confident/discriminative than DeBERTa-v3 on ambiguous pairs.
-2. **`BertNLIJudge`/`ElectraNLIJudge` → removed entirely.** Both did the
-   *exact same task* as `FactualityEncoderJudge` (entailment/factual-
-   consistency) — their only distinguishing feature was an unrecoverable,
-   empirically-verified generic label order on their specific checkpoints
-   (`textattack/bert-base-uncased-MNLI`: `LABEL_0=contradiction,
-   LABEL_1=entailment, LABEL_2=neutral`; `howey/electra-base-mnli`: the
-   **opposite** order). Real, useful knowledge — but not a distinct task,
-   so it didn't justify two more classes with no behavior difference
-   beyond which checkpoint. That knowledge is preserved as a worked
-   example in [Encoder Judge](encoder_judge.md) instead:
-   ```python
-   bert_judge = ak.EncoderJudge(
-       model_name="textattack/bert-base-uncased-MNLI",
-       label_map={"LABEL_0": 0.0, "LABEL_1": 1.0, "LABEL_2": 0.5},
-   )
-   electra_judge = ak.EncoderJudge(
-       model_name="howey/electra-base-mnli",
-       label_map={0: 1.0, 1: 0.5, 2: 0.0},
-   )
-   ```
-
-`SentimentEncoderJudge` (renamed from `DistilBertSentimentJudge`) is the
-only one that survived both rounds untouched — it's the one prebuilt with
-a task distinct from `FactualityEncoderJudge`.
+```python
+bert_judge = ak.EncoderJudge(
+    model_name="textattack/bert-base-uncased-MNLI",
+    label_map={"LABEL_0": 0.0, "LABEL_1": 1.0, "LABEL_2": 0.5},
+)
+electra_judge = ak.EncoderJudge(
+    model_name="howey/electra-base-mnli",
+    label_map={0: 1.0, 1: 0.5, 2: 0.0},
+)
+```
 
 ## Quick decision guide
 

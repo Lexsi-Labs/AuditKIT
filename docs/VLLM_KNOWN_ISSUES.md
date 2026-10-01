@@ -1,16 +1,11 @@
 # `vllm:` backend — known issues, bugs, and gaps
 
-`VLLMModel` (`src/auditkit/model/vllm_gen.py`) had real, non-stub code and
-mocked unit-test coverage, but had never been run against a real, installed
-vLLM engine until it was live-tested for the first time on a real Colab L4
-GPU. That first run — and everything found since — is consolidated
-here: implementation-level gaps in `vllm_gen.py` itself, and separately, the
-dependency/environment issues that got in the way of running it at all.
+Gaps and environment issues for the `vllm:` backend
+(`src/auditkit/model/vllm_gen.py`): implementation gaps in `VLLMModel` itself,
+and dependency/environment issues with their fixes.
 
-Companion to [`docs/BUGS.md`](BUGS.md) and
-[`docs/known_issues.md`](known_issues.md), which each have one-line
-summaries of some of these — this file has the full reproduction and
-reasoning for every one of them, specific to `vllm:`.
+Companion to [Known Issues](known_issues.md): this page has the full
+reproduction and reasoning for everything specific to `vllm:`.
 
 ---
 
@@ -39,7 +34,7 @@ so every prompt gets exactly one BOS token (a template already carries it).
 --tool-call-parser <parser>` reached with `api:` returns structured
 `message.tool_calls`; see `examples/colab/03_vllm_integration.ipynb`.
 
-### 2. `model_info()` — real introspection, but fallback path never confirmed to resolve
+### 2. `model_info()` — real introspection, with an identity-only fallback
 
 **Where:** `VLLMModel._find_underlying_model()`/`model_info()`.
 
@@ -49,15 +44,11 @@ parameter-count/size introspection matching `HFGenModel.model_info()`'s
 approach. Falls back to identity-only reporting (`{"is_local": True,
 "model_name": ...}`) if none resolve, rather than crashing or guessing.
 
-**Status: implemented, but which branch actually fires on a real install
-was never confirmed** — `examples/10_vllm_smoke_test.ipynb` section 4
-(the live test for exactly this) has not been run yet as of this writing.
-Until it is, treat vLLM-side `model_info()` output as unverified: it may
-report real params/size, or may silently fall back to identity-only on
-the installed vLLM version (`0.26.0` at time of writing) — both are
-"working as designed," but which one actually happens hasn't been checked.
+Which path resolves depends on the installed vLLM version, so on some versions
+`model_info()` reports identity only and size comparisons show "size not
+introspected".
 
-### 3. GPU memory never freed by `evaluate()`/`compare_models()` alone
+### 3. GPU memory not freed by `evaluate()` alone
 
 **Where:** contrast `src/auditkit/api.py`'s `evaluate()` with
 `src/auditkit/model_compare.py`'s `compare_models()`.
@@ -180,6 +171,19 @@ imports `transformers`/`huggingface_hub` directly. If hit despite this,
 set `HF_HUB_DISABLE_XET=1` at the very top of your own script/notebook,
 before any other imports.
 
+#### 2.7 `FlashInfer requires GPUs with sm75 or higher` (SM 12.x GPUs, CUDA < 12.9)
+
+**Where:** vLLM's default top-k/top-p sampler, which is FlashInfer's.
+
+FlashInfer compiles for SM 12.x GPUs (RTX PRO 6000, RTX 50-series) only with
+CUDA >= 12.9. With an older toolkit (Colab ships 12.8) every model fails to
+load with this misleading message. `VLLMModel` sets
+`VLLM_USE_FLASHINFER_SAMPLER=0` (vLLM's own sampler, no compiler needed)
+before the engine starts on such a machine, never over a value you set, and
+records it in `RunResult.metadata["vllm_launch_env"]`. For `vllm serve`,
+`python -m auditkit.compat --vllm-launch` prints the setting, and
+`check_compat(check_cuda=True)` warns. Any other GPU, or CUDA >= 12.9, is unaffected.
+
 ### Not fixable from library code (documented only)
 
 #### 2.4 `libcudart.so.13: cannot open shared object file`
@@ -229,7 +233,7 @@ _run([sys.executable, "-m", "pip", "uninstall", "-y",
 _run([sys.executable, "-m", "pip", "install", "--no-cache-dir", "auditkit[vllm]"])
 ```
 
-> **Re-verified 2026-10-01 with the current pin.** `pyproject.toml` pins `vllm>=0.30` (the first
+> **With the current pin.** `pyproject.toml` pins `vllm>=0.30` (the first
 > vLLM with North Micro Vision's `cohere_compass`, on transformers 5.x). On fresh Colab runtimes,
 > `pip install -e ".[vllm,requests]"` resolved `vllm 0.30.0` with `torch 2.13.0` (CUDA 13), and it
 > loaded the Cohere models on both an A100 and an RTX PRO 6000 **without** this uninstall: the only
@@ -280,13 +284,14 @@ starting Python) never hits this.
 | # | Issue | Kind | Scope | Status |
 |---|---|---|---|---|
 | 1 | Chat templates, native tool calling, one BOS per prompt | Implementation gap | Always applied | **Fixed** in `VLLMModel` |
-| 2 | `model_info()` fallback path unconfirmed | Implementation gap | Depends on installed vLLM version | **Unverified** — implemented, live test pending |
+| 2 | `model_info()` may report identity only | Implementation gap | Depends on installed vLLM version | Falls back to identity-only reporting |
 | 3 | GPU memory not freed via `evaluate()` | Implementation gap | Any repeated local-model use via `evaluate()` | **Open** — workaround documented |
 | 4 | `threadsafe=False`, no concurrency | Implementation gap | By design | Not a bug — documented behavior |
 | 5 | Shared `SamplingParams` per batch | Implementation gap | Harness steps and judges sharing a batch | **Fixed** (one per request) |
 | 2.1 | CUDA re-init in forked subprocess | Environment | General (vLLM-internal) | **Fixed** in `VLLMModel` |
 | 2.2 | `sys.stdout.fileno()` crash | Environment | Jupyter/Colab-specific | **Fixed** in `VLLMModel` |
 | 2.3 | HF Hub Xet `404` | Environment | General (server-side/repo-specific) | **Fixed** (best-effort) in `VLLMModel` |
+| 2.7 | FlashInfer can't build on SM 12.x with CUDA < 12.9 | Environment | RTX PRO 6000 / RTX 50-series with an older toolkit | **Fixed** in `VLLMModel` (own sampler) |
 | 2.6 | torch / torchaudio CUDA mismatch after `[vllm]` | Environment | Colab (preinstalled torchaudio) | **Documented**; `check_compat(check_cuda=True)` flags it |
 | 2.4 | `libcudart.so.13` version mismatch | Environment | General (pre-existing mismatched `torch`) | **Not fixable from code / not fixable by version pins** — manual reinstall + restart where it happens; not hit with `auditkit[vllm]` (vLLM 0.30, torch 2.13 cu13) on Colab, 2026-10-01 |
 | 2.5 | `ModuleNotFoundError` after editable install | Environment | Notebook-bootstrap-specific | **Fixed** in the notebook (not a library concern) |
@@ -295,9 +300,7 @@ See `examples/10_vllm_smoke_test.ipynb` for the live, working sequence
 incorporating the environment fixes (2.1–2.3, 2.5) and the
 still-open implementation gaps (1–3) demonstrated/flagged in context.
 
-## How to re-verify any entry yourself
+## Reproducing these
 
-Every reproduction above is copy-pasteable, and requires a real CUDA/Linux
-GPU (Colab's free tier works). If one no longer reproduces by the time
-you're reading this, it's fixed — update or remove that entry rather than
-leaving a stale report in place.
+Every reproduction above is copy-pasteable and needs a real CUDA/Linux GPU
+(Colab's free tier works).

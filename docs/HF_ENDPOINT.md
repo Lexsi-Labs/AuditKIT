@@ -252,10 +252,7 @@ What `chat_template=False` costs you is the chat template entirely: the model
 receives flat text with no turn markers, which is a quality regression, not a
 BOS bug. Keep the default unless a specific reason says otherwise.
 
-None of this has been checked live against a Cohere model on TGI. The equivalent
-SGLang question is still open in
-`docs/notes/open-bugs-fix-plan.md` (internal) (S3, "BOS /
-chat-template handling not verified for Cohere"), and nothing here closes it.
+None of this has been checked live against a Cohere model on TGI.
 
 ## What is not covered
 

@@ -33,7 +33,7 @@ evaluation — zero required deps.
 flowchart LR
     A["Dataset<br/>Samples · CSV · Scenario"] --> B["Adapter"]
     B --> C["Model<br/>echo · openai · hf · vllm"]
-    C --> D{"Metrics<br/>10 families"}
+    C --> D{"Metrics<br/>11 families"}
     D --> E["Score + Prediction"]
     E --> F["Aggregate<br/>Stats · Headline"]
     F --> G["RunResult<br/>fingerprint · cache"]

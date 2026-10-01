@@ -65,7 +65,8 @@ def _merge_yaml(args: argparse.Namespace, cfg: dict) -> argparse.Namespace:
 def _build_eval_parser(prog: str = "auditkit eval") -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog=prog, description="Evaluate any model on any task")
     p.add_argument("--config", help="Path to YAML/JSON config file")
-    p.add_argument("--model", required=True, help="Model spec (e.g. hf:gpt2, groq:llama-3.3-70b-versatile)")
+    # required, but it may come from --config (model:), so it is checked after the YAML merge
+    p.add_argument("--model", help="Model spec (e.g. hf:gpt2, groq:llama-3.3-70b-versatile)")
     p.add_argument("--csv", help="Path to CSV dataset")
     p.add_argument("--input-col", default="input", help="CSV input column")
     p.add_argument("--target-col", default="target", help="CSV target column")
@@ -89,7 +90,7 @@ def _build_eval_parser(prog: str = "auditkit eval") -> argparse.ArgumentParser:
     p.add_argument("--experiment", help="Experiment name for tracking")
     p.add_argument("--mlflow-uri", help="MLflow tracking URI")
     p.add_argument("--tag", action="append", help="Tags (can repeat)")
-    p.add_argument("--dataset", help="Built-in dataset name (mmlu, gsm8k, arc)")
+    p.add_argument("--dataset", help="Built-in dataset name (mmlu, gsm8k, arc, hellaswag, truthfulqa, humaneval)")
     p.add_argument("--subject", help="MMLU subject (when --dataset=mmlu)")
     p.add_argument("--engine", choices=["native", "lmeval"], default="native",
                    help="Eval engine: 'native' spine (default) or 'lmeval' (lm-eval harness)")
@@ -112,6 +113,9 @@ def _run_eval(args: argparse.Namespace, yaml_prompts: list[str] | None = None) -
     if args.config:
         cfg = _load_yaml_config(args.config)
         args = _merge_yaml(args, cfg)
+    if not args.model:
+        print("auditkit eval: error: --model is required (or set model: in the --config file)", file=sys.stderr)
+        sys.exit(2)
 
     from .runspec import RunConfig, SplitConfig
 

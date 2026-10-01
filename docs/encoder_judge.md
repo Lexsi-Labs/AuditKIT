@@ -197,20 +197,10 @@ spans of any relative size. Verified live: a short output scored correctly
 against a long reference and a long output against a short reference,
 both landing at real, sensible confidence values.
 
-**Real bug found and fixed while testing this:** checkpoints using
-*absolute* position embeddings (BERT, RoBERTa, ELECTRA) have a hard
-512-token limit on the **combined** pair — `EncoderJudge` used to crash
-outright (`RuntimeError: The size of tensor a (1233) must match the size
-of tensor b (512) ...`) if both texts together exceeded it, since
-truncation wasn't enabled. Fixed: `score()` now always calls the pipeline
-with `truncation=True`. DeBERTa (*relative* position embeddings, no hard
-limit — its tokenizer even reports `model_max_length` as the classic
-"unbounded" sentinel value seen elsewhere in this codebase's `bert_score`
-fix) was never affected by the crash, which is exactly why it wasn't
-caught by the smaller examples used everywhere else on this page — only
-surfaced by deliberately testing very long inputs against a BERT
-checkpoint specifically. `truncation=True` is confirmed harmless for
-DeBERTa too (no `OverflowError`, unlike that earlier `bert_score` case).
+**Long inputs.** Checkpoints with *absolute* position embeddings (BERT,
+RoBERTa, ELECTRA) have a hard 512-token limit on the **combined** pair, so
+`score()` always runs the pipeline with `truncation=True`. DeBERTa (*relative*
+position embeddings) has no hard limit, and truncation is harmless for it.
 
 Practical effect: past ~512 combined tokens on an absolute-position-
 embedding checkpoint, the tail end of whichever span runs longest gets
@@ -332,23 +322,6 @@ default is still a normal constructor argument, fully overridable. See
 [Encoder Judge Prebuilts](encoder_judge_prebuilts.md) for a dedicated,
 example-driven walkthrough of both.
 
-> **Candor — this used to be six.** The reduction happened in two rounds.
-> First, `DebertaNLIJudge`/`DebertaV3NLIJudge`/`RobertaNLIJudge` were
-> collapsed into one, `FactualityEncoderJudge` (keeping DeBERTa v1 — the
-> strongest of the three: no hard input-length limit, and empirically more
-> confident/discriminative than DeBERTa-v3 on ambiguous pairs) — all three
-> used checkpoints with real, auto-detectable labels, so having three
-> separate classes added a name each but no real behavior difference over
-> passing `model_name=` to one class directly. Then `BertNLIJudge`/
-> `ElectraNLIJudge` were removed entirely: both did the exact same *task*
-> as `FactualityEncoderJudge` (entailment/factual-consistency) — their only
-> distinguishing feature was an unrecoverable, empirically-verified generic
-> label order on their specific checkpoints, which is real knowledge but
-> not a distinct enough task to justify two more classes. That knowledge
-> is preserved below as a worked example instead. `SentimentEncoderJudge`
-> (renamed from `DistilBertSentimentJudge`) is the only prebuilt left with
-> a genuinely different task from `FactualityEncoderJudge`.
-
 ```python
 import auditkit as ak
 
@@ -384,10 +357,8 @@ ak.FactualityEncoderJudge(model_name="some-other-deberta-nli-checkpoint")
 Not every entailment checkpoint has real label names — some (e.g.
 `textattack/bert-base-uncased-MNLI`) only expose generic `LABEL_0/1/2`,
 which bare `EncoderJudge` correctly refuses to auto-detect (see the
-gotcha above) rather than guess. This is exactly the situation
-`BertNLIJudge`/`ElectraNLIJudge` used to paper over with a whole class
-each; passing `label_map=` explicitly does the same thing with no extra
-class needed — you just have to determine the real order yourself first
+gotcha above) rather than guess. Pass `label_map=` explicitly —
+you just have to determine the real order yourself first
 (by testing a few unambiguous pairs and checking `metadata["predicted_label"]`).
 
 Two real, already-verified examples, confirmed to have the **opposite**

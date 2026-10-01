@@ -7,6 +7,7 @@ auditkit/
 ├── adapter.py           # Adapter ABC + 8 implementations (generation, chat, fewshot, tools, etc.)
 ├── annotator.py         # Annotator ABC for post-generation annotation
 ├── api.py               # evaluate(), evaluate_many(), generate(), compare(), run_lmeval()
+├── bfcl.py              # load_bfcl, bfcl_arg_match: BFCL v3 single-turn categories as samples
 ├── cache.py             # DiskCache — fingerprint-keyed result cache
 ├── cli.py               # argparse CLI: eval, init, list, redteam, compare, agent
 ├── compat.py            # check_compat(), CompatReport: sglang/vllm/torch/transformers pin and platform check (stdlib only)
@@ -15,11 +16,15 @@ auditkit/
 ├── errors.py            # AuditKitError, CapabilityError, ExtraNotInstalled, etc.
 ├── evaluator.py         # Evaluator ABC for technique plugins
 ├── experiment.py        # Experiment, ExperimentDB — run management
+├── hf_publish.py        # Hugging Face Hub publishing (push_to_hub)
+├── lexsi_login.py       # lexsi_login(): Lexsi SDK login and project resolution (extra)
+├── lexsi_relay.py       # LexsiCompletionsRelay: local relay for the Lexsi gateway (extra)
 ├── lmeval_engine.py     # run_benchmark() — lm-evaluation-harness engine (extra)
 ├── loaders.py           # load_csv, load_jsonl, load_agenttune, load_hf, load_croissant
 ├── logs.py              # configure_logging
 ├── metric.py            # Metric ABC + ExactMatch, QuasiExactMatch, Acc, AccNorm
 ├── model_compare.py     # CompareResult, compare_models() — multi-model comparison
+├── provenance.py        # lexsi_provenance.json lineage records (read_provenance)
 ├── registry.py          # ObjectSpec, Registry — SCENARIOS, ADAPTERS, MODELS, etc.
 ├── report.py            # Prediction, RunResult — evaluation output
 ├── report_format.py     # Report — markdown formatting
@@ -40,6 +45,8 @@ auditkit/
 │   ├── outcome.py       # FinalState/Artifact/Answer assertions, CustomPredicate, judge fallback
 │   ├── runner.py        # AgentEvalSpec, AgentEvalRunner (recorded/deployed), rescore
 │   ├── report.py        # AgentCaseResult, AgentEvalResult: summary, drilldown, JSON
+│   ├── reliability.py   # reliability across repeated trials (pass@k, consistency)
+│   ├── sidecar.py       # AgentTune-compatible evaluation sidecar (write_sidecar, read_sidecar)
 │   └── lexsi.py         # Lexsi evidence importer: SourceEvidence readers, join_evidence, lineage_sidecar
 │
 ├── metrics/             # metric families
@@ -47,12 +54,17 @@ auditkit/
 │   ├── embedding.py     # CosineSimilarity, TokenOverlap, BM25Similarity
 │   ├── generation.py    # Bleu, RogueL, ChrF, BertScore, Perplexity, WordErrorRate
 │   ├── hallucination.py # FactualConsistency
-│   ├── agent.py         # ToolCallF1, TrajectoryMatch, ParallelToolCalls, ToolCallValidity, RedundantToolCalls, TaskCompletion
-│   ├── judge.py         # JudgeMetric, LLMJudge, GEval, RubricItem, Factuality, ClosedQA, Relevance
+│   ├── agent.py         # ToolCallF1, TrajectoryMatch, ParallelToolCalls, ToolCallValidity, RedundantToolCalls, TaskCompletion, ToolSelectionJudge, ToolPermission, AgentLoopDetection
+│   ├── encoder_judge.py # EncoderJudge, FactualityEncoderJudge, SentimentEncoderJudge
+│   ├── guard.py         # GuardJudge: guard-model safety scoring
+│   ├── judge.py         # JudgeMetric, LLMJudge, GEval, RubricItem, Factuality, ClosedQA, Relevance, BiasJudge
 │   ├── pairwise.py      # WinRate, EloScore, PreferenceAccuracy
 │   ├── perf.py          # LatencyStats, Throughput
 │   ├── rag.py           # LexicalGroundedness, ContextCoverage, ContextOverlap, AnswerOverlap
-│   ├── rag_judge.py     # Faithfulness, ContextPrecision, ContextRecall (LLM-judged)
+│   ├── rag_judge.py     # Faithfulness, ContextPrecision, ContextRecall, ContextRelevance, AnswerRelevancy, ResponseGroundedness, Hallucination
+│   ├── rag_stress.py    # deterministic RAG stress contract and checks
+│   ├── rag_stress_runner.py # paired stress cases and runner, ContextRetention, NumericAccuracy
+│   ├── rag_stress_ops.py # judge calibration, human review, operational checks
 │   ├── retrieval.py     # RetrievalMetrics: hit rate, precision, recall, MRR, AP, nDCG
 │   ├── security.py      # DefconGrade, KeywordDetector, ThreatCategory
 │   └── toxicity.py      # ToxicityScore, RepresentationSkew, HateSpeechScore
@@ -67,7 +79,10 @@ auditkit/
 │   ├── lexsi.py         # Lexsi gateway backend (extra)
 │   ├── litellm_gen.py   # LiteLLM backend (extra)
 │   ├── openai.py        # OpenAI backend (extra)
+│   ├── openrouter_gen.py # OpenRouter backend (extra)
 │   └── vllm_gen.py      # vLLM backend (extra)
+│
+├── scenarios/           # Built-in benchmark scenarios: mmlu, gsm8k, arc, hellaswag, truthfulqa, humaneval
 │
 ├── redteam/             # Red teaming
 │   ├── __init__.py      # Probe, Detector, RedTeamRunner, RedTeamResult exports
