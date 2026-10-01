@@ -1,8 +1,8 @@
 <p align="center">
   <a href="https://github.com/Lexsi-Labs/AuditKIT">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/auditkit-logo-white.png">
-      <img src="docs/assets/auditkit-logo-black.png" alt="AuditKit" width="480">
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Lexsi-Labs/AuditKIT/main/docs/assets/auditkit-logo-white.png">
+      <img src="https://raw.githubusercontent.com/Lexsi-Labs/AuditKIT/main/docs/assets/auditkit-logo-black.png" alt="AuditKit" width="480">
     </picture>
   </a>
 </p>
@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/auditkit/"><img src="https://img.shields.io/badge/pypi-v1.2.0-0a8868" alt="PyPI v1.2.0"></a>
+  <a href="https://pypi.org/project/auditkit/"><img src="https://img.shields.io/pypi/v/auditkit?color=0a8868" alt="PyPI version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+"></a>
   <a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-LSAL--1.2-lightgrey" alt="License: LSAL-1.2 (source-available, noncommercial)"></a>
   <a href="https://auditkit.lexsi.ai/"><img src="https://img.shields.io/badge/docs-auditkit.lexsi.ai-4c6ef5" alt="Documentation"></a>
@@ -180,7 +180,7 @@ dropped it after 0.24.0, SGLang never had it), so both servers run it through th
 Transformers backends: automatically on vLLM, with `compat.py --patch-sglang` on SGLang. North Micro Vision is native on vLLM; on SGLang
 it needs transformers >= 5.15 in the SGLang env plus `--patch-sglang`. Tiny Aya and Aya Expanse
 are native on both. The full
-model-by-runtime table is in [docs/model_backends.md](docs/model_backends.md).
+model-by-runtime table is in [docs/model_backends.md](https://github.com/Lexsi-Labs/AuditKIT/blob/main/docs/model_backends.md).
 
 Tiny Aya (`CohereLabs/tiny-aya-global` and siblings `fire`, `water`, `earth`),
 Aya Expanse and Aya Vision are gated
@@ -213,57 +213,57 @@ Every `evaluate()` returns a `RunResult`:
 ## Examples
 
 Colab-ready notebooks with real models and real datasets — see
-[`examples/README.md`](examples/README.md) for the full, current list.
+[`examples/README.md`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/README.md) for the full, current list.
 
 | Example | File |
 |---------|------|
-| Full pipeline: adapter, 5 metrics, LLM judge, LLM annotator | [`01_full_evaluation_pipeline.ipynb`](examples/01_full_evaluation_pipeline.ipynb) |
-| Generation across two real HF model families, compared | [`02_generation_across_hf_families.ipynb`](examples/02_generation_across_hf_families.ipynb) |
-| Custom annotators (regex, LLM-backed, fully custom) | [`03_custom_annotators.ipynb`](examples/03_custom_annotators.ipynb) |
-| Metrics deep dive: built-in, custom, LLM-as-judge, RAG | [`04_metrics_deep_dive.ipynb`](examples/04_metrics_deep_dive.ipynb) |
-| Every data type/task kind: generative, MCQ, RAG, precomputed, chat | [`05_data_types.ipynb`](examples/05_data_types.ipynb) |
-| Model comparison deep dive: `compare_models()` + `RunComparison` | [`06_model_comparison.ipynb`](examples/06_model_comparison.ipynb) |
-| Annotators across 4 real model families, then compared together | [`07_annotators_across_models.ipynb`](examples/07_annotators_across_models.ipynb) |
-| `CompareResult` deep dive: what `compare_models()`'s native per-model support still can't express (different scorers per model), full method surface | [`08_compare_result_deep_dive.ipynb`](examples/08_compare_result_deep_dive.ipynb) |
-| `GuardJudge` implementation check: all 5 profiles, real and offline | [`09_guard_judge_implementation_check.ipynb`](examples/09_guard_judge_implementation_check.ipynb) |
-| `GuardJudge` with real, flagship guard models | [`10_guard_judge_legit_models.ipynb`](examples/10_guard_judge_legit_models.ipynb) |
-| `EncoderJudge`: the base mechanism plus its two prebuilt subclasses | [`11_encoder_judge_prebuilts.ipynb`](examples/11_encoder_judge_prebuilts.ipynb) |
-| Performance metrics on a real, large-scale evaluation | [`12_performance_metrics_demo.ipynb`](examples/12_performance_metrics_demo.ipynb) |
-| SGLang: environment checks, server mode via `api:`, tool calls and parallel tool calls | [`13_sglang_compatibility.ipynb`](examples/13_sglang_compatibility.ipynb) |
-| Agent and RAG evals: tool calls, parallel tool calls, deployed agent endpoints, AgentTune data, retrieval and judged RAG metrics | [`14_agent_and_rag_evals.ipynb`](examples/14_agent_and_rag_evals.ipynb) |
-| End-to-end agent evaluation, fully offline (`.py` script): recorded episodes, a verified state outcome, and a fabricated answer that does not pass a state case | [`agent_eval_offline.py`](examples/agent_eval_offline.py) |
+| Full pipeline: adapter, 5 metrics, LLM judge, LLM annotator | [`01_full_evaluation_pipeline.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/01_full_evaluation_pipeline.ipynb) |
+| Generation across two real HF model families, compared | [`02_generation_across_hf_families.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/02_generation_across_hf_families.ipynb) |
+| Custom annotators (regex, LLM-backed, fully custom) | [`03_custom_annotators.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/03_custom_annotators.ipynb) |
+| Metrics deep dive: built-in, custom, LLM-as-judge, RAG | [`04_metrics_deep_dive.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/04_metrics_deep_dive.ipynb) |
+| Every data type/task kind: generative, MCQ, RAG, precomputed, chat | [`05_data_types.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/05_data_types.ipynb) |
+| Model comparison deep dive: `compare_models()` + `RunComparison` | [`06_model_comparison.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/06_model_comparison.ipynb) |
+| Annotators across 4 real model families, then compared together | [`07_annotators_across_models.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/07_annotators_across_models.ipynb) |
+| `CompareResult` deep dive: what `compare_models()`'s native per-model support still can't express (different scorers per model), full method surface | [`08_compare_result_deep_dive.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/08_compare_result_deep_dive.ipynb) |
+| `GuardJudge` implementation check: all 5 profiles, real and offline | [`09_guard_judge_implementation_check.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/09_guard_judge_implementation_check.ipynb) |
+| `GuardJudge` with real, flagship guard models | [`10_guard_judge_legit_models.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/10_guard_judge_legit_models.ipynb) |
+| `EncoderJudge`: the base mechanism plus its two prebuilt subclasses | [`11_encoder_judge_prebuilts.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/11_encoder_judge_prebuilts.ipynb) |
+| Performance metrics on a real, large-scale evaluation | [`12_performance_metrics_demo.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/12_performance_metrics_demo.ipynb) |
+| SGLang: environment checks, server mode via `api:`, tool calls and parallel tool calls | [`13_sglang_compatibility.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/13_sglang_compatibility.ipynb) |
+| Agent and RAG evals: tool calls, parallel tool calls, deployed agent endpoints, AgentTune data, retrieval and judged RAG metrics | [`14_agent_and_rag_evals.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/14_agent_and_rag_evals.ipynb) |
+| End-to-end agent evaluation, fully offline (`.py` script): recorded episodes, a verified state outcome, and a fabricated answer that does not pass a state case | [`agent_eval_offline.py`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/agent_eval_offline.py) |
 
 ## Applications
 
 Real-world scenarios answered end to end, not feature tours — see
-[`examples/applications/README.md`](examples/applications/README.md). Only `01` uses the
+[`examples/applications/README.md`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/README.md). Only `01` uses the
 `lm-evaluation-harness` integration (`ak.run_lmeval()`, needs
 `auditkit[lmeval]`), as an authoritative cross-check alongside the native
 evaluation; none of the others do.
 
 | Application | File |
 |-------------|------|
-| How much does pruning severity (20%/40%/60%) degrade a model? Real BoolQ, real annotator, ship/no-ship verdicts, cross-checked via `ak.run_lmeval()` | [`01_application_pruned_llama_boolq.ipynb`](examples/applications/01_application_pruned_llama_boolq.ipynb) |
-| Healthcare: clinical QA correctness vs. grounding (PubMedQA) | [`02_application_healthcare_pubmedqa.ipynb`](examples/applications/02_application_healthcare_pubmedqa.ipynb) |
-| Finance: QA grounded in real SEC 10-K filings | [`03_application_finance_10k_qa.ipynb`](examples/applications/03_application_finance_10k_qa.ipynb) |
-| E-commerce: review-sentiment triage at scale | [`04_application_ecommerce_review_triage.ipynb`](examples/applications/04_application_ecommerce_review_triage.ipynb) |
-| Education: auto-graded tutoring, correctness vs. explanation | [`05_application_education_arc_tutor.ipynb`](examples/applications/05_application_education_arc_tutor.ipynb) |
-| Enterprise search: internal knowledge assistant (real retrieval + RAG grounding) | [`06_application_enterprise_search_rag.ipynb`](examples/applications/06_application_enterprise_search_rag.ipynb) |
-| LLM-as-judge via a real BERT NLI classifier, not a generative model | [`07_application_bert_nli_judge.ipynb`](examples/applications/07_application_bert_nli_judge.ipynb) |
+| How much does pruning severity (20%/40%/60%) degrade a model? Real BoolQ, real annotator, ship/no-ship verdicts, cross-checked via `ak.run_lmeval()` | [`01_application_pruned_llama_boolq.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/01_application_pruned_llama_boolq.ipynb) |
+| Healthcare: clinical QA correctness vs. grounding (PubMedQA) | [`02_application_healthcare_pubmedqa.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/02_application_healthcare_pubmedqa.ipynb) |
+| Finance: QA grounded in real SEC 10-K filings | [`03_application_finance_10k_qa.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/03_application_finance_10k_qa.ipynb) |
+| E-commerce: review-sentiment triage at scale | [`04_application_ecommerce_review_triage.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/04_application_ecommerce_review_triage.ipynb) |
+| Education: auto-graded tutoring, correctness vs. explanation | [`05_application_education_arc_tutor.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/05_application_education_arc_tutor.ipynb) |
+| Enterprise search: internal knowledge assistant (real retrieval + RAG grounding) | [`06_application_enterprise_search_rag.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/06_application_enterprise_search_rag.ipynb) |
+| LLM-as-judge via a real BERT NLI classifier, not a generative model | [`07_application_bert_nli_judge.ipynb`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/07_application_bert_nli_judge.ipynb) |
 
 ## Repository map
 
 | Directory | Description | README |
 |-----------|-------------|--------|
-| [`src/auditkit/`](src/auditkit/) | Core library — spine, runner, metrics, models, CLI | [README](src/auditkit/README.md) |
-| [`src/auditkit/metrics/`](src/auditkit/metrics/) | Metric families | [README](src/auditkit/metrics/README.md) |
-| [`src/auditkit/model/`](src/auditkit/model/) | Model backends (echo, openai, hf, vllm, etc.) | [README](src/auditkit/model/README.md) |
-| [`src/auditkit/redteam/`](src/auditkit/redteam/) | Red team probes and detectors | [README](src/auditkit/redteam/README.md) |
-| [`src/auditkit/scenarios/`](src/auditkit/scenarios/) | Built-in benchmark datasets | [README](src/auditkit/scenarios/README.md) |
-| [`tests/`](tests/) | Test suite (~3,000 tests) | [README](tests/README.md) |
-| [`examples/`](examples/) | Colab-ready example notebooks | [README](examples/README.md) |
-| [`examples/applications/`](examples/applications/) | Real-world application notebooks | [README](examples/applications/README.md) |
-| [`docs/`](docs/) | MkDocs source for [auditkit.lexsi.ai](https://auditkit.lexsi.ai/) | [index](docs/index.md) |
+| [`src/auditkit/`](https://github.com/Lexsi-Labs/AuditKIT/tree/main/src/auditkit/) | Core library — spine, runner, metrics, models, CLI | [README](https://github.com/Lexsi-Labs/AuditKIT/blob/main/src/auditkit/README.md) |
+| [`src/auditkit/metrics/`](https://github.com/Lexsi-Labs/AuditKIT/tree/main/src/auditkit/metrics/) | Metric families | [README](https://github.com/Lexsi-Labs/AuditKIT/blob/main/src/auditkit/metrics/README.md) |
+| [`src/auditkit/model/`](https://github.com/Lexsi-Labs/AuditKIT/tree/main/src/auditkit/model/) | Model backends (echo, openai, hf, vllm, etc.) | [README](https://github.com/Lexsi-Labs/AuditKIT/blob/main/src/auditkit/model/README.md) |
+| [`src/auditkit/redteam/`](https://github.com/Lexsi-Labs/AuditKIT/tree/main/src/auditkit/redteam/) | Red team probes and detectors | [README](https://github.com/Lexsi-Labs/AuditKIT/blob/main/src/auditkit/redteam/README.md) |
+| [`src/auditkit/scenarios/`](https://github.com/Lexsi-Labs/AuditKIT/tree/main/src/auditkit/scenarios/) | Built-in benchmark datasets | [README](https://github.com/Lexsi-Labs/AuditKIT/blob/main/src/auditkit/scenarios/README.md) |
+| [`tests/`](https://github.com/Lexsi-Labs/AuditKIT/tree/main/tests/) | Test suite (~3,000 tests) | [README](https://github.com/Lexsi-Labs/AuditKIT/blob/main/tests/README.md) |
+| [`examples/`](https://github.com/Lexsi-Labs/AuditKIT/tree/main/examples/) | Colab-ready example notebooks | [README](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/README.md) |
+| [`examples/applications/`](https://github.com/Lexsi-Labs/AuditKIT/tree/main/examples/applications/) | Real-world application notebooks | [README](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/applications/README.md) |
+| [`docs/`](https://github.com/Lexsi-Labs/AuditKIT/tree/main/docs/) | MkDocs source for [auditkit.lexsi.ai](https://auditkit.lexsi.ai/) | [index](https://github.com/Lexsi-Labs/AuditKIT/blob/main/docs/index.md) |
 
 ---
 
@@ -299,11 +299,11 @@ If you use AuditKIT in research, please cite it:
 
 ## License
 
-This project is released under the [Lexsi Labs Source Available License (LSAL) v1.2](LICENSE.md) — free for academic research and teaching on MIT-like terms; use by any organization requires written acknowledgement or permission (Section 1A); a separate commercial license is required to sell it or embed it in a paid product.
+This project is released under the [Lexsi Labs Source Available License (LSAL) v1.2](https://github.com/Lexsi-Labs/AuditKIT/blob/main/LICENSE.md) — free for academic research and teaching on MIT-like terms; use by any organization requires written acknowledgement or permission (Section 1A); a separate commercial license is required to sell it or embed it in a paid product.
 
 ---
 
 ## Join Community / Contribute
 
 - Issues and discussions are welcomed on the [GitHub issue tracker](https://github.com/Lexsi-Labs/AuditKIT/issues).
-- See [Contributing](docs/community/contributing.md) for the development setup, code standards and the pull request process.
+- See [Contributing](https://github.com/Lexsi-Labs/AuditKIT/blob/main/docs/community/contributing.md) for the development setup, code standards and the pull request process.
