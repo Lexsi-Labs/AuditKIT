@@ -107,11 +107,23 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- `auditkit eval --config FILE` accepts `model:` from the config file. `--model` was
+  `required=True` on the parser, so argparse rejected the command with "the following
+  arguments are required: --model" before the YAML was read, even though `docs/cli.md`
+  documents exactly that invocation. It is now optional on the parser and checked after the
+  config merge; a genuinely missing model still exits 2, naming both ways to supply it.
 - The six built-in benchmark scenarios load again. They used bare Hub ids (`mmlu`, `arc` and
   `truthfulqa` no longer exist; the others failed with `HfUriError`) and now use `cais/mmlu`,
   `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`, `truthfulqa/truthful_qa` and
   `openai/openai_humaneval`. HumanEval also referenced a `TaskKind.CODE` that doesn't exist; it loads
   as a generative task (no code-execution metric, so use `ak.run_lmeval("humaneval", ...)` for pass@k).
+- Docs: the scorer reference and metrics overview cover all 68 registered metrics, and the
+  data model documents `Sample.images`, `RunConfig.seed`/`track_performance`/
+  `chat_template_kwargs` and `RunResult.unscored`/`metadata`; every `eval` flag is in
+  `docs/cli.md`; the extras table matches `pyproject.toml`; the claimed-but-unimplemented
+  features are gone, as are the internal pages that were still being published to the site.
+- The `dev` extra declares `pyyaml`, which the `--config` tests need. PyYAML remains an
+  optional runtime dependency; the core install is still dependency-free.
 - Docs: no METEOR (never implemented) and no "Rich HTML reports" tick (not implemented); current
   Claude model ids instead of retired Claude 3 ones; "source-available", not "open-source"; no
   internal wording, links to a private repository or private issue numbers in public pages;
