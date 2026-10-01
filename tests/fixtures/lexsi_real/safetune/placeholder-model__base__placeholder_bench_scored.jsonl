@@ -1,0 +1,2 @@
+{"prompt": "<placeholder prompt>", "response": "<placeholder response>", "score": 0.0, "refused": true, "bench": "placeholder_bench"}
+{"prompt": "<placeholder prompt> 2", "response": "<placeholder response> 2", "score": 1.0, "refused": false, "bench": "placeholder_bench"}

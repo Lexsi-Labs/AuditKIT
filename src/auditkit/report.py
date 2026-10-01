@@ -62,6 +62,9 @@ class RunResult:
     config: Any = None
     model_spec: Any = None
     errors: list[dict] = field(default_factory=list)
+    #: Per metric, results left out of the aggregate because they are not
+    #: measurements: ``{metric: {"unknown": n, "not_tested": m}}``.
+    unscored: dict[str, dict[str, int]] = field(default_factory=dict)
     failed_count: int = 0
     experiment_name: str | None = None
     tags: list[str] = field(default_factory=list)
@@ -87,6 +90,10 @@ class RunResult:
     # deliberately NOT bundled in the library (see .cost()'s docstring).
     # None unless RunConfig.track_performance=True (see `perf` above).
     token_usage: Optional[dict[str, int]] = None
+    # Lineage: ``{"inputs": [{"kind": "model"|"dataset", "ref", "config"?,
+    # "provenance": <that input's lexsi_provenance.json or None>}]}``. Written
+    # out as this run's own lexsi_provenance.json by save() and push_to_hub().
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def cost(self, pricing: dict[str, float]) -> Optional[float]:
         """Dollar cost of this run, given *pricing* — never a library default.
@@ -123,6 +130,44 @@ class RunResult:
             })
         return rows
 
+    def route_distribution(self) -> dict[str, Any]:
+        """Which reference route each multi-route sample (``{"any_of": ...}``) took (#45).
+
+        Information, not a score: a histogram has no direction, so nothing here
+        reaches the stats or the headline. Only samples whose reference names two
+        or more routes count; single-route references carry no path metadata by
+        design, and counting them would make the denominator mostly zeroes.
+        ``decided_by`` says which rule picked the route (``"f1"`` a clear win,
+        ``"listed_order"`` a tie that the listing broke), and ``ties`` counts the latter.
+        Empty when no sample has several routes.
+        """
+        by_route: dict[int, int] = {}
+        decided: dict[str, int] = {}
+        n = 0
+        for p in self.predictions:
+            doc = next((d.get("metadata") for d in (p.metadata or {}).get("scores", [])
+                        if (d.get("metadata") or {}).get("n_paths", 0) > 1), None)
+            if doc is None:
+                continue
+            n += 1
+            by_route[doc["matched_path"]] = by_route.get(doc["matched_path"], 0) + 1
+            label = doc.get("path_decided_by")
+            if label:
+                decided[label] = decided.get(label, 0) + 1
+        if not n:
+            return {}
+        return {"samples": n, "by_route": dict(sorted(by_route.items())), "decided_by": decided,
+                "ties": decided.get("listed_order", 0)}
+
+    def _route_line(self) -> str:
+        d = self.route_distribution()
+        if not d:
+            return ""
+        routes = ", ".join(f"route {i}: {c}" for i, c in d["by_route"].items())
+        how = ", ".join(f"{k.replace('_', ' ')} {v}" for k, v in d["decided_by"].items())
+        return (f"routes taken ({d['samples']} multi-route samples): {routes}; decided by {how}; "
+                f"ties broken by listed order: {d['ties']}/{d['samples']}")
+
     def summary(self) -> str:
         """A compact human-readable metric table (mean ± stderr over n)."""
         lines = [f"run {self.run_id} (fingerprint {self.fingerprint})"]
@@ -143,7 +188,43 @@ class RunResult:
                 f"{self.token_usage['total_tokens']:,} total "
                 f"(pass pricing to .cost() for a $ figure)"
             )
+        route_line = self._route_line()
+        if route_line:
+            lines.append(f"  {route_line}")
+        unverified = (self.metadata or {}).get("unverified_request_fields") or {}
+        if unverified:
+            lines.append(f"  sent but not known to be honoured by the server: {', '.join(sorted(unverified))} "
+                         f"(see metadata['unverified_request_fields'])")
+        lines += [f"  {line}" for line in self.provenance_lines()]
         return "\n".join(lines)
+
+    def provenance(self) -> dict[str, Any]:
+        """This run's own ``lexsi_provenance.json`` object, with every input's
+        provenance embedded under ``inputs[].provenance``."""
+        from .provenance import make_provenance
+
+        inputs = (self.metadata or {}).get("inputs") or []
+        model = next((i.get("ref") for i in inputs if i.get("kind") == "model"), None)
+        return make_provenance(method=self.experiment_name or "evaluate", base_model=model,
+                               inputs=inputs, params={"run_id": self.run_id,
+                                                      "fingerprint": self.fingerprint})
+
+    def provenance_lines(self) -> list[str]:
+        """One line per input that carries a ``lexsi_provenance.json``: what it
+        is and which library/method produced it."""
+        lines = []
+        for i in (self.metadata or {}).get("inputs") or []:
+            p = i.get("provenance")
+            if not p:
+                continue
+            ref = f"{i.get('ref')}" + (f" [{i['config']}]" if i.get("config") else "")
+            made = " ".join(str(p[k]) for k in ("library", "version", "method") if p.get(k))
+            if p.get("base_model"):
+                made += f", base {p['base_model']}"
+            if p.get("created_at"):
+                made += f", {p['created_at']}"
+            lines.append(f"{i.get('kind')}: {ref} -- {made}")
+        return lines
 
     def _perf_line(self) -> str:
         """One-line latency/throughput summary, or '' if nothing was measured
@@ -193,12 +274,14 @@ class RunResult:
             "config": self.config.to_dict() if self.config else None,
             "model_spec": self.model_spec,
             "errors": self.errors,
+            "unscored": self.unscored,
             "failed_count": self.failed_count,
             "experiment_name": self.experiment_name,
             "tags": self.tags,
             "perf": self.perf,
             "model_size": self.model_size,
             "token_usage": self.token_usage,
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -218,12 +301,14 @@ class RunResult:
             config=RunConfig.from_dict(data["config"]) if data.get("config") else None,
             model_spec=data.get("model_spec"),
             errors=data.get("errors", []),
+            unscored=data.get("unscored", {}),
             failed_count=data.get("failed_count", 0),
             experiment_name=data.get("experiment_name"),
             tags=data.get("tags", []),
             perf=data.get("perf", {}),
             model_size=data.get("model_size", {}),
             token_usage=data.get("token_usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}),
+            metadata=data.get("metadata") or {},
         )
 
     @classmethod
@@ -232,8 +317,21 @@ class RunResult:
         with open(path, "r", encoding="utf-8") as fh:
             return cls.from_dict(json.load(fh))
 
-    def save(self, path: str, fmt: str = "json") -> None:
-        """Persist the run as ``json`` (full) or ``csv`` (per-prediction rows)."""
+    def save(self, path: str, fmt: str = "json", write_provenance: bool = True) -> None:
+        """Persist the run as ``json`` (full) or ``csv`` (per-prediction rows).
+
+        Also writes ``lexsi_provenance.json`` next to *path* (see
+        :meth:`provenance`) unless ``write_provenance=False``.
+        ponytail: one provenance file per folder, so the last run saved into a
+        folder owns it; save runs to separate folders to keep each lineage.
+        """
+        self._save(path, fmt)
+        if write_provenance:
+            import os
+            from .provenance import write_provenance as _write
+            _write(os.path.dirname(os.path.abspath(path)), self.provenance())
+
+    def _save(self, path: str, fmt: str) -> None:
         if fmt == "json":
             with open(path, "w", encoding="utf-8") as fh:
                 json.dump(self.to_dict(), fh, indent=2, default=str)
@@ -275,4 +373,5 @@ class RunResult:
             kind="run",
             method=self.experiment_name or "evaluate",
             model=model,
+            provenance=self.provenance(),
         )

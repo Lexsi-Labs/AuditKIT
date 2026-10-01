@@ -482,6 +482,7 @@ class CompareResult:
     ) -> str:
         """Push per-model predictions to a Hub dataset and stamp the AuditKIT card."""
         from .hf_publish import push_rows_to_hub
+        from .provenance import make_provenance
 
         rows: list[dict[str, Any]] = []
         for name, run in self.runs.items():
@@ -496,6 +497,8 @@ class CompareResult:
             token=token,
             kind="compare",
             method="compare_models",
+            provenance=make_provenance(method="compare_models", inputs=[
+                i for run in self.runs.values() for i in (run.metadata or {}).get("inputs") or []]),
         )
 
 

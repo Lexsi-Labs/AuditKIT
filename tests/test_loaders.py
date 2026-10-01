@@ -32,6 +32,7 @@ class TestLoadHf:
         assert callable(load_hf)
 
     @pytest.mark.skipif(not _importable("datasets"), reason="needs the datasets package")
+    @pytest.mark.network
     def test_real_dataset_load(self):
         # Real HF Hub load -- needs network access. rag-mini-wikipedia's
         # `question-answer` config is small (918 rows) and already used
@@ -65,6 +66,7 @@ class TestLoadCroissant:
         assert callable(load_croissant)
 
     @pytest.mark.skipif(not _importable("mlcroissant"), reason="needs the mlcroissant package")
+    @pytest.mark.network
     def test_real_dataset_load(self):
         # Real Croissant (JSON-LD) load via HuggingFace's croissant endpoint --
         # needs network access. Same rag-mini-wikipedia dataset as the load_hf

@@ -1,12 +1,12 @@
 <!--
   AuditKIT — Complete Technical Guide
-  Verified against the AuditKit 1.0.0 source.
+  Written against the AuditKit 1.0.0 source; counts, red-teaming, scenarios and the CLI re-checked against 1.2.0.
   Renders on GitHub (mermaid + tables) and as a hosted page.
 -->
 
 # AuditKIT — Complete Technical Guide
 
-> **Version:** 1.0.0 · **Python:** ≥ 3.10 · **License:** LSAL v1.2
+> **Version:** 1.2.0 (written for 1.0.0; counts, red-teaming, scenarios and the CLI re-checked for 1.2.0) · **Python:** ≥ 3.10 · **License:** LSAL v1.2
 >
 > This guide is written **against the actual code on this branch**, not the marketing README. Where the code diverges from older docs (the top-level `README.md` and the docstrings), this guide follows the code and calls the divergence out. This guide states limitations inline, in context, wherever they matter. Nothing is hidden to make a feature look better than it is.
 
@@ -23,10 +23,10 @@
 7. [Model backends](#7-model-backends)
 8. [Two engines: native vs lm-eval](#8-two-engines-native-vs-lm-eval)
 9. [Adapters & routing](#9-adapters--routing)
-10. [The metric catalog (all 42)](#10-the-metric-catalog-all-42)
+10. [The metric catalog](#10-the-metric-catalog)
 11. [LLM-as-judge](#11-llm-as-judge)
 12. [Comparison & experiments](#12-comparison--experiments)
-13. [Red-teaming (future work)](#13-red-teaming-future-work--not-part-of-this-release)
+13. [Red-teaming (a basic probe suite)](#13-red-teaming-a-basic-probe-suite)
 14. [Performance metrics](#14-performance-metrics)
 15. [CLI & YAML reference](#15-cli--yaml-reference)
 16. [Scenarios & data loading](#16-scenarios--data-loading)
@@ -131,7 +131,7 @@ flowchart TD
 - **Native engine** (`engine="native"`, the default): AuditKIT owns the whole pipeline above — it builds prompts via adapters, calls the model backend, and scores with its own metrics.
 - **lm-eval engine** (`engine="lmeval"` or the dedicated `ak.run_lmeval()`): delegates to the real [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) — its task templates, filters, and metrics — then maps lm-eval's aggregates + per-doc samples back into a `RunResult`. Requires `auditkit[lmeval]`. See [§8](#8-two-engines-native-vs-lm-eval).
 
-> The native `scenarios/` package (mmlu, gsm8k, …) is a **separate reimplementation** that does *not* use lm-eval, and most of it is broken (see [§16](#16-scenarios--data-loading)). For academic benchmarks, use `ak.run_lmeval()` (the lm-eval engine) — that's the maintained path.
+> The native `scenarios/` package (mmlu, gsm8k, …) is a **separate reimplementation** that does *not* use lm-eval, and does less: no few-shot prompting and no code execution (see [§16](#16-scenarios--data-loading)). For academic benchmarks, `ak.run_lmeval()` (the lm-eval engine) is the more complete path.
 
 ### Provenance & caching
 
@@ -144,7 +144,9 @@ flowchart LR
     RUN -.->|cache.set| C
 ```
 
-`RunSpec.fingerprint()` hashes the model identity, scenario name, adapter identity (incl. its prompt template/system prompt), each metric's identity (a judge folds in its model + prompt + choices), the annotators, and the **entire** `RunConfig`. Any change to any of these changes the fingerprint and forces a fresh run. This is what makes `compare()` and the disk cache correct.
+`RunSpec.fingerprint()` hashes the running `auditkit.__version__` (so a library upgrade that changes a metric never replays an old cached score), the model identity, scenario name, adapter identity (incl. its prompt template/system prompt), each metric's identity (a judge folds in its model + prompt + choices, but not transport/secret args like `api_key` or `timeout`), the annotators, and the **entire** `RunConfig`. Any change to any of these changes the fingerprint and forces a fresh run. This is what makes `compare()` and the disk cache correct.
+
+The inline-dataset (`ListScenario`) name folds in each sample's content — including a **caller-supplied** `Sample.id`, so two datasets that differ only in their ids hash apart. An auto-assigned id (the `str(index)` the runner writes into an unset id) does not enter the hash, so re-running the same id-less samples still hits the cache.
 
 ---
 
@@ -250,6 +252,8 @@ result = ak.evaluate(
     verbose=False,
     experiment_name=None,        # str — persist this run to the ExperimentDB
     tags=None,                   # list[str]
+    dataset_config=None,         # str — named config of a Hub dataset / local folder (e.g. "sft_alpaca")
+    dataset_split=None,          # str — split of a Hub dataset (e.g. "test")
     **opts,                      # forwarded to the model constructor (api_key, device, …)
 )
 ```
@@ -465,7 +469,7 @@ ak.evaluate(samples, model=lambda ps: [p.upper() for p in ps])   # any callable
 | LiteLLM / API / Groq / OpenRouter | temperature, top_p, max_tokens, stop_sequences→`stop`, penalties, num_completions→`n`, seed | top_k |
 | Lexsi | **temperature, max_tokens only** | everything else |
 
-> **Candor — the docstring lies (harmlessly).** `AutoModel.resolve`'s docstring claims `vllm:`/`litellm:`/`api:` are "not yet implemented" — that's **stale**; all three work. There's also a dead code path (`_T1_PREFIXES` is empty). And the top-level README advertises an `ollama:` prefix — there is **no** `ollama:` backend; use `litellm:ollama/llama3` instead.
+> **Note.** There is **no** `ollama:` backend; use `litellm:ollama/llama3`. `AutoModel.resolve` also keeps a dead code path (`_T1_PREFIXES` is empty).
 
 ---
 
@@ -503,6 +507,27 @@ ak.run_lmeval("gsm8k", model="openrouter:openai/gpt-4o-mini", limit=5, apply_cha
 ```
 
 **Passing lm-eval knobs** (native adapters don't have these — they're lm-eval-only): `apply_chat_template=True` (**required** for `groq:`/`openrouter:`/`openai:`/`anthropic:` — see above), `system_instruction=...`, `gen_kwargs="temperature=0,max_gen_toks=256"`, `fewshot_as_multiturn=True`, or anything else via `lmeval_kwargs={...}`. Gated models: pass `hf_token=` (also mirrored to `HF_TOKEN` for gated datasets).
+
+**The Lexsi gateway (`lexsi:`).** Rides the same `local-completions` backend as `api:` (needs `base_url=`), plus three things `api:` doesn't have:
+- **Auto-`tokenizer=`.** `map_model_spec()` infers it from the model name when not given explicitly: strips a trailing `_v<digits>` version suffix, then splits org/repo at the first remaining hyphen (`"Qwen-Qwen3-0.6B_v1"` → `"Qwen/Qwen3-0.6B"`). An explicit `tokenizer=` always wins.
+- **`project_name=`/`provider=`/`client_id=`.** The gateway rejects requests missing these. `run_benchmark()` folds them into `gen_kwargs` automatically, for any backend pointed at a Lexsi gateway via `base_url=`. Caller-supplied `gen_kwargs` values win on key conflicts.
+- **`relay=True`.** The chat/generation endpoint (`/gateway/v1/chat/completions`) accepts the three fields directly, no relay needed. The completions/loglikelihood endpoint (`/gateway/v1/completions`) reroutes a direct request carrying those fields server-side and 404s instead, confirmed against the real gateway. `relay=True` starts a short-lived local `LexsiCompletionsRelay` (optional `auditkit[relay]` extra) right before the call, repoints `base_url` at it, and stops it in a `finally`, so teardown happens whether the run succeeds or raises. The disk-cache fingerprint is computed from the real `base_url=` before the relay's ephemeral local port gets substituted in, so caching stays stable across runs.
+
+```python
+TOKEN, PROJECT_ID, CLIENT_ID = ak.lexsi_login("MyOrg", "MyWorkspace", "MyProject")  # optional auditkit[lexsi-sdk] extra
+
+ak.run_lmeval("gsm8k", model="openai:my-model",
+              base_url="https://.../gateway/v1/chat/completions",
+              project_name=PROJECT_ID, provider="Lexsi", client_id=CLIENT_ID, api_key=TOKEN,
+              apply_chat_template=True, num_fewshot=0, limit=10)
+
+ak.run_lmeval("arc_easy", model="lexsi:my-model",   # auto-infers tokenizer=
+              base_url="https://.../gateway/v1/completions",
+              project_name=PROJECT_ID, provider="Lexsi", client_id=CLIENT_ID, api_key=TOKEN,
+              relay=True, num_fewshot=0, limit=10)
+```
+
+`ak.lexsi_login(org, workspace, project, sdk_access_token=None, api_url=..., app_url=...)` (`lexsi_login.py`, the only place `lexsi_sdk` is imported) does the login and project lookup once, returning `(token, project_id, client_id)`. `client_id` is the logged-in user's own username, resolved automatically on a best-effort basis: it comes back `None` when it can't be determined, and you can pass your own instead. `sdk_access_token` falls back to the `SDK_ACCESS_TOKEN` env var, so calling code never needs a literal token. For a single call without a separate login step, pass `lexsi_org=`/`lexsi_workspace=`/`lexsi_project=` straight to `run_benchmark`/`ak.run_lmeval` instead.
 
 ---
 
@@ -550,7 +575,7 @@ The system prompt / messages story: `ChatAdapter` puts a structured `messages` l
 
 ---
 
-## 10. The metric catalog (all 39)
+## 10. The metric catalog
 
 Pass a metric as a **string** (zero-config only) or an **instance** (for parameters). Every metric declares a `direction`; only `perplexity` is `MINIMIZE`.
 
@@ -600,11 +625,13 @@ Target/output accept three encodings: choice text, 0-based index, or a single A�
 
 ### RAG (`metrics/rag.py`) — MAXIMIZE, deterministic
 
+All four share one tokenizer (lowercase + strip punctuation). Contexts come from the trace's `retrieved_contexts` when present, else `Sample.retrieval_context`; a sample with no context is skipped (no fake 0), so these are not gated on `retrieval_context` being set.
+
 | Name | Measures | Requires |
 |---|---|---|
-| `lexical_groundedness` | fraction of output words backed by context (word-boundary match) | `retrieval_context` |
-| `context_coverage` | fraction of *target* vocab present in context (retrieval quality; ignores output) | `retrieval_context`, `target` |
-| `context_overlap` | fraction of context chunks sharing a word with output | `retrieval_context` |
+| `lexical_groundedness` | fraction of output tokens backed by context (word-prefix match) | context (trace or sample) |
+| `context_coverage` | fraction of *target* vocab present in context (retrieval quality; ignores output) | `target` + context |
+| `context_overlap` | fraction of context chunks sharing a token with output | context (trace or sample) |
 | `answer_overlap` | token-set overlap of output vs target | `target` |
 
 ### Hallucination / consistency (`metrics/hallucination.py`) — MAXIMIZE, requires `target`
@@ -676,7 +703,7 @@ ak.LLMJudge(
     threshold=None,
     required_fields=frozenset(),
     unknown_score=0.0,           # value when the verdict can't be parsed
-    judge_model_args=None,       # connection kwargs: api_key/api_base/device/hf_token
+    judge_model_args=None,       # connection kwargs: api_key/api_base/device/hf_token/timeout
     temperature=None, max_tokens=None, top_p=None,   # judge generation settings
     direction=Direction.MAXIMIZE,
 )
@@ -685,7 +712,8 @@ ak.LLMJudge(
 - **Classifier vs numeric.** Give `choices={"yes":1.0,"partial":0.5,"no":0.0}` *or* `scale=(1.0,5.0)` — not both (raises `ValueError`). Neither → defaults to `scale=(0.0,1.0)`.
 - **Parsing is robust.** The judge is instructed to emit a marker line (`CHOICE: …` or `SCORE: …`); the parser reads the **last** marker (so CoT reasoning above it is ignored), falls back to the final line, and for ties picks the label occurring **last by text position**. Unparseable → an explicit **Unknown** (`value=unknown_score`, `metadata["unknown"]=True`), never a silent midpoint.
 - **Prompt placeholders:** `{input}`, `{output}`, `{expected}`/`{target}`, `{context}` (joined `retrieval_context`), plus any `sample.metadata` key.
-- **Fingerprint.** `identity()` folds in the judge model, prompt, system prompt, choices/scale, `use_cot`, `prompt_version`, and generation params — so changing the "ruler" changes the run fingerprint and never silently reuses a cached score graded by a different judge.
+- **Fingerprint.** `identity()` folds in the judge model, prompt, system prompt, choices/scale, `use_cot`, `prompt_version`, and generation params — so changing the "ruler" changes the run fingerprint and never silently reuses a cached score graded by a different judge. Transport/secret kwargs in `judge_model_args` (`api_key`, `timeout`, `device`, `hf_token`, …) are **excluded**, so rotating a key or bumping a timeout still hits the cache; `api_base` is kept, since for a string spec it's the only record of which server (hence which model) graded.
+- **Judge timeout.** When `judge_model` is an `api:` spec, the resolved model gets a longer default timeout (600s, vs the backend's 120s) so a slow reasoning judge doesn't time out. Override with `judge_model_args={"timeout": …}` or the `AUDITKIT_JUDGE_TIMEOUT` env var.
 
 ```python
 judge = ak.LLMJudge(
@@ -800,17 +828,25 @@ exp.log_mlflow(tracking_uri=...)  # optional, needs auditkit[mlflow]
 
 ---
 
-## 13. Red-teaming (future work — not part of this release)
+## 13. Red-teaming (a basic probe suite)
 
-A first-class adversarial red-teaming suite — a probe/detector runner that
-*generates* attacks (prompt-injection / jailbreak / encoding / over-refusal),
-runs them against a model, and scores attack success — is **on the roadmap, not
-part of the v1.0.0 release**, so it isn't documented as a supported capability
-here. See [Future works](RELEASE.md#future-works).
+AuditKIT ships a basic red-team suite: four probes (`prompt_injection`, `jailbreak`, `encoding`, `refusal`), four detectors (`keyword`, `refusal`, `injection_success`, `system_prompt_leak`), `RedTeamRunner`, and `auditkit redteam` (`--model`, `--probes`, `--detectors`, `--output`):
+
+```bash
+auditkit redteam --model openai:gpt-4o-mini --probes prompt_injection,jailbreak
+```
+
+```python
+from auditkit.redteam import RedTeamRunner
+print(RedTeamRunner(model="openai:gpt-4o-mini").run(probes=["jailbreak"]).summary())
+```
+
+It's deliberately small: fixed probe lists and keyword/pattern detectors, not an attack
+generator. For broad adversarial testing, Garak, Promptfoo or DeepTeam go much further.
 
 What *does* ship today for safety/security is a set of ordinary **metrics** you
 run through the normal `ak.evaluate()` path: `asr` (an attack-success-rate
-proxy — token-overlap threshold, see [§11](#11-metric-catalog)),
+proxy — token-overlap threshold, see [§10](#10-the-metric-catalog)),
 `keyword_detector`, and the toxicity/bias/hate-speech scorers. Those are
 `Metric`s, not an attack generator — you supply the adversarial prompts as your
 dataset; AuditKIT scores the responses.
@@ -898,7 +934,7 @@ A **`Scenario`** yields `Sample`s. Three ways in:
 
 **Data loaders** (in `__all__`): `load_csv`, `load_hf`, `load_croissant`. `load_hf`/`load_croissant` need `auditkit[interop]` (`datasets` + `mlcroissant`).
 
-> **Candor — the built-in native scenarios are mostly broken.** The `scenarios/` package registers 6 (`mmlu`, `gsm8k`, `arc`, `hellaswag`, `truthfulqa`, `humaneval`), all needing `auditkit[interop]`. But **4 of 6 (`mmlu`, `arc`, `hellaswag`, `truthfulqa`) fail even with `[interop]` installed** — they reference stale bare HuggingFace dataset IDs (`"mmlu"`, `"arc"`, …) that the current Hub no longer resolves (canonical IDs are namespaced: `cais/mmlu`, `allenai/ai2_arc`, `Rowan/hellaswag`). Only `gsm8k` and `humaneval` use still-valid IDs. **For academic benchmarks, use `ak.run_lmeval()` (the lm-eval engine) — that's the maintained path; the native `scenarios/` are a separate, largely-unmaintained reimplementation.**
+> **The built-in native scenarios.** The `scenarios/` package registers 6 (`mmlu`, `gsm8k`, `arc`, `hellaswag`, `truthfulqa`, `humaneval`), all needing `auditkit[interop]`. All six load (2026-10-01): MMLU 14,042, GSM8K 1,319, ARC-Challenge 1,172, HellaSwag 10,042, TruthfulQA 817 and HumanEval 164 samples. They use namespaced Hub ids now (`cais/mmlu`, `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`, `truthfulqa/truthful_qa`, `openai/openai_humaneval`), and HumanEval no longer uses the nonexistent `TaskKind.CODE`. HumanEval loads as a generative task whose target is the reference solution: AuditKIT has no code-execution metric, so it can't score pass@k. **For academic benchmarks, `ak.run_lmeval()` (the lm-eval engine) is still the more complete path** (standard prompts, few-shot, and lm-eval's own scoring, including HumanEval execution).
 
 ---
 
@@ -965,9 +1001,6 @@ A single list of everything flagged inline above, for a quick pre-demo scan. Non
 - `paired_bootstrap` significance is a conservative heuristic (can under-report significance for low-variance differences), not an exact permutation/sign test.
 - `CompareResult` runs an independent p-test per model pair with no multiple-comparisons correction; `winner()` ignores significance (picks the raw best mean).
 
-**Stale docs (not code issues)**
-- Older docs still describe the removed conversation/agent features; the README advertises `ollama:` (use `litellm:ollama/...`), "520 tests", and modality language. This branch removed multimodal/agent/conversation/tabular.
-
 **bert_score** hits an upstream `bert_score`-vs-`transformers>=5` tokenizer incompatibility on its own — `BertScore.score()` works around it with a scoped monkeypatch clamping the affected tokenizer's `model_max_length` (see `docs/BUGS.md`); `cosine_similarity` was never affected.
 
 ---
@@ -985,8 +1018,8 @@ A single list of everything flagged inline above, for a quick pre-demo scan. Non
 | `src/auditkit/runspec.py` | `RunConfig`, `RunSpec`, `fingerprint()` |
 | `src/auditkit/sample.py`, `score.py`, `report.py`, `types.py` | the data model |
 | `src/auditkit/adapter.py`, `router.py` | adapters + shape routing |
-| `src/auditkit/model/` | 8 backends + echo/callable/precomputed |
-| `src/auditkit/metric.py`, `metrics/` | built-ins + 10 metric families (48 total) |
+| `src/auditkit/model/` | 10 backends + echo/callable/precomputed |
+| `src/auditkit/metric.py`, `metrics/` | built-ins + 11 metric families (68 registered metrics) |
 | `src/auditkit/lmeval_engine.py` | the lm-eval bridge |
 | `src/auditkit/comparison.py`, `diff.py`, `model_compare.py`, `_bootstrap.py`, `experiment.py` | comparison + significance + tracking |
 | `src/auditkit/redteam/` | probes + detectors + `RedTeamRunner` (future work — not part of the release) |
@@ -1011,4 +1044,4 @@ flowchart TD
 
 ---
 
-*Generated against AuditKit 1.0.0. If a detail here ever disagrees with the code, the code wins — regenerate this guide.*
+*Written against AuditKit 1.0.0, with counts, red-teaming, scenarios and the CLI re-checked against 1.2.0. If a detail here ever disagrees with the code, the code wins — regenerate this guide.*

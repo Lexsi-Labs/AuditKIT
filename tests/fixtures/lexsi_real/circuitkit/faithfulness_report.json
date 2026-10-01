@@ -1,0 +1,45 @@
+{
+  "patching_score": 0.5,
+  "ablation_score": 0.4,
+  "stability": {
+    "placeholder_key": 0.1
+  },
+  "robustness": {
+    "placeholder_variant": {
+      "placeholder_key": 0.1
+    }
+  },
+  "baseline_comparison": {
+    "placeholder_key": 0.1
+  },
+  "generalization": {
+    "placeholder_key": 0.1
+  },
+  "intervention_reliability": {
+    "placeholder_key": 0.1,
+    "per_seed": [
+      {
+        "seed": 0
+      }
+    ]
+  },
+  "metadata": {
+    "patching_raw_ratio": 0.5,
+    "ablation_raw_ratio": 0.4,
+    "algorithm": "eap",
+    "model": "placeholder-model",
+    "task": "placeholder_task",
+    "level": "node",
+    "scope": "unknown",
+    "sparsity": 0.0,
+    "pillars_computed": [
+      "patching",
+      "ablation"
+    ],
+    "timestamp": 1758830400.0,
+    "total_duration_seconds": 1.0,
+    "per_pillar_duration_seconds": {
+      "patching": 1.0
+    }
+  }
+}

@@ -86,6 +86,7 @@ class TestSanitizeLogitsProcessorRealModels:
     are fixed, and that the original gpt2-medium crash-prevention purpose
     still works."""
 
+    @pytest.mark.network   # downloads bigscience/bloom-560m
     def test_bloom_produces_real_text_not_empty_string(self):
         """bigscience/bloom-560m: real logits reach ~430 for a normal
         prompt's top token -- confirmed live to previously produce an

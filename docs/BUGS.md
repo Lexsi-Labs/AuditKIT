@@ -94,24 +94,6 @@ score = ak.WinRate().score(s, "some output")   # no context supplied
 print(score.value)   # 0.0 -- silent proxy fallback, not an error
 ```
 
-### 4. All 6 built-in benchmark scenarios fail to load
-
-**Where:** `src/auditkit/scenarios/` — `mmlu`, `gsm8k`, `arc`, `hellaswag`,
-`truthfulqa`, `humaneval`.
-
-All point at stale/unqualified HuggingFace dataset references:
-
-```python
-from auditkit.registry import SCENARIOS
-for name in SCENARIOS.names():
-    list(SCENARIOS.get(name)().samples())
-# arc/mmlu/truthfulqa -> DatasetNotFoundError
-# gsm8k/hellaswag/humaneval -> HfUriError
-```
-
-`ak.run_lmeval()` (the real lm-evaluation-harness integration) is the
-maintained path for academic benchmarks — it does not have this problem.
-
 ### 5. `RunResult.model_spec` doesn't serialize cleanly
 
 **Where:** `src/auditkit/report.py`, `RunResult.to_dict()`.
@@ -139,6 +121,10 @@ hashed into the fingerprint but never read anywhere in the codebase.
 ---
 
 ## Fixed since this document was written
+
+### The 6 built-in benchmark scenarios failed to load
+
+They pointed at bare Hub ids (`mmlu`, `arc`, `truthfulqa` no longer exist; `gsm8k`, `hellaswag` and `openai_humaneval` failed with `HfUriError`), and HumanEval used a `TaskKind.CODE` that doesn't exist. All six load (2026-10-01): MMLU 14,042, GSM8K 1,319, ARC-Challenge 1,172, HellaSwag 10,042, TruthfulQA 817 and HumanEval 164 samples. They use namespaced Hub ids now (`cais/mmlu`, `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`, `truthfulqa/truthful_qa`, `openai/openai_humaneval`), and HumanEval no longer uses the nonexistent `TaskKind.CODE`. HumanEval's target is the reference solution, and AuditKIT has no code-execution metric, so for pass@k use `ak.run_lmeval("humaneval", ...)`.
 
 ### `HFGenModel` ignored `stop_sequences`/`seed`
 
@@ -315,13 +301,12 @@ executed output.
 
 ## Real limitations (by design or upstream — not bugs to fix)
 
-- **`vllm:`/`lexsi:` don't apply a chat template to flat prompts.** `hf:`
-  (via the model's own `tokenizer.chat_template`) and the hosted chat APIs
-  (`openai:`/`anthropic:`/`groq:`/`litellm:`) format an adapter's prompt
-  correctly for an instruct model; `vllm:` and `lexsi:` send the raw flat
-  prompt, under-formatting an instruct model served that way. Full detail,
-  plus everything else found running `vllm:` live, now in
-  [`docs/VLLM_KNOWN_ISSUES.md`](VLLM_KNOWN_ISSUES.md).
+- **`lexsi:` doesn't apply a chat template to flat prompts.** `hf:` and
+  `vllm:` render the model's own chat template, and the hosted chat APIs
+  (`openai:`/`anthropic:`/`groq:`/`litellm:`) take chat messages; `lexsi:`
+  sends the raw flat prompt, under-formatting an instruct model served that
+  way. (`vllm:` had the same gap until it learned the chat template; what's
+  left for `vllm:` is in [`docs/VLLM_KNOWN_ISSUES.md`](VLLM_KNOWN_ISSUES.md).)
 - **`litellm:` backend has never been verified against the real, installed
   library making a real call.** Real (non-stub) implementation with
   mocked unit-test coverage of its parameter mapping

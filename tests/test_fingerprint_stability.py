@@ -84,3 +84,91 @@ class TestListScenarioActualOutputInFingerprint:
         assert r_correct.fingerprint != r_wrong.fingerprint
         assert r_correct.headline["exact_match"] == 1.0
         assert r_wrong.headline["exact_match"] == 0.0
+
+
+class TestUserSuppliedIdInName:
+    """A caller-supplied Sample.id is part of dataset identity; an
+    auto-assigned str(index) id is not. Two datasets differing only in a user
+    id must hash apart (else the second evaluate() is served the first run's
+    cached predictions under the wrong sample_ids), while an id-less re-run of
+    the same reused objects -- whose ids the Runner mutates to str(index) in
+    place -- must still hit the cache.
+    """
+
+    def test_user_supplied_id_changes_the_name(self):
+        a = ListScenario([Sample(input="x", target="y", id="q1")]).name
+        b = ListScenario([Sample(input="x", target="y", id="q2")]).name
+        assert a != b
+
+    def test_index_valued_id_is_treated_as_auto_assigned(self):
+        # An id equal to its positional index is indistinguishable from what
+        # the Runner writes into an unset id, so it must not change the name.
+        plain = ListScenario([Sample(input="x", target="y")]).name
+        indexed = ListScenario([Sample(input="x", target="y", id="0")]).name
+        assert plain == indexed
+
+    def test_idless_rerun_after_runner_mutation_still_matches(self):
+        s0 = Sample(input="a", target="a")
+        s1 = Sample(input="b", target="b")
+        before = ListScenario([s0, s1]).name
+        s0.id, s1.id = "0", "1"  # what Runner writes into unset ids
+        after = ListScenario([s0, s1]).name
+        assert before == after
+
+
+class TestTaskAndKindInName:
+    """Sample.task and Sample.kind label every cached prediction
+    (Prediction.task = task or kind), so two datasets differing only in them must
+    hash apart -- else the second evaluate() is served the first run's
+    predictions under the first run's labels. Defaults add nothing to the hash,
+    so plain datasets keep their exact name.
+    """
+
+    def test_task_label_changes_the_name(self):
+        a = ListScenario([Sample(input="x", target="y", task="suite-a")]).name
+        b = ListScenario([Sample(input="x", target="y", task="suite-b")]).name
+        assert a != b
+
+    def test_non_default_kind_changes_the_name(self):
+        from auditkit.types import TaskKind
+        plain = ListScenario([Sample(input="x", target="y")]).name
+        agent = ListScenario([Sample(input="x", target="y", kind=TaskKind.AGENT)]).name
+        assert plain != agent
+
+    def test_defaults_keep_the_existing_name(self):
+        from auditkit.types import TaskKind
+        plain = ListScenario([Sample(input="x", target="y")]).name
+        explicit = ListScenario([Sample(input="x", target="y", task="", kind=TaskKind.GENERATIVE)]).name
+        assert plain == explicit
+
+    def test_cached_run_carries_its_own_task_label(self, tmp_path, monkeypatch):
+        import auditkit as ak
+        monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+        mk = lambda t: [Sample(input="q", target="a", actual_output="a", task=t)]  # noqa: E731
+        r1 = ak.evaluate(mk("suite-a"), model="precomputed", scorers=["exact_match"])
+        r2 = ak.evaluate(mk("suite-b"), model="precomputed", scorers=["exact_match"])
+        assert r1.fingerprint != r2.fingerprint
+        assert r2.predictions[0].task == "suite-b"
+
+
+class TestAuditkitVersionInFingerprint:
+    """Upgrading auditkit (which may change how a metric scores) must shift
+    the fingerprint, so a cached score from the old code is never replayed."""
+
+    def test_version_changes_the_fingerprint(self, monkeypatch):
+        import auditkit
+        from auditkit.runspec import RunSpec
+
+        class _M:
+            name = "echo"
+
+        class _A:
+            method = "gen"
+
+        rs = RunSpec(scenario=ListScenario([Sample(input="x", target="y")]),
+                     model=_M(), adapter=_A(), metrics=[])
+        monkeypatch.setattr(auditkit, "__version__", "0.0.0-test-a")
+        fp_a = rs.fingerprint()
+        monkeypatch.setattr(auditkit, "__version__", "0.0.0-test-b")
+        fp_b = rs.fingerprint()
+        assert fp_a != fp_b

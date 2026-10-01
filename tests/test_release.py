@@ -14,6 +14,7 @@ from scripts.release import (
     current_version,
     decide_action,
     next_patch,
+    release_version,
     parse_version,
     set_version,
     validate_distributions,
@@ -161,3 +162,41 @@ def test_distribution_metadata_must_match_requested_version(tmp_path):
     validate_distributions("1.0.0", _write_distributions(tmp_path, "1.0.0"))
     with pytest.raises(ReleaseError, match="expected exact version"):
         validate_distributions("1.0.1", list(tmp_path.iterdir()))
+
+
+@pytest.mark.parametrize("current,latest,expected", [
+    ("1.2.0", "1.0.0", "1.2.0"),   # a deliberate bump in the code is released as is (not 1.0.1)
+    ("2.0.0", "1.9.9", "2.0.0"),
+    ("1.2.0", "1.2.0", "1.2.1"),   # the code isn't ahead: next patch, as before
+    ("1.2.0", "1.2.3", "1.2.4"),
+    ("1.0.0", "1.2.0", "1.2.1"),   # an older code version never moves the release backwards
+])
+def test_release_version_honours_a_bump_in_the_code(current, latest, expected):
+    assert release_version(current, latest) == expected
+
+
+def test_merges_after_the_bump_advance_patch_releases():
+    latest = "1.0.0"
+    released = []
+    for _ in range(3):
+        latest = release_version("1.2.0", latest)
+        released.append(latest)
+    assert released == ["1.2.0", "1.2.1", "1.2.2"]
+
+
+def test_the_real_init_layout_is_read_and_updated(tmp_path):
+    # since 1.2.0, __init__.py reads installed metadata and keeps the literal as an indented fallback
+    root = _version_tree(tmp_path, "1.2.0")
+    init = root / "src/auditkit/__init__.py"
+    init.write_text(
+        "from importlib import metadata as _metadata\n\n"
+        "try:\n"
+        '    __version__ = _metadata.version("auditkit")\n'
+        "except _metadata.PackageNotFoundError:\n"
+        '    __version__ = "1.2.0"\n'
+    )
+    assert current_version(root) == "1.2.0"
+    set_version("1.2.1", root)
+    assert current_version(root) == "1.2.1"
+    text = init.read_text()
+    assert '    __version__ = "1.2.1"\n' in text and '_metadata.version("auditkit")' in text

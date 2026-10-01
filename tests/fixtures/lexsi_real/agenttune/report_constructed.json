@@ -1,0 +1,42 @@
+{
+  "use_case": "generic",
+  "model": "<placeholder model>",
+  "timestamp": "2026-09-26T00:02:50.544853",
+  "n_samples": 2,
+  "pass_rate": 0.5,
+  "n_errors": 1,
+  "duration_s": 0.1,
+  "means": {
+    "token_f1": 0.5
+  },
+  "stds": {
+    "token_f1": 0.7
+  },
+  "samples": [
+    {
+      "idx": 0,
+      "question": "<placeholder question one>",
+      "gold": "<placeholder answer one>",
+      "predicted": "<answer><placeholder answer one></answer>",
+      "n_tools": 2,
+      "tool_calls": [
+        "search_corpus",
+        "read_document"
+      ],
+      "scores": {
+        "token_f1": 1.0
+      },
+      "error": null
+    },
+    {
+      "idx": 1,
+      "question": "<placeholder question two>",
+      "gold": "<placeholder answer two>",
+      "predicted": "",
+      "n_tools": 0,
+      "tool_calls": [],
+      "scores": {},
+      "error": "<placeholder error>"
+    }
+  ]
+}

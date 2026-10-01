@@ -21,7 +21,7 @@ class TruthfulQAScenario(Scenario):
             import datasets
         except ImportError:
             raise ExtraNotInstalled("interop", "pip install auditkit[interop]")
-        data = datasets.load_dataset("truthfulqa", "multiple_choice", split=self.split)
+        data = datasets.load_dataset("truthfulqa/truthful_qa", "multiple_choice", split=self.split)
         return [
             Sample(
                 input=row["question"],

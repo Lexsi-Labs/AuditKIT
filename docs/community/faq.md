@@ -66,7 +66,7 @@ For a named wrapper, use `ak.model.CallableModel(my_model, name="my_app")`. See 
 
 ## What metrics are available?
 
-10 metric families with 48 individual metrics. See the [Metrics guide](../metrics.md)
+11 metric families with 68 registered metrics. See the [Metrics guide](../metrics.md)
 for the full list.
 
 ## Can I use AuditKIT in CI/CD?

@@ -16,37 +16,28 @@ reasoning for every one of them, specific to `vllm:`.
 
 ## Part 1 — Implementation gaps in `VLLMModel` itself
 
-### 1. No chat-template support — sends the raw flat prompt always
+### 1. Chat templates and tool calling — **fixed**
 
-**Where:** `VLLMModel.generate()`:
-```python
-prompts = [r.prompt if isinstance(r.prompt, str) else str(r.prompt) for r in requests]
-```
+`VLLMModel._render_prompt()` renders every request through the loaded model's own
+`tokenizer.chat_template` (from `self._llm.get_tokenizer()`), the same rule as
+`HFGenModel`: structured `messages` are formatted by the template, and a base
+model with no template gets the flat prompt.
 
-Unlike `HFGenModel._render_prompt()` (which checks the loaded model's own
-`tokenizer.chat_template` and formats structured `messages` through it when
-one exists, falling back to flat text only for genuine base models),
-`VLLMModel` never looks at a chat template at all — it always sends
-`request.prompt` as-is. For an instruct/chat-tuned model served via
-`vllm:`, this means the prompt is under-formatted compared to how the same
-checkpoint would be formatted via `hf:` or a hosted chat API
-(`openai:`/`anthropic:`/`groq:`/`litellm:`).
+**Native tool calling** works the same way as on `hf:`. `VLLMModel` declares
+`Capability.TOOLS`, `ToolCallAdapter()` passes the tool schemas to the template as
+`tools=`, and the model's reply is parsed for its calls (Hermes `<tool_call>`, Cohere
+action lists, JSON). A template that can't render tools (Tiny Aya, Aya Expanse, Aya
+Vision, North), or a model with no template, raises `CapabilityError` with the
+advice to use `ToolCallAdapter(mode="prompt")`; the schemas are never dropped
+silently. `RunConfig.chat_template_kwargs` (e.g. Qwen3's `{"enable_thinking": False}`)
+reaches the template too, and wins over `tools=` on a clash.
 
-**Status: real, open, unfixed.** Documented in `docs/known_issues.md` and
-`docs/BUGS.md` prior to this session; confirmed still true by reading
-current code. **Not yet demonstrated live** — the obvious test (compare
-`hf:<model>` vs `vllm:<model>` prompts for the same instruct checkpoint)
-was attempted in `examples/10_vllm_smoke_test.ipynb` section 3, but using
-`gpt2` (a base model with no chat template at all) on both sides, which
-can't demonstrate this gap — see the note in that notebook section. A
-live demonstration needs an instruction-tuned model with a
-`tokenizer.chat_template` on the `hf:` side.
+Batches mixing chat-templated and raw prompts are split into one engine call each,
+so every prompt gets exactly one BOS token (a template already carries it).
 
-**What a fix would look like:** extend `VLLMModel` with the same
-chat-template detection/rendering `HFGenModel._render_prompt()` already
-does — vLLM's own tokenizer is reachable via `self._llm.get_tokenizer()`
-after the engine is constructed, which should expose the same
-`chat_template` attribute a `transformers` tokenizer does.
+**Tool calling through a server instead:** `vllm serve --enable-auto-tool-choice
+--tool-call-parser <parser>` reached with `api:` returns structured
+`message.tool_calls`; see `examples/colab/03_vllm_integration.ipynb`.
 
 ### 2. `model_info()` — real introspection, but fallback path never confirmed to resolve
 
@@ -124,21 +115,13 @@ assuming a high `concurrency` will speed anything up.
 completeness since it's a behavioral difference from threadsafe
 backends (`LiteLLMModel`, `CallableModel`, `PrecomputedModel`).
 
-### 5. One shared `SamplingParams` per batch, not per-request
+### 5. Per-request `SamplingParams` — **fixed**
 
-**Where:** `VLLMModel.generate()`:
-```python
-# One shared SamplingParams for the whole batch -- same caveat as
-# HFGenModel: per-request variation isn't meaningful here.
-```
-
-If a batch of requests somehow carried different
-`temperature`/`max_tokens`/etc. per sample, only the first request's
-params would apply to the whole batch. In practice this never happens
-(one `evaluate()` run shares one `RunConfig`, so every request in a batch
-already has identical params) — documented here as a known constraint,
-not an active bug, matching the identical, already-accepted behavior in
-`HFGenModel`.
+`VLLMModel.generate()` builds one `SamplingParams` per request and passes the list
+to `LLM.generate` (parallel to the prompts), so each request's own `max_tokens`,
+`temperature`, `stop`, ... are honoured. It used to apply the first request's
+settings to the whole batch. That mattered once several callers shared a batch:
+an agent harness step's budget, or a judge's settings.
 
 ---
 
@@ -241,29 +224,36 @@ def _run(cmd):
 _run([sys.executable, "-m", "pip", "uninstall", "-y",
       "torch", "torchvision", "torchaudio",
       "nvidia-cuda-runtime", "nvidia-cuda-runtime-cu12"])
-# Install through the extra so the pyproject pin (vllm>=0.15,<0.20) drives
-# the version — NOT a bare `pip install vllm`, which pulls latest (0.26+,
-# CUDA 13) and defeats the pin.
+# Install through the extra so the pyproject pin (vllm>=0.30) drives the
+# version, and with it the matching torch.
 _run([sys.executable, "-m", "pip", "install", "--no-cache-dir", "auditkit[vllm]"])
 ```
 
-> **Why through the extra, and a re-verification caveat.** `pyproject.toml`
-> now pins `vllm>=0.15,<0.20` (see the `[project.optional-dependencies]` comment in `pyproject.toml`) to stay coherent with the
-> `transformers<5` cap the rest of the library needs. The **original live
-> confirmation of this fix used an *unpinned* `pip install vllm`**, which
-> resolved to `torch==2.11.0+cu130` + `vllm==0.26.0` — the modern CUDA-13
-> stack — and `VLLMModel(model="gpt2").generate(...)` then produced real
-> text with zero further workarounds. With the current pin,
-> `auditkit[vllm]` instead resolves to the `vllm 0.15–0.19` line
-> (`torch 2.9.1–2.10.0`, CUDA 12.x). That older line is **not yet
-> live-verified in this repo** — and, being CUDA-12-era, it may actually
-> *match* Colab's pre-shipped CUDA-12 `torch` and sidestep this issue
-> entirely rather than needing the uninstall dance at all. Both are
-> plausible; **re-verify on a fresh Colab GPU with the pinned combo** and
-> update this note with the result (which path actually fires) rather than
-> assuming. The CUDA build tag (`+cu12x` vs `+cu13x`) is *not* expressible
-> in a pyproject version pin, so this remains an environment-level fix no
-> matter what we pin.
+> **Re-verified 2026-10-01 with the current pin.** `pyproject.toml` pins `vllm>=0.30` (the first
+> vLLM with North Micro Vision's `cohere_compass`, on transformers 5.x). On fresh Colab runtimes,
+> `pip install -e ".[vllm,requests]"` resolved `vllm 0.30.0` with `torch 2.13.0` (CUDA 13), and it
+> loaded the Cohere models on both an A100 and an RTX PRO 6000 **without** this uninstall: the only
+> step needed was removing Colab's CUDA-12 `torchaudio` (2.6 below), before anything imported torch.
+> `tests/integrations_suite/colab_vllm_cohere_matrix.ipynb` does exactly that. Keep the uninstall
+> above for a machine whose pre-installed torch still disagrees with vLLM's; the CUDA build tag
+> (`+cu12x` vs `+cu13x`) can't be expressed in a version pin, so that case stays an environment fix.
+
+#### 2.6 `PyTorch and TorchAudio were compiled with different CUDA versions`
+
+**Where:** any `transformers` import (its `audio_utils` imports `torchaudio`
+whenever it is installed), so `hf:` and `vllm:` model loads fail, after
+`pip install "auditkit[vllm]"` on Colab.
+
+**Root cause:** vLLM upgrades `torch` to a CUDA 13 build. Colab's
+preinstalled `torchaudio` (CUDA 12.8) is not a vLLM dependency, so pip leaves
+it in place, and it refuses to load against the new `torch`.
+
+**Fix:** nothing in AuditKit needs audio. After installing `[vllm]`, and before
+importing `transformers` or `vllm`:
+```bash
+pip uninstall -y torchaudio      # or install the torchaudio build matching torch's CUDA
+```
+`ak.check_compat(check_cuda=True)` reports this mismatch as an error.
 
 #### 2.5 `auditkit` `ModuleNotFoundError` after an editable install
 
@@ -289,15 +279,16 @@ starting Python) never hits this.
 
 | # | Issue | Kind | Scope | Status |
 |---|---|---|---|---|
-| 1 | No chat-template support | Implementation gap | Real limitation, always applies | **Open** — documented, not yet fixed |
+| 1 | Chat templates, native tool calling, one BOS per prompt | Implementation gap | Always applied | **Fixed** in `VLLMModel` |
 | 2 | `model_info()` fallback path unconfirmed | Implementation gap | Depends on installed vLLM version | **Unverified** — implemented, live test pending |
 | 3 | GPU memory not freed via `evaluate()` | Implementation gap | Any repeated local-model use via `evaluate()` | **Open** — workaround documented |
 | 4 | `threadsafe=False`, no concurrency | Implementation gap | By design | Not a bug — documented behavior |
-| 5 | Shared `SamplingParams` per batch | Implementation gap | Never actually triggered in practice | Not a bug — documented constraint |
+| 5 | Shared `SamplingParams` per batch | Implementation gap | Harness steps and judges sharing a batch | **Fixed** (one per request) |
 | 2.1 | CUDA re-init in forked subprocess | Environment | General (vLLM-internal) | **Fixed** in `VLLMModel` |
 | 2.2 | `sys.stdout.fileno()` crash | Environment | Jupyter/Colab-specific | **Fixed** in `VLLMModel` |
 | 2.3 | HF Hub Xet `404` | Environment | General (server-side/repo-specific) | **Fixed** (best-effort) in `VLLMModel` |
-| 2.4 | `libcudart.so.13` version mismatch | Environment | General (pre-existing mismatched `torch`) | **Not fixable from code / not fixable by version pins** — manual reinstall + restart; re-verify with the pinned `vllm<0.20` combo |
+| 2.6 | torch / torchaudio CUDA mismatch after `[vllm]` | Environment | Colab (preinstalled torchaudio) | **Documented**; `check_compat(check_cuda=True)` flags it |
+| 2.4 | `libcudart.so.13` version mismatch | Environment | General (pre-existing mismatched `torch`) | **Not fixable from code / not fixable by version pins** — manual reinstall + restart where it happens; not hit with `auditkit[vllm]` (vLLM 0.30, torch 2.13 cu13) on Colab, 2026-10-01 |
 | 2.5 | `ModuleNotFoundError` after editable install | Environment | Notebook-bootstrap-specific | **Fixed** in the notebook (not a library concern) |
 
 See `examples/10_vllm_smoke_test.ipynb` for the live, working sequence

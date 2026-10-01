@@ -20,6 +20,7 @@ class TaskKind(str, Enum):
     MCQ = "mcq"
     GENERATIVE = "generative"
     RAG = "rag"
+    AGENT = "agent"
     SECURITY = "security"
     PERFORMANCE = "performance"
     LANGUAGE_MODELING = "language_modeling"
@@ -35,6 +36,7 @@ class ScoreKind(str, Enum):
     PERF = "perf"
     HUMAN = "human"
     RAG = "rag"
+    AGENT = "agent"
 
 
 class DataType(str, Enum):
@@ -59,6 +61,7 @@ class Capability(str, Enum):
     LOGLIKELIHOOD = "loglikelihood"
     CHAT = "chat"
     EMBED = "embed"
+    TOOLS = "tools"
 
 
 class Source(str, Enum):

@@ -15,3 +15,6 @@ dist/
 .idea/
 .vscode/
 site/
+# Internal working scratch: new files here stay local (already-tracked ones are unaffected)
+internal/temp/
+internal/logs/

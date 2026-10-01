@@ -22,7 +22,7 @@ class MMLUScenario(Scenario):
             import datasets
         except ImportError:
             raise ExtraNotInstalled("interop", "pip install auditkit[interop]")
-        data = datasets.load_dataset("mmlu", self.subject, split=self.split)
+        data = datasets.load_dataset("cais/mmlu", self.subject, split=self.split)
         return [
             Sample(
                 input=row["question"],

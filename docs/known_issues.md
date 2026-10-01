@@ -1,9 +1,11 @@
 # Known issues
 
 A current source of truth for problems and limitations found via
-live testing (not inferred from reading code), as of 2026-07-16. Distinct
+live testing (not inferred from reading code), as of 2026-07-16; entries re-checked against the code on 2026-10-01. Distinct
 from the [Changelog](community/changelog.md), which records what changed and
-when — this page tracks what's still open right now.
+when — this page tracks what's still open right now. Supersedes
+`docs/notes/AUDIT_FINDINGS.md` and `docs/notes/KEY_ISSUES.md`, which cover
+earlier snapshots of some of the same items and are no longer maintained.
 
 For a flat, single-purpose bug list with copy-pasteable reproductions (no
 narrative, no doc-debt/never-verified sections), see [Bugs](BUGS.md) —
@@ -20,14 +22,16 @@ time on a real GPU), see [vLLM Known Issues](VLLM_KNOWN_ISSUES.md).
 | Issue | Where | Detail |
 |---|---|---|
 | No annotator integration for 3 metrics | `metrics/pairwise.py` | `win_rate`, `elo_score`, `preference_accuracy` all read fixed top-level `context` keys (`candidates`, `pairwise_results`, `preference_data`) that an `Annotator`'s output never populates. `extract_with=` has no effect on any of these regardless of configuration — see [Annotators](annotators.md). |
-| The 6 built-in benchmark scenarios fail to load | `src/auditkit/scenarios/` | `mmlu`/`gsm8k`/`arc`/`hellaswag`/`truthfulqa`/`humaneval` all point at stale/unqualified HuggingFace dataset references that fail with the `datasets`/`huggingface_hub` versions in a typical current environment (`HfUriError`/`DatasetNotFoundError`). The same class of issue was independently hit again testing RAG with bare `squad` — the canonical namespaced ID (`rajpurkar/squad`) works; the built-in scenarios need the equivalent fix. |
 | `RunResult.model_spec` doesn't serialize cleanly | `src/auditkit/report.py` | `RunResult.to_dict()` stores the live `Model` instance, not the original spec string/dict — `json.dump(..., default=str)` produces an unusable object-repr string (e.g. `"<auditkit.model.groq_gen.GroqModel object at 0x...>"`). Everything else on `RunResult` (`config`, `headline`, `predictions`) round-trips correctly through save/load. |
 | `num_completions`/`best_of` reach the API but don't affect the score; `RunConfig.extra` unused | `src/auditkit/runner.py`, `src/auditkit/report.py` | Adapters now forward all generation params consistently (see "Fixed recently"), so `num_completions`/`best_of` do reach a backend that supports them — but the scoring path only ever reads `completions[0]`, so extra completions change cost/output without changing the score. `RunConfig.extra: dict` is declared and hashed into the fingerprint but never read anywhere in the codebase. |
 
 ## Real limitations — by design or upstream, not bugs to fix
 
-- **`vllm:`/`lexsi:` backends don't apply a chat template to flat prompts.** The `hf:` backend (via the model's own `tokenizer.chat_template`) and the hosted chat APIs (`openai:`/`anthropic:`/`groq:`) format any adapter's prompt correctly for an instruct model; `vllm:` and `lexsi:` still send the raw flat prompt, so an instruct model served that way is under-formatted. Extending the same wrap-as-user-turn rendering to those two backends is the follow-up. See [vLLM Known Issues](VLLM_KNOWN_ISSUES.md) for this and every other `vllm:`-specific gap (GPU memory leak via `evaluate()`, `model_info()` fallback status, and the dependency/environment issues hit getting it running at all).
+- **`lexsi:` doesn't apply a chat template to flat prompts.** `hf:` and `vllm:` render the model's own chat template (including Cohere's named templates), and the hosted chat APIs (`openai:`/`anthropic:`/`groq:`) take chat messages; `lexsi:` still sends the raw flat prompt, so an instruct model served that way is under-formatted. See [vLLM Known Issues](VLLM_KNOWN_ISSUES.md) for the `vllm:`-specific gaps that remain (GPU memory not freed by `evaluate()` alone, `model_info()` fallback status) and the dependency/environment issues.
 
+- **Native tool calling works only on `api:`, `agent:`, `hf:` and `vllm:`.** They are the only backends that declare `Capability.TOOLS` (`hf:` and `vllm:` render the schemas through the chat template, so the template must support tools; none of the Cohere models' templates do, so use `mode="prompt"` with Tiny Aya, Aya Expanse, Aya Vision and North). With `ToolCallAdapter()` (native mode) on `openai:`, `anthropic:`, `groq:`, `openrouter:` or `litellm:`, the Runner raises `CapabilityError` instead of silently dropping the tools. Use `api:` with the provider's OpenAI-compatible base URL, or `ToolCallAdapter(mode="prompt")`, which describes the tools in the system prompt and parses `<tool_call>` blocks from the text. See [Agents & RAG](agents_and_rag.md).
+- **A single-response model shows one turn.** `api:` (and any text backend) makes one request per sample, so it only produces the model's next turn; AuditKit does not run the tool loop. With a multi-turn `expected_tool_calls`, the dependent later turns count as missed. Keep only the first reference turn for single-step evals, or evaluate a full agent through `agent:` or a recorded `actual_trace`.
+- **Judge claim extraction is non-deterministic.** `Faithfulness` asks the judge to split the answer into claims, and two runs (or two judges) can split the same answer differently, so the score can move without the answer changing. `temperature` defaults to `0.0`, which reduces but doesn't remove this. All retrieved contexts also go into one judge prompt; set `max_context_chars` for a small judge.
 - **`HFGenModel.loglikelihood()`** does one forward pass per request, not batched across a request list — correctness was prioritized for the first implementation; batching ragged prompt/continuation lengths correctly is additional surface area for a numerical bug.
 - **`representation_skew`** (which replaced the mislabeled `bias_score`) measures demographic-*representation* balance, not bias. By design it can't see meaning — a sentence mentioning men and women equally scores `0.0` even if blatantly sexist — and it's a per-sample signal best read in aggregate over a run. This is now explicit in the name/docstring rather than a hidden flaw. For biased *content*, use `bias_judge` (LLM-as-judge); for whether the model *treats groups differently*, run a counterfactual benchmark (BBQ / CrowS-Pairs via `run_lmeval`).
 - **`win_rate`/`elo_score`/`preference_accuracy`** silently fall back to a crude token-overlap proxy score whenever the caller doesn't manually populate the relevant `context` key (`candidates`/`pairwise_results`/`preference_data`) — easy to use without realizing you're getting the degraded fallback.
@@ -49,7 +53,8 @@ nonexistent `ARCScenario(challenge=...)` param and a broken top-level
 import; `docs/scorers_reference.md`/`docs/annotators.md` referenced 6
 metrics (`tool_correctness`, `trajectory_match`, `step_efficiency`,
 `coherence`, `turn_taking`, `context_adherence`) deleted from the
-codebase entirely; `docs/community/changelog.md` still advertised those
+codebase entirely (a new `trajectory_match`, with other agent metrics,
+returned in 1.1.0; see [Agents & RAG](agents_and_rag.md)); `docs/community/changelog.md` still advertised those
 same deleted features. See recent commits for the full list — this
 section intentionally stays short rather than re-deriving as a static
 snapshot that will itself go stale.
@@ -61,10 +66,14 @@ snapshot that will itself go stale.
 
 ## Fixed recently (for context — see the [Changelog](community/changelog.md) for full detail)
 
-`Runner.score_one()` silently masking `ExtraNotInstalled` as a fake `0.0`
+the 6 built-in benchmark scenarios failing to load (namespaced Hub ids; HumanEval's `TaskKind`); `api:` sending `OPENAI_API_KEY` to self-hosted servers (it now goes only to OpenAI's own host;
+anything else uses `api_key=` or `API_KEY`); `vllm:` sending raw prompts (it renders the chat
+template, and passes native tools); `Runner.score_one()` silently masking `ExtraNotInstalled` as a fake `0.0`
 score; `Perplexity` returning `nan` on short outputs; `WordErrorRate` going
 negative; `Faithfulness`/`ContextPrecision` substring-matching false
-positives; `ToxicityScore`'s keyword-only detection; `RunConfig.concurrency`'s
+positives (the old lexical metrics, since renamed `LexicalGroundedness`/
+`ContextOverlap`; the 1.1.0 `Faithfulness`/`ContextPrecision` are new LLM
+judges); `ToxicityScore`'s keyword-only detection; `RunConfig.concurrency`'s
 unsafe default; 14 built-in metrics with constructor config invisible to
 run fingerprinting; `Runner.execute()` now enforces `Model.threadsafe` (and
 never builds empty chunks); adapters now forward one consistent generation-param

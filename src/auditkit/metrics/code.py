@@ -201,13 +201,28 @@ class F1Score(Metric):
     kind = ScoreKind.CODE
     direction = Direction.MAXIMIZE
 
-    def __init__(self) -> None:
+    def __init__(self, normalize: bool = True) -> None:
+        """Token-overlap F1. ``normalize`` (default) compares SQuAD-style: lowercase,
+        punctuation and articles removed, so "Red" matches "red" and "Triangle."
+        matches "triangle". ``normalize=False`` keeps the old raw whitespace split."""
         self.name = "f1_score"
+        self.normalize = normalize
         self.required_fields = frozenset({"target"})
 
+    def identity(self) -> dict:
+        return {"name": self.name, "normalize": self.normalize}
+
+    @staticmethod
+    def _tokens(text: str) -> list[str]:
+        import re
+        import string
+        text = "".join(ch for ch in text.lower() if ch not in string.punctuation)
+        return re.sub(r"\b(a|an|the)\b", " ", text).split()
+
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
-        output_tokens = output.split()
-        target_tokens = (sample.target or "").split()
+        split = self._tokens if self.normalize else str.split
+        output_tokens = split(output)
+        target_tokens = split(sample.target or "")
         if not output_tokens and not target_tokens:
             return Score(name=self.name, value=0.0, kind=self.kind)
         out_set = set(output_tokens)

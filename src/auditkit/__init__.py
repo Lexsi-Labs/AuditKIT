@@ -2,14 +2,28 @@
 
 from __future__ import annotations
 
-__version__ = "1.0.0"
+from importlib import metadata as _metadata
+
+try:
+    __version__ = _metadata.version("auditkit")
+except _metadata.PackageNotFoundError:  # a source checkout that was never installed
+    __version__ = "1.2.0"
 
 from .api import run_lmeval, compare, evaluate, evaluate_many, generate, scorer
+from .lexsi_login import lexsi_login
 from .lmeval_engine import BenchmarkEvaluator, map_model_spec, run_benchmark
-from .loaders import load_csv, load_hf, load_croissant
+from .loaders import load_agenttune, load_croissant, load_csv, load_dataset, load_hf, load_jsonl
+from .bfcl import bfcl_arg_match, load_bfcl
+from .provenance import read_provenance
+from .agent_eval import (
+    AgentCase, AgentEvent, AgentEpisode, AgentEvalSpec, AgentEvalRunner, AgentEvalResult,
+    FinalStateAssertion, ArtifactAssertion, AnswerAssertion, CustomPredicate,
+    episodes_from_agenttune, episode_from_openai_messages, episode_from_sample,
+)
 from .model_compare import CompareResult, compare_models
 from .experiment import Experiment, ExperimentDB
 from .cache import DiskCache
+from .compat import CompatReport, check_compat
 from .logs import configure_logging
 from .diff import DeltaGrade, RunDiff
 from .comparison import MetricDelta, RunComparison, TaskDelta, grade_delta
@@ -38,10 +52,31 @@ from .metrics.toxicity import HateSpeechScore, RepresentationSkew, ToxicityScore
 from .metrics.guard import GuardJudge
 from .metrics.perf import LatencyStats, Throughput
 from .metrics.rag import AnswerOverlap, ContextCoverage, ContextOverlap, LexicalGroundedness
+from .metrics.rag_judge import (ContextPrecision, ContextRecall, Faithfulness,
+                                AnswerRelevancy, ResponseGroundedness, Hallucination, ContextRelevance)
+from .metrics.retrieval import RetrievalMetrics
+from .metrics.rag_stress import (
+    CorpusSnapshot, RAGCase, RAGTrace, EvidenceSetRecall, Freshness,
+    AclCompliance, CitationSupport, Abstention, make_doc, sha256_digest,
+    synthetic_bank_kb,
+)
+from .metrics.rag_stress_runner import (
+    NumericAccuracy, ContextRetention, StressCase, StressCaseResult, StressReport,
+    generate_stress_cases, run_stress, DEFAULT_METRICS,
+)
+from .metrics.rag_stress_ops import (
+    HumanReview, judge_calibration, review_queue, operational_stress,
+    false_answer_under_partial_retrieval, OPS_KINDS,
+)
+from .metrics.agent import (
+    ParallelToolCalls, RedundantToolCalls, TaskCompletion, ToolCallF1, ToolCallValidity, TrajectoryMatch,
+    AgentLoopDetection, ToolPermission, ToolSelectionJudge,
+)
+from .trace import ToolCall, parse_tool_calls, to_turns
 from .metrics.security import DefconGrade, KeywordDetector, ThreatCategory
 from .adapter import (
     Adapter, ChatAdapter, FewShotAdapter, GenerationAdapter, InstructionAdapter, MCQAdapter,
-    RAGAdapter, TemplateAdapter,
+    RAGAdapter, TemplateAdapter, ToolCallAdapter,
 )
 from .router import route_adapter
 from .annotator import Annotator, RegexAnnotator, LLMAnnotator, ThinkingStripAnnotator
@@ -73,9 +108,29 @@ __all__ = [
     "BenchmarkEvaluator",
     "run_benchmark",
     "map_model_spec",
+    "lexsi_login",
     "load_csv",
     "load_hf",
+    "load_dataset",
+    "read_provenance",
     "load_croissant",
+    "load_jsonl",
+    "load_agenttune",
+    "load_bfcl",
+    "bfcl_arg_match",
+    "AgentCase",
+    "AgentEvent",
+    "AgentEpisode",
+    "AgentEvalSpec",
+    "AgentEvalRunner",
+    "AgentEvalResult",
+    "FinalStateAssertion",
+    "ArtifactAssertion",
+    "AnswerAssertion",
+    "CustomPredicate",
+    "episodes_from_agenttune",
+    "episode_from_openai_messages",
+    "episode_from_sample",
     "Experiment",
     "ExperimentDB",
     "Sample",
@@ -128,6 +183,52 @@ __all__ = [
     "ContextCoverage",
     "ContextOverlap",
     "AnswerOverlap",
+    "Faithfulness",
+    "AnswerRelevancy",
+    "ResponseGroundedness",
+    "Hallucination",
+    "ContextRelevance",
+    "ContextPrecision",
+    "ContextRecall",
+    "RetrievalMetrics",
+    "CorpusSnapshot",
+    "RAGCase",
+    "RAGTrace",
+    "EvidenceSetRecall",
+    "Freshness",
+    "AclCompliance",
+    "CitationSupport",
+    "Abstention",
+    "make_doc",
+    "sha256_digest",
+    "synthetic_bank_kb",
+    "NumericAccuracy",
+    "ContextRetention",
+    "StressCase",
+    "StressCaseResult",
+    "StressReport",
+    "generate_stress_cases",
+    "run_stress",
+    "DEFAULT_METRICS",
+    "HumanReview",
+    "judge_calibration",
+    "review_queue",
+    "operational_stress",
+    "false_answer_under_partial_retrieval",
+    "OPS_KINDS",
+    "ToolCallF1",
+    "TrajectoryMatch",
+    "ParallelToolCalls",
+    "ToolCallValidity",
+    "RedundantToolCalls",
+    "AgentLoopDetection",
+    "ToolPermission",
+    "ToolSelectionJudge",
+    "TaskCompletion",
+    "ToolCall",
+    "ToolCallAdapter",
+    "parse_tool_calls",
+    "to_turns",
     "JudgeMetric",
     "RubricItem",
     "GEval",
@@ -142,6 +243,8 @@ __all__ = [
     "KeywordDetector",
     "DefconGrade",
     "DiskCache",
+    "check_compat",
+    "CompatReport",
     "ThreatCategory",
     "LatencyStats",
     "Throughput",

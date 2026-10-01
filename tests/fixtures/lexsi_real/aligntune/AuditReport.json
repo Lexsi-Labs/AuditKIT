@@ -1,0 +1,11 @@
+{
+  "reward_hacking": 0.12,
+  "sycophancy": 0.4,
+  "refusal_collapse": 0.05,
+  "verbosity_gain": 0.0,
+  "timestamp": "2026-09-25T18:31:30.881797",
+  "avg_response_tokens": 180.0,
+  "repetition_ratio": 0.15,
+  "unique_token_ratio": 0.82,
+  "degenerate_rate": 0.04
+}

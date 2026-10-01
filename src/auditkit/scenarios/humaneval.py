@@ -21,12 +21,12 @@ class HumanEvalScenario(Scenario):
             import datasets
         except ImportError:
             raise ExtraNotInstalled("interop", "pip install auditkit[interop]")
-        data = datasets.load_dataset("openai_humaneval", split=self.split)
+        data = datasets.load_dataset("openai/openai_humaneval", split=self.split)
         return [
             Sample(
                 input=row["prompt"],
                 target=row["canonical_solution"],
-                kind=TaskKind.CODE,
+                kind=TaskKind.GENERATIVE,   # no TaskKind.CODE; scoring by execution is not built in
             )
             for row in data
         ]

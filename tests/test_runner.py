@@ -273,8 +273,12 @@ def test_crashing_metric_is_not_recorded_as_a_zero_score():
     # The failure is recorded, not silently discarded.
     assert errs == [{"sample_id": None, "metric": "crashing_metric",
                       "error": "simulated metric computation bug"}]
-    # correct/score reflect the metric that actually ran, not the crashed one.
-    assert prediction.correct is True
+    # The crashed primary metric is not replaced by the next one: the sample
+    # is not "correct" and has no primary score (it used to borrow
+    # exact_match's 1.0 and count as a pass).
+    assert prediction.correct is False
+    assert prediction.score is None
+    assert prediction.metadata["metric_errors"] == ["crashing_metric"]
 
 
 # ---- track_performance: on by default, opt-out available ------------------
@@ -422,3 +426,162 @@ def test_loglikelihood_run_records_perf():
     result = Runner().run(spec)
     assert result.perf["latency_ms"]["count"] == 1
     assert result.perf["throughput"]["total_requests"] == 2  # one loglikelihood request per choice
+
+
+class _FinishReasonModel(Model):
+    """Returns a scripted (text, finish_reason) per request, in order."""
+
+    name = "finish_reason_test"
+
+    def __init__(self, scripted):
+        self._scripted = scripted
+
+    def capabilities(self):
+        return {Capability.GENERATE}
+
+    def generate(self, requests):
+        return [Result_(completions=[Generated(text=t, finish_reason=fr)])
+                for (t, fr) in self._scripted]
+
+
+def test_empty_length_output_recorded_as_failure_not_scored(monkeypatch, tmp_path):
+    """An empty reply truncated at max_tokens (finish_reason='length', typical of
+    reasoning models) must be recorded as a failed sample, not silently scored ""
+    -- which would even mark an irrelevance/empty-target sample "correct"."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    samples = [Sample(input="a", target="", id="trunc"),      # empty + length -> failure
+               Sample(input="b", target="", id="empty_ok"),   # empty + stop   -> scored
+               Sample(input="c", target="x", id="short")]     # short + length -> scored
+    model = _FinishReasonModel([("", "length"), ("", "stop"), ("x", "length")])
+    spec = RunSpec(scenario=ListScenario(samples), model=model,
+                   adapter=GenerationAdapter(), metrics=[ExactMatch()], config=RunConfig())
+    result = Runner().run(spec)
+
+    assert result.failed_count == 1
+    assert [e["sample_id"] for e in result.errors] == ["trunc"]
+    # The genuine empty answer and the truncated-but-nonempty answer both score
+    # normally -- the guard must not swallow them.
+    assert result.stats["exact_match"].count == 2
+    assert result.stats["exact_match"].mean == 1.0
+
+
+# ---- timeout must bound wall-clock, not wait for a slow generate() ---------
+
+import threading
+import time as _time
+
+from auditkit.errors import ModelTimeout
+
+
+class _BlockingModel(Model):
+    """generate() blocks on an Event until the test releases it -- stands in
+    for a slow/hung backend without a real sleep leaking into the suite."""
+
+    name = "blocking"
+
+    def __init__(self):
+        self.release = threading.Event()
+        self.entered = threading.Event()
+
+    def capabilities(self):
+        return {Capability.GENERATE}
+
+    def generate(self, requests):
+        self.entered.set()
+        self.release.wait(5)  # released by the test right after it asserts
+        return [Result_(completions=[Generated(text="late")]) for _ in requests]
+
+
+def test_timeout_bounds_wall_clock_and_raises_modeltimeout():
+    model = _BlockingModel()
+    reqs = [Request(prompt="q")]
+    start = _time.perf_counter()
+    try:
+        with pytest.raises(ModelTimeout):
+            # max_retries=0: one attempt, and ModelTimeout is not retried anyway.
+            Runner()._retry_generate(model, reqs, max_retries=0, retry_delay=0.0, timeout=0.3)
+        elapsed = _time.perf_counter() - start
+        # Bounded by `timeout` (0.3s), not by generate()'s 5s block.
+        assert elapsed < 1.0, f"timeout did not cut the call: waited {elapsed:.2f}s"
+    finally:
+        model.release.set()  # let the orphaned worker finish so it can't linger
+
+
+def test_a_crashed_metric_counts_the_sample_as_failed(monkeypatch, tmp_path):
+    """A metric that raises on a sample must not leave the run looking clean:
+    that sample counts in failed_count and records which metric failed."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+
+    class _Boom(ExactMatch):
+        name = "boom_on_b"
+
+        def score(self, sample, output, context=None):
+            if sample.id == "b":
+                raise ValueError("malformed output")
+            return super().score(sample, output, context)
+
+    samples = [Sample(input="a", target="x", id="a"), Sample(input="b", target="x", id="b")]
+    model = _FinishReasonModel([("x", "stop"), ("x", "stop")])
+    spec = RunSpec(scenario=ListScenario(samples), model=model,
+                   adapter=GenerationAdapter(), metrics=[_Boom()], config=RunConfig())
+    result = Runner().run(spec)
+
+    assert result.failed_count == 1
+    bad = [p for p in result.predictions if p.sample_id == "b"][0]
+    assert bad.metadata["metric_errors"] == ["boom_on_b"]
+    assert bad.correct is not True
+
+
+# -- G16 (fix plan #15): setup errors are not retried and not hidden -------------------------------------
+
+class _Counting:
+    name = "counting"
+    threadsafe = False
+
+    def __init__(self, exc_factory):
+        self.calls, self.exc_factory = 0, exc_factory
+
+    def generate(self, requests):
+        self.calls += 1
+        raise self.exc_factory()
+
+
+def _retry(model):
+    from auditkit.runner import Runner
+    return Runner()._retry_generate(model, [object()], max_retries=3, retry_delay=0.0)
+
+
+@pytest.mark.parametrize("make", [
+    lambda: ImportError("No module named 'vllm'"),
+    lambda: TypeError("unexpected keyword argument 'model_args'"),
+    lambda: ValueError("The following `model_kwargs` are not used by the model: ['model_args']"),
+    lambda: FileNotFoundError("model not found"),
+    lambda: OSError("foo is not a local folder and is not a valid model identifier"),
+])
+def test_g16_setup_errors_raise_at_once_unwrapped(make):
+    m = _Counting(make)
+    with pytest.raises(type(make())) as info:
+        _retry(m)
+    assert m.calls == 1 and str(make()) in str(info.value)
+
+
+def test_g16_an_error_raised_during_an_import_is_a_setup_error(tmp_path, monkeypatch):
+    (tmp_path / "broken_backend_dep.py").write_text(
+        "raise RuntimeError('Detected that PyTorch and TorchAudio were compiled with different CUDA versions.')\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    def imports_broken():
+        import broken_backend_dep  # noqa: F401
+    m = _Counting(lambda: None)
+    m.generate = lambda requests: (setattr(m, "calls", m.calls + 1), imports_broken())
+    with pytest.raises(RuntimeError, match="TorchAudio"):
+        _retry(m)
+    assert m.calls == 1
+
+
+def test_g16_transient_errors_still_retry_and_the_message_names_the_cause():
+    from auditkit.errors import ModelError
+    m = _Counting(lambda: ConnectionError("connection reset by peer"))
+    with pytest.raises(ModelError, match="ConnectionError: connection reset by peer"):
+        _retry(m)
+    assert m.calls == 4                              # 1 + 3 retries

@@ -91,6 +91,58 @@ def split_session_kwargs(kwargs: dict[str, Any]) -> tuple[dict[str, Any], dict[s
     return session_kwargs, body_kwargs
 
 
+def is_transient(e: BaseException) -> bool:
+    """HTTP 429/5xx or a dropped connection: worth re-sending the request.
+
+    A timeout is NOT transient here -- the server may still be running the
+    request, and re-sending it duplicates an agent's side effects.
+    """
+    status = getattr(e, "status", None)
+    if status is None:
+        status = getattr(getattr(e, "response", None), "status_code", None)
+    if isinstance(status, int):
+        return status == 429 or status >= 500
+    reason = getattr(e, "reason", e)  # urllib's URLError wraps the socket error
+    return isinstance(reason, ConnectionError)
+
+
+def generate_each(
+    requests: list["Request"], one: Callable[["Request"], "Result_"], *,
+    max_retries: int = 0, retry_delay: float = 1.0, where: str = "", log: Any = None,
+) -> list["Result_"]:
+    """``[one(r) for r in requests]`` where a failure fails only that request.
+
+    Never raises: the runner's batch retry would re-send every earlier,
+    already-answered request (duplicating billed or side-effecting calls).
+    A failed request becomes ``finish_reason="error"`` with the reason in
+    ``Generated.error``; transient failures (:func:`is_transient`) are retried
+    up to *max_retries* times with exponential backoff first.
+    """
+    import logging
+    import time
+    log = log or logging.getLogger(__name__)
+    out = []
+    for r in requests:
+        t0 = time.monotonic()
+        for attempt in range(max_retries + 1):
+            try:
+                out.append(one(r))
+                break
+            except Exception as e:  # noqa: BLE001 -- any failure is this request's alone
+                if attempt < max_retries and is_transient(e):
+                    log.warning("%s request failed (retry %d/%d): %s", where, attempt + 1, max_retries, e)
+                    time.sleep(retry_delay * (2 ** attempt))
+                    continue
+                log.warning("%s request failed: %s", where, e)
+                out.append(Result_(
+                    completions=[Generated(text="", finish_reason="error",
+                                           error=f"{type(e).__name__}: {e}"[:1000])],
+                    latency_ms=(time.monotonic() - t0) * 1000,
+                ))
+                break
+    return out
+
+
 def resolve_params(
     request: "Request",
     defaults: dict[str, Any],
@@ -124,6 +176,35 @@ def resolve_params(
     for internal_key, api_key in key_map.items():
         if internal_key in request.params and request.params[internal_key] is not None:
             out[api_key] = request.params[internal_key]
+    return out
+
+
+def template_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """A copy of *messages* ready for a chat template: each assistant
+    ``tool_calls[].function.arguments`` given as a JSON **string** (OpenAI format,
+    AgentTune transcripts) is decoded to a dict. HF chat templates expect a dict;
+    Command R7B's would render the string as ``"parameters": "{\\"a\\": 2}"``, a
+    malformed call in the model's own history. Undecodable strings are left as-is."""
+    import json
+
+    out: list[dict[str, Any]] = []
+    for m in messages:
+        calls = m.get("tool_calls") if isinstance(m, dict) else None
+        if not calls:
+            out.append(m)
+            continue
+        fixed = []
+        for c in calls:
+            fn = c.get("function") if isinstance(c, dict) else None
+            if isinstance(fn, dict) and isinstance(fn.get("arguments"), str):
+                try:
+                    args = json.loads(fn["arguments"] or "{}")
+                except ValueError:
+                    args = None
+                if isinstance(args, dict):
+                    c = {**c, "function": {**fn, "arguments": args}}
+            fixed.append(c)
+        out.append({**m, "tool_calls": fixed})
     return out
 
 
@@ -179,6 +260,13 @@ class Generated:
     logprob: Optional[float] = None
     finish_reason: Optional[str] = None
     media: Optional[list[Any]] = None
+    # Structured output beyond text, for agents and RAG pipelines:
+    # ``{"tool_calls": [[...turns...]], "messages": [...], "retrieved_contexts": [...]}``.
+    # The Runner copies it into the scoring context as ``context["trace"]``.
+    trace: Optional[dict[str, Any]] = None
+    # Why a per-request failure happened (finish_reason="error"); the Runner
+    # puts it in RunResult.errors instead of a generic message.
+    error: Optional[str] = None
 
 
 @dataclass
@@ -201,6 +289,47 @@ class LogLikelihood:
 
     logprob: float
     is_greedy: bool = False
+
+
+# The first transformers release that knows each architecture AuditKit is documented to run,
+# where it is newer than the oldest transformers the ecosystem still ships (#51).
+_ARCH_MIN_TRANSFORMERS = {"cohere_compass": "5.15"}
+
+
+def explain_unknown_architecture(err: BaseException, model: str) -> Optional[ValueError]:
+    """transformers' "model type `x` but Transformers does not recognize this architecture",
+    rewritten to say what actually happened: an installed transformers too old for the model.
+
+    That message reads like a broken checkpoint and cost several Colab runs in #51, where a stale
+    auditkit (1.0.0, ``transformers<5``) had quietly downgraded transformers. Returns None for any
+    other error.
+    """
+    import re
+    msg = str(err)
+    m = re.search(r"model type `([\w.-]+)` but Transformers does not recognize this architecture", msg)
+    if not m:
+        return None
+    model_type = m.group(1)
+    try:
+        from importlib import metadata
+        installed = metadata.version("transformers")
+    except Exception:   # noqa: BLE001
+        installed = "unknown"
+    try:
+        from importlib import metadata
+        auditkit_version = metadata.version("auditkit")
+    except Exception:   # noqa: BLE001
+        auditkit_version = None
+    floor = _ARCH_MIN_TRANSFORMERS.get(model_type)
+    need = f"transformers>={floor}" if floor else "a newer transformers"
+    fix = f"transformers>={floor},<6" if floor else "transformers>=5.15,<6"
+    return ValueError(
+        f"{model!r} is a {model_type!r} model, and the installed transformers {installed} does not know "
+        f"that architecture: it needs {need}. The checkpoint is fine. AuditKit's [transformers] extra "
+        f"requires transformers>=5.15,<6, so an older one means something else pinned it; the usual "
+        f"cause is an auditkit that isn't this one (installed auditkit: {auditkit_version or 'not found'}; "
+        f"check `pip show auditkit` and where it was installed from). Fix: pip install '{fix}'."
+        f"\n\ntransformers said: {msg}")
 
 
 def _free_torch_memory() -> None:
@@ -264,6 +393,15 @@ class Model(ABC):
         backend lazily reloads on the next ``generate()`` if reused.
         """
         return
+
+    def run_notes(self) -> dict[str, Any]:
+        """Facts about the finished run that only the backend knows, merged
+        into ``RunResult.metadata``; reading them resets them for the next run.
+
+        ``api:`` reports the server it detected and the request fields it may
+        have ignored (``api_server``, ``unverified_request_fields``). Default: none.
+        """
+        return {}
 
     @abstractmethod
     def generate(self, requests: list[Request]) -> list[Result_]:
@@ -424,9 +562,21 @@ _T1_BACKENDS: dict[str, tuple[str, str, str]] = {
     "api:": ("model.api_gen", "APIModel", "requests"),   # pip install auditkit[requests]
     "groq:": ("model.groq_gen", "GroqModel", "requests"),   # pip install auditkit[requests]
     "openrouter:": ("model.openrouter_gen", "OpenRouterModel", "requests"),   # pip install auditkit[requests]
+    "agent:": ("model.agent_endpoint", "AgentEndpointModel", "core"),   # stdlib only: agent:https://host/path
 }
 
 _T1_PREFIXES = ()
+
+# A bare prefix ("api:") is decided per backend (#43):
+# - these need a name: a served model or one to load. A constructor default
+#   (gpt-4o-mini, gpt2) would evaluate a model nobody asked for, and api: used
+#   to send {"model": null};
+# - agent: passes None through, since the URL may come as url= and the backend
+#   raises itself when neither is given;
+# - every other (hosted) prefix falls back to its backend's default model.
+_NEEDS_MODEL_NAME = {"api:": "api:Qwen/Qwen2.5-7B-Instruct", "hf:": "hf:CohereLabs/tiny-aya-global",
+                     "vllm:": "vllm:Qwen/Qwen2.5-7B-Instruct"}
+_BARE_PASSES_NONE = {"agent:"}
 
 
 class AutoModel:
@@ -447,7 +597,10 @@ class AutoModel:
             - ``list[str] -> list[str]`` callable — wrapped in :class:`CallableModel`
             - ``"openai:..."``, ``"anthropic:..."``, ``"hf:..."``, ``"lexsi:..."``,
               ``"groq:..."``, ``"openrouter:..."`` — resolved to the corresponding T1 backend
-            - ``"vllm:..."``, ``"litellm:..."``, ``"api:..."`` — not yet implemented
+            - ``"vllm:..."``, ``"litellm:..."``, ``"api:..."``: also resolved to their
+              T1 backends; ``"agent:<url>"`` resolves to
+              :class:`~auditkit.model.agent_endpoint.AgentEndpointModel`, an
+              externally deployed agent called over HTTP (stdlib only)
         **opts
             Extra keyword args forwarded to the backend constructor.
         """
@@ -458,12 +611,17 @@ class AutoModel:
         if isinstance(spec, str):
             for prefix, (mod, cls_name, extra) in _T1_BACKENDS.items():
                 if spec.startswith(prefix):
+                    model_name = spec[len(prefix):] if spec[len(prefix):].strip() else None
+                    if model_name is None and prefix in _NEEDS_MODEL_NAME:
+                        raise AuditKitError(f"empty model spec {spec!r}: name the model, "
+                                            f"e.g. {_NEEDS_MODEL_NAME[prefix]!r}")
                     try:
                         m = importlib.import_module(f"auditkit.{mod}")
                         backend_cls = getattr(m, cls_name)
                     except ImportError:
                         raise ExtraNotInstalled(extra, f"pip install auditkit[{extra}]")
-                    model_name = spec[len(prefix):] or None
+                    if model_name is None and prefix not in _BARE_PASSES_NONE:
+                        return backend_cls(name=spec, **opts)
                     return backend_cls(model=model_name, name=spec, **opts)
             for prefix in _T1_PREFIXES:
                 if spec.startswith(prefix):
@@ -481,5 +639,5 @@ class AutoModel:
                     "with ak.run_lmeval(tasks, model='hf:...') or "
                     "ak.evaluate(tasks, model='hf:...', engine='lmeval')."
                 )
-            raise AuditKitError(f"unknown model spec {spec!r}; known: 'precomputed', 'openai:', 'anthropic:', 'hf:', 'lexsi:', 'groq:', 'openrouter:', 'vllm:', 'litellm:', 'api:'")
+            raise AuditKitError(f"unknown model spec {spec!r}; known: 'precomputed', 'openai:', 'anthropic:', 'hf:', 'lexsi:', 'groq:', 'openrouter:', 'vllm:', 'litellm:', 'api:', 'agent:'")
         raise AuditKitError(f"cannot resolve model spec: {spec!r}")

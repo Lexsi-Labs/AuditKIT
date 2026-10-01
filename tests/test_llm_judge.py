@@ -5,6 +5,8 @@ The judge model is a fake (canned text), so these run offline.
 
 from __future__ import annotations
 
+import pytest
+
 import auditkit as ak
 from auditkit.metrics.judge import LLMJudge, GEval, RubricItem
 from auditkit.model import Generated, Result_
@@ -277,6 +279,132 @@ def test_match_choice_picks_the_label_at_the_last_text_position_not_dict_order()
     # "relevant" is the label that actually appears last in the text (the
     # real verdict, per "final line" convention) -- confirmed previously
     # broken: it returned "irrelevant".
+    # (B1) A label merely ending the line no longer counts, so the negated
+    # sentence is unknown; the label after a verdict phrase is still read by
+    # text, not by dict order.
     j = LLMJudge(choices={"relevant": 1.0, "partially_relevant": 0.5, "irrelevant": 0.0})
-    label = j._match_choice("the answer is not irrelevant, it is relevant.")
-    assert label == "relevant"
+    assert j._match_choice("the answer is not irrelevant, it is relevant.") is None
+    assert j._match_choice("Verdict: relevant, not irrelevant.") == "relevant"
+
+
+def test_judge_cache_identity_separates_callables_and_judge_args():
+    """Two different callable judges, or one spec with different judge args,
+    must not share a cache identity (they previously both read 'function')."""
+    from auditkit.metrics.judge import LLMJudge
+
+    def lenient(prompts):
+        return ["1" for _ in prompts]
+
+    def strict(prompts):
+        return ["0" for _ in prompts]
+
+    a = LLMJudge(prompt="{output}", judge_model=lenient, name="j").identity()
+    b = LLMJudge(prompt="{output}", judge_model=strict, name="j").identity()
+    assert a["judge_model"] != b["judge_model"]
+    c = LLMJudge(prompt="{output}", judge_model="api:x", judge_model_args={"api_base": "http://a"}, name="j")
+    d = LLMJudge(prompt="{output}", judge_model="api:x", judge_model_args={"api_base": "http://b"}, name="j")
+    assert c.identity() != d.identity()
+
+
+def test_judge_identity_excludes_api_key_and_timeout():
+    # Rotating an api_key or changing a timeout is a transport/secret change,
+    # not a scoring change: the judge's cache identity must stay put (and the
+    # secret must never land in the fingerprint blob). A real
+    # generation-affecting arg, though, must still enter identity.
+    base = {"api_base": "http://h/v1"}
+    j1 = LLMJudge(prompt="{output}", judge_model="api:x", name="j",
+                  judge_model_args={**base, "api_key": "SECRET1", "timeout": 30})
+    j2 = LLMJudge(prompt="{output}", judge_model="api:x", name="j",
+                  judge_model_args={**base, "api_key": "SECRET2", "timeout": 600})
+    assert j1.identity() == j2.identity()
+    assert "SECRET1" not in str(j1.identity())
+    # api_base is kept (it selects which model answered); api_key/timeout gone.
+    assert j1.identity()["judge_model_args"] == {"api_base": "http://h/v1"}
+    # a real generation-affecting arg survives alongside api_base.
+    j3 = LLMJudge(prompt="{output}", judge_model="api:x", name="j",
+                  judge_model_args={**base, "reasoning_effort": "high"})
+    assert j3.identity()["judge_model_args"] == {"api_base": "http://h/v1",
+                                                 "reasoning_effort": "high"}
+
+
+# --- judge-resolved api: models get a long default timeout -----------------
+#
+# Judges run offline (not in a serving loop) and must tolerate a slow reasoning
+# judge; the api: backend's 120s default would time one out.
+
+def test_api_judge_gets_a_long_default_timeout(monkeypatch):
+    monkeypatch.delenv("AUDITKIT_JUDGE_TIMEOUT", raising=False)
+    j = LLMJudge(judge_model="api:x", choices={"a": 1.0}, prompt="{output}",
+                 judge_model_args={"api_base": "http://localhost:8000/v1"})
+    assert j._model().timeout == 600.0
+
+
+def test_api_judge_timeout_is_env_configurable(monkeypatch):
+    monkeypatch.setenv("AUDITKIT_JUDGE_TIMEOUT", "30")
+    j = LLMJudge(judge_model="api:x", choices={"a": 1.0}, prompt="{output}")
+    assert j._model().timeout == 30.0
+
+
+def test_explicit_judge_timeout_wins_over_the_default(monkeypatch):
+    monkeypatch.setenv("AUDITKIT_JUDGE_TIMEOUT", "30")
+    j = LLMJudge(judge_model="api:x", choices={"a": 1.0}, prompt="{output}",
+                 judge_model_args={"timeout": 45})
+    assert j._model().timeout == 45
+
+
+# -- B1: the fallback reads a verdict, never a label word buried in prose ----------------------------------
+
+@pytest.mark.parametrize("reply,want", [
+    ("no verdict here", None),                           # 'no' inside prose is not a verdict
+    ("There is no clear issue", None),
+    ("yes and no", None),                                # hedging between two labels is ambiguous
+    ("Unclear.", None),
+    ("No.", "no"),
+    ("**Yes**", "yes"),                                  # markdown emphasis
+    ("Answer: yes", "yes"),
+    ("I think the answer is no", "no"),                  # after a verdict phrase
+    ("No, because the call is premature.", "no"),        # opens it, then punctuation
+    ("The answer is yes, because it helps.", "yes"),     # after a verdict phrase
+    ("There is no issue here, so yes.", None),           # a label ending the clause is not enough
+    ("Reasoning first.\nCHOICE: no", "no"),              # the CHOICE marker path is unchanged
+])
+def test_fallback_reads_only_a_real_verdict(reply, want):
+    assert LLMJudge(choices={"yes": 1.0, "no": 0.0})._match_choice(reply) == want
+
+
+# The comma in "The answer is yes, because it helps." above is what lets a verdict be
+# followed by an explanation. Strip it and the same sentence must still read as "yes":
+# a judge that explains is not a judge that failed to answer.
+@pytest.mark.parametrize("reply,want", [
+    ("The answer is yes because the context states the fee.", "yes"),
+    ("The answer is no because the document contradicts it.", "no"),
+    ("Verdict: yes the call is justified", "yes"),
+    ("Answer: no it follows from the policy", "no"),
+    ("The answer is yes as the policy requires", "yes"),
+    ("The answer is yes given the retrieved passage", "yes"),
+    # ... but a label the clause CONTINUES past is still prose, not a verdict.
+    ("The answer is no longer relevant to the question.", None),
+    ("The answer is no longer available in the documents.", None),
+    ("The answer is not relevant at all", None),
+    ("The answer is yes-ish, hard to say.", None),
+    ("The answer is clearly no", None),
+])
+def test_fallback_verdict_phrase_survives_an_explanation(reply, want):
+    assert LLMJudge(choices={"yes": 1.0, "no": 0.0})._match_choice(reply) == want
+
+
+def test_a_buried_label_is_unknown_not_a_decided_zero():
+    j = LLMJudge(judge_model=FakeJudge("no verdict here"), choices={"yes": 1.0, "no": 0.0}, prompt="{output}")
+    s = j.judge(Sample(input="q"), "a", None)      # judge() flags it; score() raises by design
+    assert s.metadata.get("unknown") is True
+
+
+@pytest.mark.parametrize("reply,choices,want", [
+    ("The tool choice is not correct.", {"correct": 1.0, "incorrect": 0.0}, None),   # B1
+    ("The call looks fine to me, so correct", {"correct": 1.0, "incorrect": 0.0}, None),
+    ("Correct", {"correct": 1.0, "incorrect": 0.0}, "correct"),
+    ("Incorrect: the wrong tool was used.", {"correct": 1.0, "incorrect": 0.0}, "incorrect"),
+    ("Verdict: incorrect", {"correct": 1.0, "incorrect": 0.0}, "incorrect"),
+])
+def test_b1_a_label_ending_the_line_is_not_a_verdict(reply, choices, want):
+    assert LLMJudge(choices=choices)._match_choice(reply) == want

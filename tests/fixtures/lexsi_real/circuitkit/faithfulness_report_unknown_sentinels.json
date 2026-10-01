@@ -1,0 +1,24 @@
+{
+  "patching_score": 0.5,
+  "ablation_score": 0.4,
+  "stability": null,
+  "robustness": null,
+  "baseline_comparison": null,
+  "generalization": null,
+  "intervention_reliability": null,
+  "metadata": {
+    "algorithm": "unknown",
+    "model": "unknown",
+    "task": "unknown",
+    "level": "node",
+    "scope": "unknown",
+    "sparsity": 0.0,
+    "pillars_computed": [
+      "patching",
+      "ablation"
+    ],
+    "timestamp": 1758830400.0,
+    "total_duration_seconds": 1.0,
+    "per_pillar_duration_seconds": {}
+  }
+}

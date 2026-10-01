@@ -422,10 +422,11 @@ class TestAPIModelHonorsRequestParams:
         fake_session.post.return_value = fake_resp
         m._session = fake_session
 
-        with pytest.raises(requests.HTTPError) as exc_info:
-            m.generate([Request(prompt="hi", params={})])
-
-        assert "invalid request: unknown field" in str(exc_info.value)
+        # Fails only this request (the runner must not replay the batch); the
+        # response body is kept in the failure reason.
+        g = m.generate([Request(prompt="hi", params={})])[0].completions[0]
+        assert g.finish_reason == "error"
+        assert "invalid request: unknown field" in g.error
 
 
 class TestOpenRouterModelHonorsRequestParams:

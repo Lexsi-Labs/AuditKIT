@@ -85,6 +85,33 @@ class TestAutoModelResolve:
         with pytest.raises(AuditKitError, match="unknown"):
             AutoModel.resolve("nonexistent:")
 
+    # #43 part 3: a bare prefix is decided per backend, not by one blanket guard.
+    @pytest.mark.parametrize("spec", ["api:", "hf:", "vllm:", "api:  "])
+    def test_bare_prefix_that_needs_a_name_raises_with_the_spec(self, spec):
+        with pytest.raises(AuditKitError, match=f"empty model spec {spec!r}"):
+            AutoModel.resolve(spec)
+
+    def test_named_api_spec_resolves_as_before(self):
+        pytest.importorskip("requests")
+        assert AutoModel.resolve("api:x")._model_name == "x"
+
+    def test_bare_hosted_prefix_uses_the_backend_default(self):
+        pytest.importorskip("requests")
+        assert AutoModel.resolve("groq:")._model_name == "llama-3.3-70b-versatile"
+
+    def test_bare_agent_prefix_takes_the_url_from_opts(self):
+        m = AutoModel.resolve("agent:", url="http://127.0.0.1:9/agent")
+        assert m.name == "agent:"
+        with pytest.raises(AuditKitError, match="URL"):
+            AutoModel.resolve("agent:")
+
+    def test_hf_local_directory_still_resolves(self, tmp_path):
+        assert AutoModel.resolve(f"hf:{tmp_path}")._model_name == str(tmp_path)
+
+    def test_precomputed_and_echo_have_no_name_and_still_resolve(self):
+        assert AutoModel.resolve("precomputed").name == "precomputed"
+        assert AutoModel.resolve("echo").name == "echo"
+
 
 class TestThreadsafe:
     def test_echo_threadsafe(self):

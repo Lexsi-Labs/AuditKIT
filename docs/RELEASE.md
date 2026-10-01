@@ -7,6 +7,23 @@
 
 # AuditKIT 1.0.0 — Release Overview
 
+> **1.1.0 update.** This release adds:
+> - Agent and tool-use evals, including parallel tool calls: `tool_call_f1`,
+>   `trajectory_match`, `parallel_tool_calls`, `tool_call_validity` and
+>   `task_completion`.
+> - An `agent:` backend for externally deployed agents, and native tool calling
+>   on `api:` (vLLM and SGLang servers included).
+> - Ranked retrieval metrics and judged `faithfulness` / `context_precision` /
+>   `context_recall`.
+> - `load_agenttune()`, and SGLang environment checks (`check_compat()`).
+> - `auditkit.agent_eval`: end-to-end agent evaluation with verified outcomes
+>   (state, artifact, answer), recorded and deployed modes, the AgentTune
+>   bridge (files and `EventLog`), the `auditkit agent` CLI, and the read-only
+>   Lexsi evidence importer.
+>
+> See [Agents & RAG](agents_and_rag.md), [Agent evaluation](agent_eval.md),
+> [SGLang](SGLANG.md) and the changelog.
+
 > **Evaluate any model, on any dataset, across any technique — from one `ak.evaluate()` call.**
 > Benchmark · LLM-as-judge · RAG · performance — one library, one result object, zero required dependencies.
 

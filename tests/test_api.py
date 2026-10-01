@@ -264,7 +264,7 @@ class TestLoadCSV:
 
 
 # ============================================================================
-# evaluate() — acceptance tests
+# evaluate() — acceptance tests from HANDOFF.md
 # ============================================================================
 
 class TestEvaluate:

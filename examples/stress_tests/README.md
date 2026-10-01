@@ -1,8 +1,8 @@
 # AuditKIT — Stress Tests
 
-Separate from the functional coverage in `tests/`. This folder is about
-**robustness under real, heavier conditions**: real gated models, real load,
-concurrency, and
+Separate from `audit_tests/` (which is organized by roadmap tier and covers
+correctness/functional coverage). This folder is about **robustness under
+real, heavier conditions**: real gated models, real load, concurrency, and
 deliberately awkward inputs — the kind of testing that surfaces bugs regular
 functional tests don't, because it needs actual network access, a real
 downloaded model, and adversarial conditions to trigger.

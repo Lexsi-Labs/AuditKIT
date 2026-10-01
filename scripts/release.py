@@ -78,6 +78,17 @@ def next_patch(value: str) -> str:
     return f"{major}.{minor}.{patch + 1}"
 
 
+def release_version(current: str, latest: str) -> str:
+    """The version a merge should release, given the code's version and the latest public release.
+
+    A deliberate bump in the code (1.2.0 while the latest release is 1.0.0) is released as is;
+    otherwise the next patch of the latest release, so successive merges keep advancing.
+    """
+    if parse_version(current) > parse_version(latest):
+        return current
+    return next_patch(latest)
+
+
 def _single_match(pattern: re.Pattern[str], text: str, location: Path) -> str:
     matches = pattern.findall(text)
     if len(matches) != 1:
@@ -94,7 +105,8 @@ def _single_match(pattern: re.Pattern[str], text: str, location: Path) -> str:
 # Horizontal whitespace only: under (?m), a trailing \s* would also consume the
 # newline and delete the blank line that follows the version on every bump.
 _PYPROJECT_VERSION = re.compile(r'(?m)^version[ \t]*=[ \t]*"([^"]+)"[ \t]*$')
-_INIT_VERSION = re.compile(r'(?m)^__version__[ \t]*=[ \t]*"([^"]+)"[ \t]*$')
+# Indented too: since 1.2.0 the literal is the fallback inside ``try: metadata.version(...)``.
+_INIT_VERSION = re.compile(r'(?m)^[ \t]*__version__[ \t]*=[ \t]*"([^"]+)"[ \t]*$')
 _CITATION_VERSION = re.compile(r"(?m)^version:[ \t]*([^\s#]+)[ \t]*$")
 
 
@@ -148,16 +160,11 @@ def set_version(requested: str, root: Path | str = Path(".")) -> None:
     for relative, pattern in patterns.items():
         path = root / relative
         text = path.read_text(encoding="utf-8")
-        replacement = (
-            f'version = "{requested}"'
-            if relative == VERSION_FILES[0]
-            else (
-                f'__version__ = "{requested}"'
-                if relative == VERSION_FILES[1]
-                else f"version: {requested}"
-            )
+        # replace only the version text, so indentation and the rest of the line stay as they are
+        updated, count = pattern.subn(
+            lambda m: m.group(0)[: m.start(1) - m.start(0)] + requested + m.group(0)[m.end(1) - m.start(0):],
+            text,
         )
-        updated, count = pattern.subn(replacement, text)
         if count != 1:
             raise ReleaseError(f"Could not safely update the version in {relative}.")
         prepared[path] = updated

@@ -120,7 +120,9 @@ class TestGenerationQualityMetricsViaEvaluate:
         r = ak.evaluate(BASIC, model=real_model, scorers=[Perplexity()])
         assert r.headline["perplexity"] > 0.0
 
+    @pytest.mark.network   # downloads microsoft/deberta-xlarge-mnli
     def test_bert_score(self):
+        pytest.importorskip("bert_score", reason="needs the [bert-score] extra")
         # bert_score's default tokenizer (microsoft/deberta-xlarge-mnli)
         # reports model_max_length as HuggingFace's "no limit configured"
         # sentinel (~1e30), which transformers>=5's Rust-backed truncation
@@ -132,7 +134,9 @@ class TestGenerationQualityMetricsViaEvaluate:
         assert not r.errors
         assert r.headline["bert_score"] > 0.99
 
+    @pytest.mark.network   # downloads microsoft/deberta-xlarge-mnli
     def test_bert_score_discriminates_unrelated_text(self):
+        pytest.importorskip("bert_score", reason="needs the [bert-score] extra")
         r = ak.evaluate(
             [Sample(input="x", target="cat sat on mat quietly")],
             model=lambda p: ["completely unrelated topic about rockets"],

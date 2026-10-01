@@ -262,3 +262,69 @@ class TemplateAdapter(Adapter):
         ctx = "\n".join(sample.retrieval_context or [])
         prompt = self.template.format(input=sample.input, target=sample.target or "", context=ctx)
         return [Request(prompt=prompt, request_type="generate", params=params)]
+
+
+_TOOL_PROMPT = """\
+You can call these tools. Their JSON schemas:
+{tools}
+
+To call a tool, reply with one block per call:
+<tool_call>{{"name": "<tool name>", "arguments": {{...}}}}</tool_call>
+Independent calls that can run at the same time go in the SAME reply, one
+block each. If no tool is needed, answer normally without any block."""
+
+
+@ADAPTERS.register("tools")
+class ToolCallAdapter(Adapter):
+    """Offer ``Sample.tools`` to the model and ask for the next action.
+
+    ``mode="native"`` (default) sends the schemas as the API's ``tools``
+    parameter, for backends that declare ``Capability.TOOLS`` (``api:`` against
+    OpenAI/vLLM/SGLang servers, ``agent:`` endpoints, and ``hf:`` models whose
+    chat template renders tools); tool calls come back structured, or for
+    ``hf:`` are parsed from the text in the model's own format.
+    ``mode="prompt"`` writes the schemas into a system message and asks for
+    Hermes-style ``<tool_call>`` blocks, so any text backend (``hf:``,
+    ``vllm:``, a callable) can be evaluated; calls are parsed from the text.
+
+    The conversation is ``Sample.metadata["messages"]`` when given (e.g. an
+    AgentTune prompt with its system message), else one user turn.
+    ``tool_choice``/``parallel_tool_calls`` are forwarded in native mode.
+    """
+
+    method = "tools"
+
+    def __init__(self, mode: str = "native", system_prompt: str | None = None,
+                 tool_choice: str | None = None, parallel_tool_calls: bool | None = None) -> None:
+        if mode not in ("native", "prompt"):
+            raise ValueError("mode must be 'native' or 'prompt'")
+        self.mode = mode
+        self.system_prompt = system_prompt
+        self.tool_choice = tool_choice
+        self.parallel_tool_calls = parallel_tool_calls
+
+    def identity(self) -> dict:
+        return {"method": self.method, "mode": self.mode, "system_prompt": self.system_prompt,
+                "tool_choice": self.tool_choice, "parallel_tool_calls": self.parallel_tool_calls}
+
+    def adapt(self, sample: Sample, config: RunConfig) -> list[Request]:
+        params = _gen_params(config)
+        messages = [dict(m) for m in (sample.metadata or {}).get("messages") or []] or \
+            [{"role": "user", "content": sample.input}]
+        system = [self.system_prompt] if self.system_prompt else []
+        if self.mode == "prompt" and sample.tools:
+            system.append(_TOOL_PROMPT.format(tools=json.dumps(sample.tools, indent=1)))
+        if system:
+            if messages[0].get("role") == "system":
+                system.insert(0, messages[0].get("content") or "")
+                messages = messages[1:]
+            messages = [{"role": "system", "content": "\n\n".join(system)}] + messages
+        params["messages"] = messages
+        if self.mode == "native" and sample.tools:
+            params["tools"] = sample.tools
+            if self.tool_choice is not None:
+                params["tool_choice"] = self.tool_choice
+            if self.parallel_tool_calls is not None:
+                params["parallel_tool_calls"] = self.parallel_tool_calls
+        prompt = "\n\n".join(f"{m.get('role', 'user').capitalize()}: {m.get('content') or ''}" for m in messages)
+        return [Request(prompt=prompt, request_type="chat", params=params)]

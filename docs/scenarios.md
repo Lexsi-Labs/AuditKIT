@@ -12,6 +12,10 @@ Requires `pip install auditkit[interop]` (the `datasets` package).
 | TruthfulQA | `TruthfulQAScenario(split="validation")` | `truthfulqa` |
 | HumanEval | `HumanEvalScenario(split="test")` | `humaneval` |
 
+Each loads its namespaced Hub dataset (`cais/mmlu`, `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`,
+`truthfulqa/truthful_qa`, `openai/openai_humaneval`). HumanEval's target is the reference solution, and
+AuditKIT has no code-execution metric, so it can't score pass@k; use `ak.run_lmeval("humaneval", ...)` for that.
+
 AuditKIT doesn't re-export these classes at the top-level `auditkit` package.
 Import them from their own module, or resolve by name via `SCENARIOS`.
 

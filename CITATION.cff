@@ -1,24 +1,26 @@
 cff-version: 1.2.0
-title: AuditKit
+title: AuditKIT
 abstract: |
-  AuditKit is a Python library for evaluating and auditing AI models: a unified
-  evaluation spine across techniques and modalities. It provides 10 metric
-  families, 9 model backends, LLM-as-judge and encoder-judge scorers, a CLI with
+  AuditKIT is a Python library for evaluating and auditing AI models: a unified
+  evaluation spine across techniques and modalities. It provides 11 metric
+  families, 10 model backends, LLM-as-judge and encoder-judge scorers, a CLI with
   YAML-configured runs, and an MkDocs documentation site.
 type: software
 message: "If you use this software, please cite it."
 
-version: 1.0.0
+version: 1.2.0
 
 authors:
-  - family-names: "Avaiya"
-    given-names: "Utsav"
   - family-names: "Arora"
     given-names: "Shreeyans"
-  - family-names: "Kadiyala"
-    given-names: "Ram Mohan Rao"
+  - family-names: "Avaiya"
+    given-names: "Utsav"
   - family-names: "Lyngkhoi"
     given-names: "Zera"
+  - family-names: "Kadiyala"
+    given-names: "Ram Mohan Rao"
+  - family-names: "Gosalia"
+    given-names: "Hem"
   - family-names: "Sankarapu"
     given-names: "Vinay Kumar"
   - family-names: "Seth"
@@ -32,5 +34,6 @@ contact:
 
 repository-code: "https://github.com/Lexsi-Labs/AuditKIT"
 url: "https://github.com/Lexsi-Labs/AuditKIT"
-license: LSAL-1.2
+# LSAL-1.2 is not an SPDX identifier, which the CFF schema requires for `license:`; the
+# license is given by URL instead.
 license-url: "https://github.com/Lexsi-Labs/AuditKIT/blob/main/LICENSE.md"

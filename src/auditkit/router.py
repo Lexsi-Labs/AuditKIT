@@ -3,6 +3,7 @@
 Routing is a pure function of the **task** — what each sample carries — never of
 the model:
 
+- ``tools`` present              -> :class:`ToolCallAdapter`
 - ``choices`` present            -> :class:`MCQAdapter`
 - ``retrieval_context`` present  -> :class:`RAGAdapter`
 - otherwise                      -> :class:`GenerationAdapter`
@@ -24,7 +25,7 @@ from __future__ import annotations
 
 from typing import Any, Sequence, Union
 
-from .adapter import Adapter, GenerationAdapter, MCQAdapter, RAGAdapter
+from .adapter import Adapter, GenerationAdapter, MCQAdapter, RAGAdapter, ToolCallAdapter
 from .sample import Sample
 
 
@@ -47,6 +48,8 @@ def route_adapter(samples: Union[Sample, Sequence[Sample]], model: Any = None,
     backend handles model-specific formatting.
     """
     sample = _first_sample(samples)
+    if sample.tools:
+        return ToolCallAdapter()
     if sample.choices:
         return MCQAdapter()
     if sample.retrieval_context:

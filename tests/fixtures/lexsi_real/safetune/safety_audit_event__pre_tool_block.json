@@ -1,0 +1,1 @@
+{"tenant_id": "placeholder-tenant", "decision": "block", "reason": "blocked_tool:placeholder_tool", "prompt": "[REDACTED]", "response": "Tool usage is no...[REDACTED]... policy.", "metadata": {"tool_name": "placeholder_tool"}, "timestamp": "2026-09-25T18:28:24.397693+00:00"}

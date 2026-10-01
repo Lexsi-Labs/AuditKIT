@@ -1,0 +1,3 @@
+# Not part of a public export (git archive): internal process docs and working notes
+internal/ export-ignore
+docs/notes/ export-ignore

@@ -11,7 +11,7 @@ python3 -m pytest tests/ -q
 ## Running Tests
 
 ```bash
-# Full suite (750+ tests)
+# Full suite (~3,000 tests)
 python3 -m pytest tests/
 
 # Specific test file

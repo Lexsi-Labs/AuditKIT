@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "auditkit"
-version = "1.0.0"
+version = "1.1.0"
 description = "Evaluate any model on any dataset and any task — standalone, no platform required"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -26,25 +26,38 @@ classifiers = [
 [project.optional-dependencies]
 openai      = ["openai"]
 anthropic   = ["anthropic"]
-# torch/transformers/vllm are version-locked to each other. vLLM pins an EXACT
-# torch per release and drives the transformers floor, and transformers 5.x is a
-# breaking major this code is not yet validated against (developed on 4.44). We
-# therefore cap transformers below 5.x and pin vLLM to the 0.15–0.19 line, which
-# stays on transformers 4.x and pins torch 2.9–2.10 — a stack coherent with the
-# [transformers] extra so `auditkit[transformers,vllm]` co-resolves. torch is a
-# floor only (no upper cap) so users can bring their own CUDA build.
-transformers = ["torch>=2.4", "transformers>=4.44,<5"]
-lmeval      = ["lm-eval", "accelerate"]   # accelerate: required by lm-eval's hf model backend
-vision      = ["pillow", "torchmetrics"]
+# torch/transformers/vllm are version-locked to each other: vLLM pins an EXACT
+# torch per release and drives the transformers floor. transformers>=5.15 is
+# needed for North Micro Vision (cohere_compass); vLLM 0.30 is the first release
+# on transformers 5.x that also registers CohereCompass, so the two extras
+# co-resolve. torch is a floor only (no upper cap) so users can bring their own
+# CUDA build.
+transformers = ["torch>=2.4", "transformers>=5.15,<6", "peft"]   # peft: hf:<adapter dir>
+lmeval      = ["lm-eval", "accelerate>=1.0"]   # accelerate: lm-eval's hf backend; transformers 5 refuses device_map below 1.x
+vision      = ["pillow", "torchvision", "torchmetrics"]   # torchvision: transformers 5.x image processors need it
 interop     = ["datasets", "mlcroissant", "GitPython"]   # GitPython: mlcroissant needs it for git-based repo downloads but doesn't declare it itself
 mlflow      = ["mlflow"]
 requests    = ["requests"]
-vllm        = ["vllm>=0.15,<0.20"]   # 0.15→torch 2.9.1 … 0.19→torch 2.10.0, all transformers<5; 0.20+ moves to torch 2.11 + transformers 5.x
+# SGLang is NOT needed to evaluate an SGLang model: run `python -m sglang.launch_server`
+# in its own env and point the `api:` backend at it -- that needs only [requests].
+# This extra exists only for code that drives SGLang's offline Engine in-process.
+# It is mutually exclusive with [vllm] and [transformers]: sglang 0.5.10+ pins
+# transformers 5.x, and sglang/vllm never co-resolve (llguidance: e.g. vllm 0.16
+# needs >=1.3,<1.4, sglang needs <0.8 or >=1.7.6; torch/xgrammar pins clash too).
+# Resolved next to either, pip/uv silently fall back to sglang 0.5.9 (last on
+# transformers 4.x) or 0.5.2 (frontend only) -- the >=0.5.18 floor turns that into
+# a hard error. Excluded from `all` for the same reason. Linux only (manylinux_2_34,
+# py3.10-3.13). sglang 0.5.20 pins the pre-release cuda-tile==1.6.0rc5, so uv needs
+# `--prerelease=allow`. `auditkit.compat.check_compat()` diagnoses a mixed env.
+sglang      = ["sglang>=0.5.18,<0.6"]
+vllm        = ["vllm>=0.30"]   # first vLLM with CohereCompass; resolves with transformers 5.x
 litellm     = ["litellm"]
 bert-score  = ["bert-score", "torch>=2.4"]
+relay       = ["flask", "werkzeug", "requests"]   # LexsiCompletionsRelay (lexsi_relay.py)
+lexsi-sdk   = ["lexsi-sdk"]   # lexsi_login()/run_benchmark(lexsi_org=...) (lexsi_login.py) -- the only place it's imported
 dev         = ["pytest", "pytest-asyncio", "pytest-mock"]
 all         = [
-    "auditkit[openai,anthropic,transformers,lmeval,vision,interop,mlflow,requests,vllm,litellm,bert-score,dev]",
+    "auditkit[openai,anthropic,transformers,lmeval,vision,interop,mlflow,requests,vllm,litellm,bert-score,relay,lexsi-sdk,dev]",
 ]
 
 [project.urls]
@@ -53,6 +66,18 @@ Repository = "https://github.com/Lexsi-Labs/AuditKIT"
 
 [project.scripts]
 auditkit = "auditkit.cli:main"
+
+# uv lock/sync only (pip ignores this): never try to co-resolve the extras above
+# that cannot share an environment.
+[tool.uv]
+conflicts = [
+    [{ extra = "sglang" }, { extra = "vllm" }],
+    [{ extra = "sglang" }, { extra = "transformers" }],
+]
+
+[tool.hatch.build.targets.sdist]
+# internal process docs, logs and working notes never ship (see AGENTS.md)
+exclude = ["internal/", "docs/notes/"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/auditkit"]

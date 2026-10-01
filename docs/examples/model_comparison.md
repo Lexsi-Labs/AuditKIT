@@ -54,14 +54,14 @@ determine whether differences are statistically significant.
 ## CLI
 
 ```bash
-auditkit compare --models openai:gpt-4o,anthropic:claude-3 --csv data.csv
+auditkit compare --models openai:gpt-4o,anthropic:claude-sonnet-5-5 --csv data.csv
 ```
 
 ## Python API
 
 ```python
 result = ak.compare_models(
-    models=["openai:gpt-4o", "anthropic:claude-3", "hf:mistralai/Mistral-7B"],
+    models=["openai:gpt-4o", "anthropic:claude-sonnet-5-5", "hf:mistralai/Mistral-7B"],
     dataset=samples,
     model_names=["GPT-4o", "Claude 3", "Mistral 7B"],
 )

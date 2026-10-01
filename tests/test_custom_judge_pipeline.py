@@ -10,7 +10,8 @@ Exercises the complete chain with genuinely custom pieces at every stage:
   proving metadata flows independently into both the generation and the
   scoring stage.
 - Both generation and judging go through the real Groq API
-  (``llama-3.1-8b-instant``), with ``concurrency=1`` (which sidesteps the empty-chunk bug).
+  (``llama-3.1-8b-instant``), with ``concurrency=1`` (see
+  ``docs``/``PROGRESS.md`` on the empty-chunk bug this sidesteps).
 
 Needs a real ``GROQ_API_KEY``; skipped automatically when it isn't set, same
 as the rest of the suite runs fully offline by default.

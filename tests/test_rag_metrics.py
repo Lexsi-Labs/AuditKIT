@@ -38,11 +38,16 @@ class TestLexicalGroundedness:
         score = m.score(s, "Z")
         assert score.value == 0.0
 
-    def test_requires_retrieval_context(self):
+    def test_runs_on_trace_contexts_and_skips_without_any(self):
+        # Not gated on Sample.retrieval_context (finding 13): applicable to every
+        # sample, prefers the trace's retrieved_contexts, and skips (no score,
+        # not a fake 0) only when neither source has any context.
         m = LexicalGroundedness()
-        assert "retrieval_context" in m.required_fields
-        assert m.applicable(Sample(input="q")) is False
-        assert m.applicable(Sample(input="q", retrieval_context=["a"])) is True
+        assert m.required_fields == frozenset()
+        assert m.applicable(Sample(input="q")) is True
+        assert m.score(Sample(input="q"), "x") == []  # no context anywhere -> skip
+        s = Sample(input="q", retrieval_context=["irrelevant static"])
+        assert m.score(s, "Paris", {"trace": {"retrieved_contexts": ["Paris is the capital"]}}).value == 1.0
 
     def test_name(self):
         assert LexicalGroundedness().name == "lexical_groundedness"
@@ -74,10 +79,15 @@ class TestContextCoverage:
         score = m.score(s, "")
         assert score.value == 0.0
 
-    def test_requires_retrieval_context_and_target(self):
+    def test_requires_target_not_retrieval_context(self):
+        # Needs the gold target, but reads contexts from the trace-or-sample
+        # helper (finding 13), so it is not gated on Sample.retrieval_context.
         m = ContextCoverage()
-        assert "retrieval_context" in m.required_fields
-        assert "target" in m.required_fields
+        assert m.required_fields == frozenset({"target"})
+        assert m.applicable(Sample(input="q")) is False
+        assert m.score(Sample(input="q", target="Paris"), "") == []  # target but no context -> skip
+        assert m.score(Sample(input="q", target="Paris"), "",
+                       {"trace": {"retrieved_contexts": ["Paris is the capital"]}}).value == 1.0
 
     def test_name(self):
         assert ContextCoverage().name == "context_coverage"
@@ -109,9 +119,13 @@ class TestContextOverlap:
         score = m.score(s, "cat")
         assert score.value == 0.0
 
-    def test_requires_retrieval_context(self):
+    def test_runs_on_trace_contexts_and_skips_without_any(self):
+        # Not gated on Sample.retrieval_context (finding 13).
         m = ContextOverlap()
-        assert "retrieval_context" in m.required_fields
+        assert m.required_fields == frozenset()
+        assert m.score(Sample(input="q"), "cat") == []  # no context anywhere -> skip
+        assert m.score(Sample(input="q"), "cat",
+                       {"trace": {"retrieved_contexts": ["cats are cute"]}}).value == 1.0
 
     def test_name(self):
         assert ContextOverlap().name == "context_overlap"
@@ -147,3 +161,20 @@ class TestAnswerOverlap:
 
     def test_name(self):
         assert AnswerOverlap().name == "answer_overlap"
+
+
+# ============================================================================
+# Shared tokenizer: case- and punctuation-insensitive across all four (finding 14)
+# ============================================================================
+
+class TestSharedTokenizer:
+    def test_case_and_punctuation_do_not_block_a_match(self):
+        # "Paris." / "paris" / "Paris" all tokenize to "paris".
+        assert LexicalGroundedness().score(
+            Sample(input="q", retrieval_context=["The capital is Paris"]), "PARIS.").value == 1.0
+        assert ContextOverlap().score(
+            Sample(input="q", retrieval_context=["the capital is PARIS"]), "paris,").value == 1.0
+        assert ContextCoverage().score(
+            Sample(input="q", target="Paris!", retrieval_context=["the capital is paris"]), "").value == 1.0
+        assert AnswerOverlap().score(
+            Sample(input="q", target="Paris"), "the capital is paris.").value == 1.0

@@ -1,13 +1,15 @@
 """HuggingFace generation backend (optional extra: auditkit[transformers])."""
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from . import (
     Model, Request, Result_, Generated, LogLikelihood, resolve_params,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs, _free_torch_memory,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, _free_torch_memory, template_messages,
+    explain_unknown_architecture,
 )
-from ..errors import ExtraNotInstalled
+from ..errors import CapabilityError, ExtraNotInstalled
 from ..types import Capability
 
 # stop_sequences maps to generate()'s real stop_strings kwarg (needs the
@@ -57,10 +59,12 @@ class HFGenModel(Model):
         self._token = hf_token or token
         self._extra_kwargs = kwargs
         self._pipeline = None
+        self._processor = None  # loaded on the first request that carries images
         self.name = name
 
     def capabilities(self) -> set[Capability]:
-        return {Capability.GENERATE, Capability.LOGLIKELIHOOD}
+        # TOOLS: schemas go to the chat template's ``tools=`` (see _template_kwargs).
+        return {Capability.GENERATE, Capability.LOGLIKELIHOOD, Capability.TOOLS}
 
     def model_info(self) -> dict[str, Any]:
         """Real parameter count/sparsity/on-disk-equivalent size, introspected
@@ -97,6 +101,7 @@ class HFGenModel(Model):
         the GPU cache -- so ``compare_models()`` can reclaim this checkpoint's
         memory before loading the next. Lazily reloads on the next call."""
         self._pipeline = None
+        self._processor = None
         _free_torch_memory()
 
     def _resolve_device(self) -> str:
@@ -166,6 +171,31 @@ class HFGenModel(Model):
 
         return _SanitizeLogits()
 
+    def _needs_fp16(self, device: Any) -> bool:
+        """A bf16 checkpoint on a CUDA GPU without bf16 (T4, V100: compute capability < 8).
+
+        transformers loads the checkpoint's own dtype, so such a model would run in a dtype the
+        GPU can't do natively. Load it as fp16 instead; an explicit ``dtype=`` always wins.
+        """
+        import torch
+        on_cuda = isinstance(device, int) or str(device).startswith("cuda")   # "cuda", "cuda:1", 0
+        if not on_cuda or not torch.cuda.is_available():
+            return False
+        try:
+            if torch.cuda.is_bf16_supported(including_emulation=False):
+                return False
+        except TypeError:                                  # torch without the keyword
+            if torch.cuda.get_device_capability()[0] >= 8:
+                return False
+        try:
+            from transformers import AutoConfig
+            cfg = AutoConfig.from_pretrained(self._model_name, token=self._token)
+        except Exception:   # noqa: BLE001 -- unreadable config: leave the choice to transformers
+            return False
+        cfgs = [cfg, getattr(cfg, "text_config", None)]
+        return any(str(getattr(c, "dtype", None) or getattr(c, "torch_dtype", None)).endswith("bfloat16")
+                   for c in cfgs if c is not None)
+
     def _ensure_pipeline(self) -> None:
         if self._pipeline is not None:
             return
@@ -174,18 +204,36 @@ class HFGenModel(Model):
             from transformers import pipeline
         except ImportError:
             raise ExtraNotInstalled("transformers", "pip install auditkit[transformers]")
+        if os.path.isfile(os.path.join(str(self._model_name), "adapter_config.json")):
+            # Without peft, transformers reads the folder as a full checkpoint
+            # and fails on the missing config.json.
+            try:
+                import peft  # noqa: F401
+            except ImportError:
+                raise ExtraNotInstalled("transformers", (
+                    f"{self._model_name!r} is a PEFT adapter folder; loading it needs peft: "
+                    "pip install 'auditkit[transformers]' (or pip install peft)")) from None
         pipe_kwargs: dict[str, Any] = {}
         if self._token:
             pipe_kwargs["token"] = self._token
         for k in _LOAD_TIME_KWARGS:
             if k in self._extra_kwargs:
                 pipe_kwargs[k] = self._extra_kwargs[k]
-        self._pipeline = pipeline(
-            "text-generation",
-            model=self._model_name,
-            device=self._resolve_device(),
-            **pipe_kwargs,
-        )
+        device = self._resolve_device()
+        if "dtype" not in pipe_kwargs and "torch_dtype" not in pipe_kwargs and self._needs_fp16(device):
+            pipe_kwargs["dtype"] = torch.float16
+        try:
+            self._pipeline = pipeline(
+                "text-generation",
+                model=self._model_name,
+                device=device,
+                **pipe_kwargs,
+            )
+        except ValueError as e:
+            better = explain_unknown_architecture(e, self._model_name)
+            if better is not None:
+                raise better from e
+            raise
         # generate() always drives length via max_new_tokens (see _KEY_MAP) --
         # never max_length. Most checkpoints still ship a generation_config.json
         # with a default max_length (commonly 20), which transformers otherwise
@@ -213,6 +261,14 @@ class HFGenModel(Model):
             if _gen_cfg is not None:
                 _gen_cfg.max_length = None
 
+    def _chat_tokenizer(self, request: Request):
+        """The tokenizer whose chat template renders *request*, or None when
+        it goes to the model as raw text (opt-out, or no chat template)."""
+        if request.params.get("apply_chat_template") is False:
+            return None
+        tokenizer = getattr(self._pipeline, "tokenizer", None)
+        return tokenizer if getattr(tokenizer, "chat_template", None) else None
+
     def _render_prompt(self, request: Request) -> str:
         """Render *request* to the literal text sent to the model.
 
@@ -234,22 +290,72 @@ class HFGenModel(Model):
         # Classifier-style models (e.g. some safety guards like WildGuard /
         # HarmBench) are trained on their own fixed prompt string; wrapping that
         # in the tokenizer's chat template would corrupt it.
-        if request.params.get("apply_chat_template") is False:
+        tokenizer = self._chat_tokenizer(request)
+        if tokenizer is None:
+            self._template_kwargs(request, None)  # native tools with no template to take them: raises
             return text
-        tokenizer = getattr(self._pipeline, "tokenizer", None)
-        chat_template = getattr(tokenizer, "chat_template", None) if tokenizer is not None else None
-        if not chat_template:
-            return text
-        messages = request.params.get("messages") or [{"role": "user", "content": text}]
-        # Extra kwargs some chat templates need (e.g. a safety guard's per-call
-        # policy: ShieldGemma's `guideline=`, Granite Guardian's `guardian_config=`).
-        extra = request.params.get("chat_template_kwargs") or {}
+        messages = template_messages(request.params.get("messages") or [{"role": "user", "content": text}])
         return tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True, **extra)
+            messages, tokenize=False, add_generation_prompt=True,
+            **self._template_kwargs(request, tokenizer.chat_template))
+
+    def _template_kwargs(self, request: Request, template: Any) -> dict[str, Any]:
+        """Extra ``apply_chat_template`` kwargs for *request*: its native tool
+        schemas as ``tools=``, then ``params["chat_template_kwargs"]`` (e.g. a
+        safety guard's per-call policy: ShieldGemma's ``guideline=``, Granite
+        Guardian's ``guardian_config=``), which win on a clash."""
+        extra = dict(request.params.get("chat_template_kwargs") or {})
+        tools = request.params.get("tools")
+        if not tools:
+            return extra
+        # ponytail: substring check on the template source. A template that
+        # never mentions `tools` would drop them silently; one that mentions
+        # but ignores them still slips through.
+        if "tools" not in str(template or ""):
+            raise CapabilityError(
+                f"{self._model_name!r}: its chat template does not render tool schemas "
+                f"(e.g. Tiny Aya, Aya Expanse, Aya Vision, North). Use ToolCallAdapter(mode='prompt') to "
+                f"describe the tools in the prompt instead.")
+        return {"tools": tools, **extra}
+
+    def _generate_with_images(self, request: Request, gen_kwargs: dict[str, Any]) -> str:
+        """Generate for a request carrying ``params["images"]`` on a vision model.
+
+        The images and text go through the model's own processor and chat
+        template (``AutoProcessor``); the model is the one the pipeline already
+        loaded, which for vision archs (``aya_vision``, ``cohere_compass``) is
+        the ``AutoModelForImageTextToText`` class.
+        """
+        if self._processor is None:
+            from transformers import AutoProcessor
+            self._processor = AutoProcessor.from_pretrained(
+                self._model_name, **({"token": self._token} if self._token else {}))
+        # A text-only checkpoint's AutoProcessor is just its tokenizer, which
+        # would silently drop the images.
+        if not hasattr(self._processor, "image_processor"):
+            raise ValueError(f"{self._model_name!r} is not a vision model; it cannot take images")
+        if not getattr(self._processor, "chat_template", None):
+            raise ValueError(
+                f"{self._model_name!r}: image inputs need a processor with a chat template")
+        text = request.prompt if isinstance(request.prompt, str) else str(request.prompt)
+        messages = [dict(m) for m in template_messages(request.params.get("messages")
+                                                      or [{"role": "user", "content": text}])]
+        # Images go at the start of the last user turn.
+        turn = next(m for m in reversed(messages) if m.get("role") == "user")
+        content = turn["content"]
+        if isinstance(content, str):
+            content = [{"type": "text", "text": content}]
+        turn["content"] = [{"type": "image", "image": img} for img in request.params["images"]] + list(content)
+        model = self._pipeline.model
+        inputs = self._processor.apply_chat_template(
+            messages, add_generation_prompt=True, tokenize=True, return_dict=True,
+            return_tensors="pt", **self._template_kwargs(request, self._processor.chat_template),
+        ).to(model.device, dtype=model.dtype)
+        out = model.generate(**inputs, logits_processor=[self._logits_processor()], **gen_kwargs)
+        return self._processor.decode(out[0, inputs["input_ids"].shape[1]:], skip_special_tokens=True)
 
     def generate(self, requests: list[Request]) -> list[Result_]:
         self._ensure_pipeline()
-        prompts = [self._render_prompt(r) for r in requests]
         # The pipeline runs all prompts in one batched call sharing one
         # sampling config, so per-request param variation isn't meaningful
         # here -- the first request's params represent the whole batch
@@ -284,29 +390,47 @@ class HFGenModel(Model):
         call_time_extra_kwargs = {
             k: v for k, v in self._extra_kwargs.items() if k not in _LOAD_TIME_KWARGS
         }
-        outputs = self._pipeline(
-            prompts,
-            # transformers' text-generation pipeline defaults to echoing the
-            # full prompt back as part of "generated_text" -- every other
-            # backend (openai.py, anthropic.py, vllm_gen.py, ...) returns only
-            # the new completion, never the input. That inconsistency broke
-            # LLMJudge: its instructions necessarily list every valid verdict
-            # label, so with the prompt echoed back, the parser reliably
-            # mistook its own instructions for the model's real answer.
-            return_full_text=False,
-            logits_processor=[self._logits_processor()],
-            **gen_kwargs,
-            **call_time_extra_kwargs,
-        )
-        results = []
-        for out in outputs:
-            if isinstance(out, list):
-                text = out[0].get("generated_text", "") if isinstance(out[0], dict) else str(out[0])
-            elif isinstance(out, dict):
-                text = out.get("generated_text", "")
+        results: list[Result_ | None] = [None] * len(requests)
+        text_idx = []
+        for i, r in enumerate(requests):
+            if r.params.get("images"):
+                text = self._generate_with_images(r, {**gen_kwargs, **call_time_extra_kwargs})
+                results[i] = Result_(completions=[Generated(text=text)])
             else:
-                text = str(out)
-            results.append(Result_(completions=[Generated(text=text)]))
+                text_idx.append(i)
+        if not text_idx:
+            return results
+        # Render every prompt, then run templated and raw prompts as separate pipeline
+        # calls: a rendered chat template already carries the model's BOS (e.g. Aya's
+        # <BOS_TOKEN>), so it must not get another, while a raw prompt needs the
+        # tokenizer's. One call per group keeps every prompt at exactly one BOS.
+        prompt_of = {i: self._render_prompt(requests[i]) for i in text_idx}
+        groups: dict[bool, list[int]] = {}
+        for i in text_idx:
+            groups.setdefault(self._chat_tokenizer(requests[i]) is not None, []).append(i)
+        for templated, idxs in groups.items():
+            outputs = self._pipeline(
+                [prompt_of[i] for i in idxs],
+                # transformers' text-generation pipeline defaults to echoing the
+                # full prompt back as part of "generated_text" -- every other
+                # backend (openai.py, anthropic.py, vllm_gen.py, ...) returns only
+                # the new completion, never the input. That inconsistency broke
+                # LLMJudge: its instructions necessarily list every valid verdict
+                # label, so with the prompt echoed back, the parser reliably
+                # mistook its own instructions for the model's real answer.
+                return_full_text=False,
+                logits_processor=[self._logits_processor()],
+                **gen_kwargs,
+                **{"add_special_tokens": not templated, **call_time_extra_kwargs},
+            )
+            for i, out in zip(idxs, outputs):
+                if isinstance(out, list):
+                    text = out[0].get("generated_text", "") if isinstance(out[0], dict) else str(out[0])
+                elif isinstance(out, dict):
+                    text = out.get("generated_text", "")
+                else:
+                    text = str(out)
+                results[i] = Result_(completions=[Generated(text=text)])
         return results
 
     def loglikelihood(self, requests: list[Request]) -> list[LogLikelihood]:

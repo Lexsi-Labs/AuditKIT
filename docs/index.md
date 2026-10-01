@@ -20,11 +20,11 @@ evaluation — zero required deps.
 [View on GitHub](https://github.com/Lexsi-Labs/AuditKIT){ .md-button }
 
 <p class="ak-chips">
-<span>v1.0.0</span>
+<span>v1.2.0</span>
 <span>LSAL v1.2</span>
 <span>Python 3.10+</span>
 <span>zero required deps</span>
-<span>10 metric families</span>
+<span>11 metric families</span>
 </p>
 
 </div>
@@ -45,7 +45,7 @@ flowchart LR
 
     ---
 
-    Exact match, F1, BLEU, ROUGE, ChrF, METEOR, perplexity, WER, BERTScore, and more — all with zero required deps unless noted.
+    Exact match, F1, BLEU, ROUGE, ChrF, perplexity, WER, BERTScore, and more — all with zero required deps unless noted.
 
 -   :material-account-balance:{ .lg .middle } **LLM-as-judge**
 
@@ -108,6 +108,26 @@ See the [Getting Started](getting_started.md) guide for more.
 - **Provenance-first.** Every run has a stable fingerprint (sha256) for caching, comparison, and reproducibility.
 - **Library + CLI + YAML.** Use as a Python library, from the command line, or with declarative YAML configs.
 - **Lexsi Labs.** Built by the same team behind [CuratorKIT](https://github.com/Lexsi-Labs/CuratorKIT) (data curation) and [TabTune](https://github.com/Lexsi-Labs/TabTune) (tabular foundation models).
+
+## Authors
+
+Shreeyans Arora · Utsav Avaiya · Zera Lyngkhoi · Ram Mohan Rao Kadiyala · Hem Gosalia · Vinay Kumar Sankarapu · Pratinav Seth
+
+## Citation
+
+If you use AuditKIT in research, please cite it:
+
+```bibtex
+@software{auditkit2026,
+  title  = {AuditKIT: one library to evaluate any model on any dataset and any task},
+  author = {Arora, Shreeyans and Avaiya, Utsav and Lyngkhoi, Zera and
+            Kadiyala, Ram Mohan Rao and Gosalia, Hem and Sankarapu, Vinay Kumar and
+            Seth, Pratinav},
+  year   = {2026},
+  version = {1.2.0},
+  url    = {https://github.com/Lexsi-Labs/AuditKIT}
+}
+```
 
 <div class="ak-lexsi-footer">
 <p>

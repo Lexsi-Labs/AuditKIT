@@ -39,6 +39,34 @@ class TestAPIBackend:
                     pytest.fail(f"Prefix {prefix} still raises T1 error")
 
 
+class TestAPIKeyHostScoping:
+    """OPENAI_API_KEY is a fallback ONLY for OpenAI's own host: a custom
+    api_base (self-hosted vLLM/SGLang/Ollama) must never be handed the user's
+    real OpenAI key."""
+
+    def test_custom_host_does_not_get_openai_key(self, monkeypatch):
+        monkeypatch.delenv("API_KEY", raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-real-openai")
+        m = APIModel(model="m", api_base="http://localhost:8000/v1")
+        assert m._api_key is None
+
+    def test_openai_default_host_still_uses_openai_key(self, monkeypatch):
+        monkeypatch.delenv("API_KEY", raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-real-openai")
+        assert APIModel(model="gpt-4o-mini")._api_key == "sk-real-openai"
+
+    def test_api_key_env_var_used_for_custom_host(self, monkeypatch):
+        monkeypatch.setenv("API_KEY", "explicit-key")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-real-openai")
+        m = APIModel(model="m", api_base="http://localhost:8000/v1")
+        assert m._api_key == "explicit-key"
+
+    def test_explicit_api_key_wins_for_custom_host(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-real-openai")
+        m = APIModel(model="m", api_base="https://vllm.internal/v1", api_key="EMPTY")
+        assert m._api_key == "EMPTY"
+
+
 class TestGroqBackend:
     def test_groq_prefix_resolves(self):
         m = AutoModel.resolve("groq:llama-3.3-70b-versatile")

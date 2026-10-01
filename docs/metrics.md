@@ -72,6 +72,30 @@ these, see [Annotators](annotators.md).
 | `ContextCoverage()` | Target tokens found in context |
 | `ContextOverlap()` | Context relevant to output |
 | `AnswerOverlap()` | Token overlap with target |
+| `RetrievalMetrics(k=None)` | Ranked retrieval vs. gold `reference_contexts`: hit rate, precision, recall, MRR, average precision, nDCG (`@k` names with `k`) |
+| `Faithfulness(judge_model=...)` | LLM judge: fraction of the answer's claims supported by the retrieved context |
+| `ContextPrecision(judge_model=...)` | LLM judge: are retrieved chunks relevant and ranked relevant-first (`context_precision`, `context_relevance`) |
+| `ContextRecall(judge_model=...)` | LLM judge: fraction of the reference answer's sentences the retrieved context covers |
+
+The first four are lexical heuristics. `RetrievalMetrics` is deterministic; the
+three judge metrics work with any text judge. See [Agents & RAG](agents_and_rag.md).
+
+## Agents / Tool Use
+
+| Metric | Description |
+|---|---|
+| `ToolCallF1(arg_mode="exact")` | Multiset precision / recall / F1 of tool calls, plus `tool_call_exact` |
+| `TrajectoryMatch()` | Turn sequence vs. reference: `trajectory_strict`, `trajectory_in_order` |
+| `ParallelToolCalls()` | Parallel calling: `parallel_recall`, `parallel_precision`, `parallel_detection` |
+| `ToolCallValidity()` | Fraction of calls valid against `Sample.tools` schemas (no reference needed) |
+| `RedundantToolCalls()` | Fraction of calls that repeat an earlier call (lower is better) |
+| `TaskCompletion(judge_model=...)` | LLM judge of task + trajectory + final answer: complete / partial / failed |
+
+These read the run's tool calls from the trace (native `api:` tool calls, an
+`agent:` endpoint, or `Sample.actual_trace`) and fall back to parsing the text
+output. Tool evals need `adapter=ak.ToolCallAdapter()` (or `adapter="auto"`).
+See [Agents & RAG](agents_and_rag.md) for the data model, score semantics and a
+worked parallel-call example.
 
 ## Security / Performance
 
