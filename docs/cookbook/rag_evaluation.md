@@ -88,8 +88,8 @@ What each one actually checks (see the RAG section of the
 
 | Metric | Checks |
 |---|---|
-| `LexicalGroundedness` | Is the model's output grounded in the retrieved context — word-boundary matching, not naive substring containment. Named for the lexical-overlap heuristic it computes, distinct from RAGAS's LLM-based `Faithfulness`. |
-| `ContextOverlap` | Is the retrieved context actually relevant to what the model said. Distinct from RAGAS's LLM-based `ContextPrecision`. |
+| `LexicalGroundedness` | Is the model's output grounded in the retrieved context — word-prefix matching on normalized (lowercased, punctuation-stripped) tokens, not naive substring containment. Named for the lexical-overlap heuristic it computes. For the LLM-judged claim check, use `Faithfulness` (see [Agents & RAG](../agents_and_rag.md)). |
+| `ContextOverlap` | Is the retrieved context actually relevant to what the model said. For judged, rank-aware chunk relevance use `ContextPrecision`; with gold chunk ids use `RetrievalMetrics`. |
 | `ContextCoverage` | Does the retrieved context contain what the *target* answer needs — **deliberately independent of the model's output**, since it measures retrieval quality, not generation quality (same scoping intent as RAGAS's `context_recall`, but a raw vocabulary-overlap heuristic, not RAGAS's method). |
 | `AnswerOverlap` | Does the output's vocabulary overlap with the target's — doesn't look at `retrieval_context` at all, despite living in the same module. Distinct from RAGAS's `ResponseRelevancy`, which compares the answer to the *question* via embedding similarity. |
 

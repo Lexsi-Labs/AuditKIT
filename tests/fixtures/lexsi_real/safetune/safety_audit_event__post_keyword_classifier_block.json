@@ -1,0 +1,1 @@
+{"tenant_id": "placeholder-tenant", "decision": "block", "reason": "blocked_response_category:placeholder_category", "prompt": "[REDACTED]", "response": "[REDACTED]", "metadata": {"category": "placeholder_category", "matched_keyword": "placeholder_keyword"}, "timestamp": "2026-09-25T18:28:24.398021+00:00"}

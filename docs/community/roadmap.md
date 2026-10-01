@@ -18,7 +18,7 @@
 - [x] Code/deterministic metrics (Contains, Equals, Regex, etc.)
 - [x] llm-evaluation-harness integration
 - [x] Per-sample Predictions with answer browser
-- [x] Rich HTML reports
+- [ ] Rich HTML reports
 
 ## T2 — Judge + RAG + user datasets
 
@@ -41,6 +41,7 @@
 
 - [x] Security metrics (KeywordDetector, DefconGrade)
 - [x] Performance metrics (LatencyStats, Throughput)
-- [ ] Red teaming — adversarial-probing suite (probes, detectors, runner)
+- [x] Red teaming — basic probe suite (4 probes, 4 detectors, `RedTeamRunner`, `auditkit redteam`)
+- [ ] Red teaming — generated attacks and a broader probe library
 - [ ] Performance profiling (TTFT, ITL, TPOT distributions)
 - [ ] Load testing profiles

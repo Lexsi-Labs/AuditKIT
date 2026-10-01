@@ -1,0 +1,56 @@
+{
+  "pipeline_config_hash": "4e732c3bf6e9acb0",
+  "run_timestamp": "2026-09-25T18:29:03.857408Z",
+  "source_files": [],
+  "stage_counts": {
+    "JSONLReader": {
+      "output_count": 3,
+      "rejected_count": 1
+    },
+    "SchemaGate": {
+      "input_count": 3,
+      "output_count": 2,
+      "probe_recovered": 0,
+      "rejected_count": 1
+    },
+    "ExactDeduplicator": {
+      "input_count": 2,
+      "output_count": 2
+    },
+    "TextCleaner": {
+      "input_count": 2,
+      "output_count": 2
+    },
+    "AlpacaExporter": {
+      "exported_count": 2
+    },
+    "ShareGPTExporter": {
+      "exported_count": 2
+    },
+    "CorpusExporter": {
+      "exported_count": 2
+    }
+  },
+  "rejected_breakdown": {
+    "json_decode_error:Unterminated string starting at: line 1 column 2 (char 1)": 1,
+    "missing_field:output": 1
+  },
+  "dedup_stats": {
+    "exact_duplicates_removed": 0
+  },
+  "minhash_threshold": null,
+  "sampler_stats": null,
+  "token_stats": {
+    "total_prompt_tokens": 0,
+    "total_completion_tokens": 0,
+    "total_tokens": 0
+  },
+  "wall_clock_seconds": 0.013,
+  "tool_versions": {
+    "curatorkit": "0.1.6",
+    "python": "3.11.15"
+  },
+  "diversity_stats": null,
+  "diagnostic_stats": null,
+  "diagnostic_files": []
+}

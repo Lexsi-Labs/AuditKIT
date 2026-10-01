@@ -1,6 +1,239 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
+
+Lexsi stack interop for the hackathon tracks (CuratorKIT, AlignTune, SafeTune,
+CircuitKIT and AgentTune outputs evaluate with no glue code), plus the
+hackathon readiness fixes for the permitted Cohere models.
+
+### Added
+
+- **Dataset folders.** `ak.load_dataset(path, config=None, split=None)` reads a
+  `.jsonl`/`.csv` file, a CuratorKIT export folder (README `configs:` layout,
+  what `datasets.load_dataset(dir, config)` loads) or a Hub id. It picks
+  test > validation > train when no split is given and reads the `sft_alpaca`,
+  `sft_sharegpt`, `dpo`, `grpo` and `ppo` columns. `ak.evaluate(<folder>,
+  model, dataset_config="sft_alpaca", dataset_split=...)` does the same.
+- **Provenance (`lexsi_provenance.json`).** Read from `hf:<dir>` model folders
+  and dataset folders into `RunResult.metadata["inputs"]`, listed by
+  `summary()` and `Report`, written next to saved results (`RunResult.save`)
+  with the inputs embedded, and uploaded by `push_to_hub`. The Lexsi evidence
+  importers take `provenance=` (and read CuratorKIT's `manifest["provenance"]`).
+  New module `auditkit.provenance`; `ak.read_provenance`.
+- **Native tool calling on `hf:`.** Tool schemas go to the chat template
+  (`apply_chat_template(tools=...)`), so `ToolCallAdapter()` works on local
+  models whose template renders tools; a template without tool support raises
+  `CapabilityError`. None of the Cohere hackathon models' templates (Tiny Aya,
+  Aya Expanse, Aya Vision, North) render tools: use
+  `ToolCallAdapter(mode="prompt")` with them.
+- **Cohere tool-call format.** The tool-call parser reads Command R7B
+  `<|START_ACTION|>[{"tool_name", "parameters"}]<|END_ACTION|>`, the same text
+  with the markers stripped, and Command-R / Aya Expanse
+  `Action: ```json [...]```; recorded `{"tool_name"}` calls count as calls.
+- `episodes_from_agenttune(<run folder>)` reads every `*.jsonl` in an AgentTune
+  run folder and attaches its provenance to each episode.
+- `Sample.images`: images for vision models (Aya Vision, North Micro Vision),
+  sent through the model's processor by `hf:`.
+
+### Changed
+
+- `[transformers]` is `transformers>=5.15,<6` (North Micro Vision needs 5.15)
+  and adds `peft`; `[vllm]` is `vllm>=0.30`; `[vision]` adds `torchvision`.
+  `check_compat()` follows the new ranges.
+- `__version__` comes from the installed package metadata.
+- Docs are public at https://auditkit.lexsi.ai/.
+
+### Fixed
+
+- Aya prompts got two `<BOS_TOKEN>`s on `hf:` and `vllm:` (template plus
+  tokenizer); now one.
+- `hf:<PEFT adapter dir>` without `peft` failed as "generate failed after 3
+  retries"; it now says peft is needed. Missing extras and capability errors
+  are no longer retried and wrapped.
+- Images sent to a text-only model raise instead of being dropped.
+
+## 1.1.0
+
+### New
+
+- **Reference-free metrics (no gold standard required).** For RAG:
+  `answer_relevancy` (answer addresses the question), `response_groundedness`
+  (answer supported by the retrieved context), `hallucination` (claims
+  unsupported or contradicted by context, lower is better), and
+  `context_relevance` (retrieved contexts relevant to the question). For agents:
+  `agent_loop_detection` (repeated calls, reasoning stagnation, call-graph
+  cycles), `tool_permission` (least-privilege allow/deny check) and
+  `tool_selection` (each call justified at that point). All need only the
+  question, context, answer or trace, never a gold answer or labeled chunks.
+- **`AssertionOracle`.** A first-class agent-eval outcome from a human-written
+  natural-language criterion and a held-out judge, returning a real
+  success/failure/unknown verdict with no gold trajectory. A verified state
+  assertion still overrides it when both are present.
+- **Metadata is metric-addressable.** A metric or the assertion oracle can read
+  a user's own reference fields from `Sample.metadata` / `AgentCase.metadata`,
+  so a custom column can gate a metric or feed the oracle.
+
+- **Agent and tool-use evals, including parallel tool calls.** `Sample` has new
+  fields: `tools`, `expected_tool_calls` (a list of turns; a turn with two or
+  more calls is a parallel group), `reference_contexts` and `actual_trace`.
+  New metrics:
+  - `tool_call_f1`: precision, recall, F1 and exact match.
+  - `trajectory_match`: strict and in-order.
+  - `parallel_tool_calls`: `parallel_recall` catches independent calls that
+    were serialized, `parallel_precision` catches dependent calls that were
+    batched, and `parallel_detection` scores the should-I-parallelize decision.
+  - `tool_call_validity`, `redundant_tool_calls` and the `task_completion`
+    judge.
+
+  Calls are matched with a maximum bipartite matching, not greedy pairing.
+- **`agent:` backend.** Evaluate an externally deployed agent over HTTP (stdlib
+  only). It reads the agent's answer, its tool-call transcript and its
+  retrieved contexts.
+- **Native tool calling on `api:`.** `tools`, `tool_choice` and
+  `parallel_tool_calls` are forwarded, and `tool_calls` are captured. Use it
+  with OpenAI-compatible servers, including vLLM and SGLang with a tool-call
+  parser. `ToolCallAdapter(mode="prompt")` covers text-only backends.
+- **RAG evals.**
+  - `retrieval(k)`: hit rate, precision, recall, MRR, average precision and nDCG.
+  - LLM-judged `faithfulness`, `context_precision` / `context_relevance` and
+    `context_recall`. They work with any text judge, and a parse failure is
+    recorded as an error, never scored 0.
+- **Loaders.** `load_jsonl()` and `load_agenttune()` (AgentTune eval rows,
+  trajectories and reports).
+- **SGLang.** New `[sglang]` extra, mutually exclusive with `[vllm]` and
+  `[transformers]`, plus `check_compat()` for environment and pin checks.
+  See `docs/SGLANG.md`.
+- Notebooks `13_sglang_compatibility` and `14_agent_and_rag_evals`.
+
+### New: End-to-end agent evaluation (`agent_eval`)
+
+- **`auditkit.agent_eval` package.** Evaluates what an agent did and achieved
+  across a complete task episode. Stdlib only; AgentTune, torch and transformers
+  are never imported. Implements slices A1 and A2 of
+  `docs/notes/agent-evals-agenttune-prd.md`. See
+  [Agent evaluation](../agent_eval.md).
+  - **Episode contract.** `AgentCase` (stable `digest()`, validated id/task),
+    `AgentEvent` (order, role, type, `timestamp`-or-`None`, `call_id`,
+    `turn_id`, raw payload, source, tier), and `AgentEpisode` (schema-versioned,
+    mode `recorded`/`deployed`/`harness`, ordered events, final
+    answer/state/artifacts, counters, a loss-aware `coverage` map, strict-JSON
+    round-trip). `source_reward` / `source_verdict` / `source_scores` are kept
+    as provenance only, never promoted to the outcome.
+  - **AgentTune bridge.** `episodes_from_agenttune`,
+    `episode_from_openai_messages` and `episode_from_sample` turn recorded runs
+    into episodes with honest coverage: a flattened report is marked
+    tool-name-only so argument-sensitive metrics stay ineligible rather than
+    reading empty arguments as wrong ones. `inspect_agenttune` (and
+    `supported_scorers_from_coverage`) report which metrics a trace can feed.
+  - **Outcome oracles.** `FinalStateAssertion`, `ArtifactAssertion`,
+    `AnswerAssertion` and `CustomPredicate`, with verdicts `success`,
+    `failure`, `unknown` and `error`. A state or artifact oracle is
+    authoritative; missing evidence is `unknown`, never a fabricated pass or
+    fail. The `TaskCompletion` judge is a labeled diagnostic that never
+    overrides a verified state assertion (a parse failure is `unknown`).
+  - **Runner and report.** `AgentEvalRunner` / `AgentEvalSpec` run recorded
+    episodes (no agent or tool call) or a deployed `agent:` endpoint (captures
+    output, trace, contexts, errors, latency and usage). `AgentEvalResult`
+    reports the verified outcome as the headline plus separate diagnostic
+    columns, a per-case status (`completed`, `budget_exhausted`, `method_error`,
+    `target_error`, `judge_error`, `ineligible`, `not_applicable`), and a
+    summary with both a decided-only and an all-cases success denominator.
+    `rescore()` replays saved episodes offline. `trials > 1` and
+    `mode="harness"` raise `NotImplementedError` (deferred to A3/A4).
+  - **CLI.** `auditkit agent eval` (`--dry-run` / `--output`),
+    `auditkit agent import-agenttune` (`--inspect`) and `auditkit agent rescore`.
+    Inspect and dry-run load no model and call no endpoint.
+  - **Deployed state.** When the `agent:` reply carries a `final_state` or
+    `artifacts` object (paths set by `agent_opts` `state_path` /
+    `artifacts_path`), state and artifact oracles use it. Without it, a state
+    oracle resolves `unknown`.
+  - **AgentTune `EventLog`.** `episode_from_eventlog` reads an `EventLog`
+    object or its JSON (duck-typed): turn boundaries become parallel groups,
+    the episode reward becomes `source_reward`, and token spans and logprobs
+    stay in the payload. The heal audit JSONL from `Project.heal` is refused
+    with a clear error instead of being read as empty trajectories.
+  - **Report provenance.** A `run_eval` report's `model`, `use_case`,
+    `pass_rate`, counts and timestamp are kept on every episode
+    (`metadata["source_report"]`); `source_verdict` is set when a row carries
+    `passed`.
+  - **Opt-in export redaction.** `agent eval` / `agent import-agenttune`
+    accept `--redact-key KEY` and `--redact-env VAR`, and `redact()` does
+    the same in Python. Nothing is redacted by default.
+- **Lexsi evidence importer (`auditkit.agent_eval.lexsi`).** Read-only readers
+  for artifacts that AgentTune, AlignTune, SafeTune, CuratorKIT and CircuitKIT
+  already wrote. Each reader wraps the artifact in a `SourceEvidence` envelope
+  with provenance, granularity, and the join keys present and missing.
+  `join_evidence` attaches evidence to an episode only on ids the caller names:
+  at least one identity key is required, aggregate reports are never pinned to
+  one case or call, and unknown keys are refused. `lineage_sidecar` summarizes
+  sample lineage. No producer library is imported. The gate tests load 27 real
+  files that each library's own serializer wrote on placeholder input
+  (`tests/fixtures/lexsi_real/`).
+
+### Changed
+
+- The inline-dataset fingerprint now also covers `metadata` and the new
+  fields, but only when they are set. A dataset that carries `metadata` gets a
+  new fingerprint once (one cache miss).
+
+### Fixes: agent/RAG edge-case hardening
+
+- **Linear tool-call and thinking parsing.** `parse_tool_calls` and
+  `strip_thinking` ran in cubic time on repeated unclosed `<tool_call>` /
+  `<think>` tags (a nested `(\s*)` pattern a runaway model could blow up);
+  rewritten to run in linear time.
+- **Bounded parallel matching.** `ParallelToolCalls`' parallel-recall search now
+  runs under a fixed work budget (20,000 units) and returns a valid lower bound
+  when the budget is hit, flagged by `recall_exact`, so a pathological trace
+  cannot make it blow up. Trajectory in-order matching is single-pass, and
+  JSON-equality and bipartite matching are iterative.
+- **Per-request isolation in `api_gen`.** The request body (including the tool
+  keys `tools` / `tool_choice` / `parallel_tool_calls`) is built per request
+  from `Request.params`, and the prompt is string-coerced, so one request's
+  fields never leak into another's.
+- **Wall-clock-bounded runner timeout.** `Runner` now bounds each chunk's wait
+  with `future.result(timeout)` instead of a `with` block that waited for
+  `generate()` to return (so the configured `timeout` never actually cut a slow
+  call); the wait is now bounded by wall-clock time, not by the call itself.
+- **Robust loaders.** `load_jsonl` / `load_agenttune` name the offending line on
+  bad JSON, reject non-object rows and non-dict `metadata`, treat a scalar id
+  field as one id (a lone string is not char-split), keep a bare numeric or
+  keyword answer as its raw string (never reformatted so it can no longer match
+  a retrieved id), read `null` gold as no gold, preserve a `trajectory_id` as
+  the sample id, and surface a structural mismatch as a named bad-line error.
+- **Real AgentTune interop tests.** `tests/test_agenttune_integration.py` runs
+  AgentTune's actual output shapes (trajectory JSONL, run-eval rows, RAG-GRPO
+  rows, `trace.jsonl`, `Report.save` JSON, `TrajectoryStore` export) end to end
+  through `load_agenttune` and the matching agent/RAG/answer metrics, each
+  fixture cited by source file and line against the pinned mirror.
+
+### Fixes: agent_eval, backends and RAG metrics (stress and audit pass)
+
+- **Recorded runs match cases by id only.** A case is matched to its episode by
+  `case_id`, then `source_id`, never by position. A case with no episode is
+  `not_applicable`, and duplicate ids warn.
+- **Deployed calls are bounded and isolated.** Every `agent:` call runs under a
+  wall-clock deadline. An error from one call fails only that case as
+  `target_error`, and the run fingerprint records the resolved endpoint
+  identity, never raw `agent_opts`.
+- **`agent:` / `api:` never raise per request.** HTTP errors, broken replies,
+  deeply nested JSON and bad redirects fail only that request, so a batch is
+  never replayed and side-effecting calls are not re-sent. 429 and 5xx
+  responses and connection resets are retried per request. Non-list
+  `tool_calls` are rejected rather than read as no calls.
+- **Runner scoring.** A sample whose metric crashed counts in `failed_count`
+  and is marked incorrect. `timeout` bounds one request on per-request
+  backends. String or non-finite token usage is coerced.
+- **Importers.** An observed transcript with zero tool calls counts as
+  evidence that no tool was called, so a skipped tool is scored. JSONL is split
+  on `\n` only, and AgentTune store exports group calls by `step_number` and
+  never claim a per-call result pairing from a copied step observation.
+- **RAG judges.** The judge cache key includes judge arguments and a stable
+  identity for plain callables. Verdict parsing is linear-time and rejects
+  conflicting duplicates. `max_context_chars` truncates each chunk to an equal
+  share, so every chunk stays visible. Non-finite relevance grades raise.
+
+## 1.0.0
 
 ### API changes
 
@@ -40,7 +273,7 @@
   and `shield_gemma`/`granite_guardian` (policy-parameterized — pass `policy=`
   to pick a harm policy/risk, threaded into the guard's chat template via a new
   `chat_template_kwargs` flag). Metric catalog is now 48 (the encoder judges
-  below were added the same cycle).
+  below were added the same cycle). See `docs/notes/guard-judge-plan.md`.
 - **Bias metrics reworked.** The old `bias_score` (`BiasScore`) was renamed to
   `representation_skew` (`RepresentationSkew`) *and* rewritten: it now measures
   demographic-representation balance per axis via total-variation distance from

@@ -21,7 +21,9 @@ env:
 jobs:
   plan:
     name: Inspect release state
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    # Internal-only divergence from public: release/publish only from the public repo,
+    # so merges here never tag, push to main, or upload to PyPI.
+    if: github.repository == 'Lexsi-Labs/AuditKIT' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     outputs:
       action: ${{ steps.plan.outputs.action }}
@@ -71,9 +73,11 @@ jobs:
             latest_version=$(python -c \
               'import json,sys; print(json.load(open(sys.argv[1]))["tag_name"])' \
               "$latest_response")
+            # the code's own version when it is ahead of the latest release (a deliberate bump,
+            # e.g. 1.2.0 after 1.0.0); otherwise the next patch of the latest release
             requested_version=$(python -c \
-              'import sys; from scripts.release import next_patch; print(next_patch(sys.argv[1]))' \
-              "$latest_version")
+              'import sys; from scripts.release import release_version; print(release_version(sys.argv[1], sys.argv[2]))' \
+              "$current_version" "$latest_version")
 
             if git show-ref --verify --quiet "refs/tags/$latest_version"; then
               latest_commit=$(git rev-list -n 1 "$latest_version")

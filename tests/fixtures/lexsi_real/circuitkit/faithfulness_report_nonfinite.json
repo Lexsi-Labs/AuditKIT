@@ -1,0 +1,10 @@
+{
+  "patching_score": NaN,
+  "ablation_score": Infinity,
+  "stability": null,
+  "robustness": null,
+  "baseline_comparison": null,
+  "generalization": null,
+  "intervention_reliability": null,
+  "metadata": {}
+}

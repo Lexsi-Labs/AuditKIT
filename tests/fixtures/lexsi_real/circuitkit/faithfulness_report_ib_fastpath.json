@@ -1,0 +1,13 @@
+{
+  "patching_score": 0.5,
+  "ablation_score": 0.4,
+  "stability": null,
+  "robustness": null,
+  "baseline_comparison": null,
+  "generalization": null,
+  "intervention_reliability": null,
+  "metadata": {
+    "random_avg": 0.1,
+    "eval_mode": "clean_only_sufficiency"
+  }
+}

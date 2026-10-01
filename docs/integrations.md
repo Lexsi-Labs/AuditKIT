@@ -17,7 +17,7 @@ import auditkit as ak
 
 # Automatically resolved by prefix
 model = ak.AutoModel.resolve("openai:gpt-4o")
-model = ak.AutoModel.resolve("anthropic:claude-3-opus-20240229")
+model = ak.AutoModel.resolve("anthropic:claude-opus-5-5")
 model = ak.AutoModel.resolve("groq:llama-3.3-70b-versatile")
 ```
 
@@ -68,7 +68,7 @@ Requires `OPENAI_API_KEY` environment variable.
 ## Anthropic
 
 ```python
-model = ak.AutoModel.resolve("anthropic:claude-3-opus-20240229")
+model = ak.AutoModel.resolve("anthropic:claude-opus-5-5")
 ```
 
 Requires `ANTHROPIC_API_KEY` environment variable.

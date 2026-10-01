@@ -12,7 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union, Optional
 
 if TYPE_CHECKING:  # avoid import cycles; these are only type hints here
     from .adapter import Adapter
@@ -40,7 +40,7 @@ class RunConfig:
     # Default 1 (not higher) because Runner._chunk() always splits requests
     # into exactly `concurrency` chunks regardless of request count -- with
     # fewer requests than concurrency, that produces empty chunks and wastes
-    # real model/API calls on them.
+    # real model/API calls on them (see docs/notes/CORRECTNESS_FIXES_2026-07-08.md).
     # concurrency<=1 takes Runner.execute()'s no-chunking path entirely, so
     # this is the only value that's safe unconditionally.
     concurrency: int = 1
@@ -68,6 +68,10 @@ class RunConfig:
     # whole), so toggling this forces a fresh run rather than replaying a
     # cached perf-less result.
     track_performance: bool = True
+    # Extra kwargs for the model's chat template on every request (hf:, vllm:, and api:
+    # servers that accept them, e.g. vLLM/SGLang): Qwen3's {"enable_thinking": False},
+    # a template's reasoning switch, ... A request's own chat_template_kwargs win.
+    chat_template_kwargs: Optional[dict[str, Any]] = None
     extra: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -123,6 +127,9 @@ class RunSpec:
         hand-picked subset of fields, so a run-affecting setting (``limit``,
         ``batch_size``, a new field added later, ...) can never be silently
         left out of the fingerprint the way ``limit`` previously was.
+
+        Also folds in ``auditkit.__version__`` so a cached score is never
+        replayed across a library upgrade that changed how a metric scores.
         """
         def _identity(obj: Any, default_attr: str) -> Any:
             fn = getattr(obj, "identity", None)
@@ -130,8 +137,15 @@ class RunSpec:
                 return fn()
             return getattr(obj, default_attr, type(obj).__name__)
 
+        # Read the running library version at call time (not a module-level
+        # import) so upgrading auditkit -- which may change a metric's scoring
+        # -- shifts every fingerprint and forces a fresh run instead of
+        # replaying a cached score computed by the old code.
+        import auditkit
+
         key = {
             "engine": "native",
+            "auditkit_version": getattr(auditkit, "__version__", "unknown"),
             "model": _identity(self.model, "name"),
             "scenario": getattr(self.scenario, "name", type(self.scenario).__name__),
             # identity() captures the *prompt* (adapter template/system prompt,

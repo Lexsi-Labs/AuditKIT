@@ -1,6 +1,6 @@
 # Platform Integration
 
-AuditKIT serves two roles: a standalone open-source library you can `pip install` and use immediately, and a platform-integrated evaluation service within the Lexsi ecosystem. This page covers the latter.
+AuditKIT serves two roles: a standalone, source-available library (LSAL v1.2) you can `pip install` and use immediately, and a platform-integrated evaluation service within the Lexsi ecosystem. This page covers the latter.
 
 ---
 

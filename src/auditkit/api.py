@@ -10,6 +10,7 @@ This is what users import::
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any, Callable, Iterable, Optional, Sequence, Union
 
 from .adapter import Adapter, GenerationAdapter
@@ -41,16 +42,27 @@ _BUILTIN_METRICS: dict[str, type[Metric]] = {
 
 def _to_scenario(
     dataset: Union[Scenario, Sequence[Sample], Callable[[], Iterable[Sample]], str],
+    config: Optional[str] = None,
+    split: Optional[str] = None,
 ) -> Scenario:
-    """Coerce any supported dataset form to a :class:`Scenario`."""
+    """Coerce any supported dataset form to a :class:`Scenario`.
+
+    A string is a registered scenario name, else a dataset folder / file / Hub
+    id read by :func:`~auditkit.loaders.load_dataset` with *config* and *split*.
+    """
     if isinstance(dataset, Scenario):
         return dataset
-    if isinstance(dataset, str):
-        try:
+    if isinstance(dataset, (str, os.PathLike)):
+        dataset = os.fspath(dataset)
+        if config is None and split is None and dataset in SCENARIOS.names():
             return SCENARIOS.get(dataset)()
-        except RegistryError:
-            available = ", ".join(SCENARIOS.names())
-            raise AuditKitError(f"Unknown dataset '{dataset}'. Available: [{available}]")
+        if config is not None or split is not None or os.path.exists(dataset) or "/" in dataset:
+            from .loaders import load_dataset
+            return load_dataset(dataset, config, split=split)
+        available = ", ".join(SCENARIOS.names())
+        raise AuditKitError(
+            f"Unknown dataset '{dataset}'. Available: [{available}], or a dataset folder, "
+            f"file or Hub id (with dataset_config= for a named config)")
     if callable(dataset):
         return CallableScenario(dataset)
     # treat it as a list/iterable of Samples
@@ -176,6 +188,8 @@ def evaluate(
     verbose: bool = False,
     experiment_name: str | None = None,
     tags: list[str] | None = None,
+    dataset_config: str | None = None,
+    dataset_split: str | None = None,
     **opts: Any,
 ) -> RunResult:
     """Evaluate a model on a dataset and return a :class:`RunResult`.
@@ -189,8 +203,11 @@ def evaluate(
     ----------
     dataset
         A :class:`Scenario`, a list of :class:`Sample`, a callable that yields
-        samples, or a scenario name (native). With ``engine="lmeval"``, an
-        lm-eval task name, comma-separated string, or list of names.
+        samples, a scenario name, or a dataset folder / ``.jsonl`` / ``.csv`` / Hub
+        id (see :func:`~auditkit.loaders.load_dataset`), e.g. a CuratorKIT export
+        folder with ``dataset_config="sft_alpaca"`` (native). With
+        ``engine="lmeval"``, an lm-eval task name, comma-separated string, or
+        list of names.
     model
         A :class:`Model` instance, a ``list[str] -> list[str]`` callable, or a
         string model spec (e.g. ``"hf:gpt2"``, ``"groq:llama-3.3-70b-versatile"``,
@@ -219,6 +236,10 @@ def evaluate(
         score the raw output, unchanged from before this existed.
     config
         A :class:`RunConfig` with evaluation knobs. Defaults to ``RunConfig()``.
+    dataset_config, dataset_split
+        For a folder or Hub id *dataset*: the config name (HF
+        ``load_dataset(path, name)``) and split (default: the first of test /
+        validation / train present).
     **opts
         Extra keyword args passed to the model constructor (native) or to
         lm-eval's ``model_args`` (``engine="lmeval"``: ``base_url``, ``dtype``, …).
@@ -233,7 +254,7 @@ def evaluate(
     if engine != "native":
         raise ValueError(f"unknown engine {engine!r}; use 'native' or 'lmeval'")
 
-    scenario = _to_scenario(dataset)
+    scenario = _to_scenario(dataset, dataset_config, dataset_split)
     resolved_model = AutoModel.resolve(model, **opts)
     samples = list(scenario.samples())
     metrics = _to_metrics(scorers, samples)
@@ -338,7 +359,12 @@ def generate(
         config=config or RunConfig(),
     )
     result = Runner().run(spec, verbose=verbose)
-    return [replace(s, actual_output=p.raw_output)
+    # Persist the structured trace too (native tool_calls/messages/retrieved
+    # contexts an api:/agent: backend produced) into actual_trace, so a later
+    # precomputed evaluate() scores the run's tool calls / contexts instead of
+    # seeing an empty actual_output and marking every native call missing.
+    return [replace(s, actual_output=p.raw_output,
+                    actual_trace=(p.context or {}).get("trace") or s.actual_trace)
             for s, p in zip(samples, result.predictions)]
 
 

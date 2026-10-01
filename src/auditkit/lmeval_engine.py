@@ -19,10 +19,12 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 from typing import Any, Optional, Union
 
 from .cache import DiskCache
 from .errors import AuditKitError, CapabilityError, ExtraNotInstalled
+from .lexsi_login import _lexsi_login
 from .report import Prediction, RunResult
 from .score import Stat
 
@@ -70,6 +72,7 @@ def _temp_env(name: str, value: Optional[str]):
         else:
             os.environ[name] = prev
 
+
 # Our model-spec prefix → (lm-eval backend name, the arg key that holds the model name).
 _BACKEND_MAP: dict[str, tuple[str, str]] = {
     "hf": ("hf", "pretrained"),
@@ -110,6 +113,28 @@ _PASSTHROUGH_ARGS = (
 _KNOWN_SAMPLE_METRICS = ("acc", "acc_norm", "exact_match", "em", "f1", "mc1", "mc2")
 
 
+def _infer_hf_repo(model_name: str) -> Optional[str]:
+    """Best-effort guess at a model's real Hugging Face repo id from a Lexsi
+    platform model name, for the ``lexsi:`` prefix's auto-``tokenizer=``.
+
+    The one Lexsi model name confirmed against a real gateway so far follows
+    ``{hf_org}-{hf_repo}_v{n}`` (``"Qwen-Qwen3-0.6B_v1"`` -> ``"Qwen/Qwen3-0.6B"``):
+    strip a trailing ``_v<digits>`` version suffix, then split org/repo at the
+    *first* remaining hyphen -- not the last -- since repo names themselves
+    commonly contain hyphens (``Qwen3-0.6B``). This is a fallback used only
+    when no ``tokenizer=``/``hf_token=`` was given explicitly; an explicit one
+    always wins, and a guess that doesn't look like ``org-repo`` is skipped
+    (``None``) rather than passed through as a bogus HF repo id.
+    """
+    base = re.sub(r"_v\d+$", "", model_name)
+    if "-" not in base:
+        return None
+    org, repo = base.split("-", 1)
+    if not org or not repo:
+        return None
+    return f"{org}/{repo}"
+
+
 def map_model_spec(model: Any, **opts: Any) -> tuple[str, dict[str, Any]]:
     """Map an AuditKIT model spec to an lm-eval ``(backend, model_args)`` pair.
 
@@ -121,6 +146,10 @@ def map_model_spec(model: Any, **opts: Any) -> tuple[str, dict[str, Any]]:
 
     ``groq:`` routes through the openai-chat-completions backend with Groq's base
     URL filled in automatically; it's chat-only, so generation-scored tasks only.
+
+    ``lexsi:`` rides the same ``local-completions`` backend as ``api:`` (still
+    needs ``base_url=``), and additionally auto-fills ``tokenizer=`` from the
+    model name via :func:`_infer_hf_repo` when it isn't given explicitly.
     """
     if not isinstance(model, str):
         raise AuditKitError(
@@ -159,6 +188,10 @@ def map_model_spec(model: Any, **opts: Any) -> tuple[str, dict[str, Any]]:
         # Same reasoning as groq above.
         args.pop("api_key", None)
         args.setdefault("base_url", _OPENROUTER_BASE_URL)
+    if prefix == "lexsi" and "tokenizer" not in args:
+        inferred = _infer_hf_repo(name)
+        if inferred is not None:
+            args["tokenizer"] = inferred
     if backend == "local-completions" and "base_url" not in args:
         raise AuditKitError(
             f"'{prefix}:' needs base_url=<OpenAI-compatible endpoint> for the "
@@ -228,6 +261,13 @@ def run_benchmark(
     gen_kwargs: Any = None,
     fewshot_as_multiturn: Optional[bool] = None,
     lmeval_kwargs: Optional[dict[str, Any]] = None,
+    relay: bool = False,
+    lexsi_org: Optional[str] = None,
+    lexsi_workspace: Optional[str] = None,
+    lexsi_project: Optional[str] = None,
+    sdk_access_token: Optional[str] = None,
+    api_url: str = "https://apidev.lexsi.ai",
+    app_url: str = "https://dev.lexsi.ai",
     **opts: Any,
 ) -> RunResult:
     """Run one or more lm-eval tasks and return a unified :class:`RunResult`.
@@ -244,6 +284,26 @@ def run_benchmark(
     for generative tasks, e.g. ``"temperature=0,max_gen_toks=256"``),
     ``fewshot_as_multiturn`` — and anything else lm-eval's ``simple_evaluate``
     accepts can be passed via ``lmeval_kwargs={...}`` for full parity.
+
+    ``relay=True`` routes the run through a short-lived local
+    :class:`~auditkit.lexsi_relay.LexsiCompletionsRelay`, for gateways whose
+    completions endpoint doesn't accept ``project_name=``/``provider=``/
+    ``client_id=`` directly (see the ``gateway_fields`` note below) --
+    ``base_url=`` is then the *real* gateway endpoint, and the relay is
+    started just before the call and always stopped right after, success or
+    failure. Needs ``project_name=``/``provider=``/``client_id=`` and an
+    ``api_key=``/``token=`` (used as the relay's outbound bearer token) in
+    ``opts`` too. The disk-cache fingerprint is computed from the real
+    ``base_url=`` before the relay's (ephemeral, per-run) local URL is
+    substituted in, so caching stays stable across runs.
+
+    ``lexsi_org=``/``lexsi_workspace=``/``lexsi_project=`` (all three or none)
+    do the ``lexsi_sdk`` login and project lookup right here, as a one-shot
+    convenience for a single call. They resolve ``api_key=``/``project_name=``
+    only when not already given explicitly, via :func:`~auditkit.lexsi_login._lexsi_login`.
+    Calling :func:`~auditkit.lexsi_login.lexsi_login` once yourself and passing
+    ``api_key=``/``project_name=`` across several calls avoids repeating the
+    login's network round trip.
     """
     from .runspec import RunConfig
 
@@ -253,12 +313,76 @@ def run_benchmark(
         raise AuditKitError("benchmark engine needs at least one task name")
     cfg = config or RunConfig()
 
+    if lexsi_org or lexsi_workspace or lexsi_project:
+        if not (lexsi_org and lexsi_workspace and lexsi_project):
+            raise AuditKitError(
+                "lexsi_org=/lexsi_workspace=/lexsi_project= must all be given together."
+            )
+        login_token, resolved_project_name, resolved_client_id = _lexsi_login(
+            lexsi_org, lexsi_workspace, lexsi_project,
+            token=sdk_access_token, api_url=api_url, app_url=app_url,
+        )
+        opts.setdefault("api_key", login_token)
+        opts.setdefault("project_name", resolved_project_name)
+        if resolved_client_id is not None:
+            opts.setdefault("client_id", resolved_client_id)
+
     backend, resolved_model_args = map_model_spec(model, **opts)
     # Full model-side parity: an explicit model_args dict merges over the
     # convenience opts, so any lm-eval model arg (load_in_4bit, gptq, parallelize,
     # max_memory, ...) is reachable — important for quantized/sharded models.
     if model_args:
         resolved_model_args.update(model_args)
+
+    # The Lexsi gateway rejects requests missing project_name/provider/
+    # client_id. lm-eval's own client has no notion of those fields, but its
+    # local-completions/openai-chat-completions/openai-completions backends
+    # all spread gen_kwargs straight into the JSON request body alongside
+    # prompt/messages (confirmed against lm_eval/models/openai_completions.py's
+    # _create_payload -- shared by every backend in _BACKEND_MAP that reaches
+    # a Lexsi gateway, not just 'lexsi:'), so folding them in here reaches the
+    # gateway the same way a real generation param like temperature would --
+    # confirmed working end-to-end for the chat/generation path with no relay
+    # in front of lm-eval at all. Not prefix-gated: any model spec pointed at
+    # a Lexsi gateway via base_url= can carry these. Caller-supplied
+    # gen_kwargs values win on key conflicts.
+    gateway_fields = {
+        k: opts[k] for k in ("project_name", "provider", "client_id")
+        if opts.get(k) is not None
+    }
+    if gateway_fields:
+        if gen_kwargs is None:
+            gen_kwargs = dict(gateway_fields)
+        elif isinstance(gen_kwargs, dict):
+            gen_kwargs = {**gateway_fields, **gen_kwargs}
+        else:
+            raise AuditKitError(
+                "project_name=/provider=/client_id= need gen_kwargs= as a "
+                "dict so they can be merged in (got "
+                f"gen_kwargs={gen_kwargs!r}, a {type(gen_kwargs).__name__})."
+            )
+
+    relay_obj = None
+    if relay:
+        real_base_url = resolved_model_args.get("base_url")
+        if not real_base_url:
+            raise AuditKitError(
+                "relay=True needs base_url=<the real gateway completions endpoint>."
+            )
+        missing = [k for k in ("project_name", "provider", "client_id") if opts.get(k) is None]
+        if missing:
+            raise AuditKitError(f"relay=True also needs {missing} passed as kwargs.")
+        relay_token = opts.get("api_key") or opts.get("token")
+        if not relay_token:
+            raise AuditKitError(
+                "relay=True needs api_key= (or token=) for the relay's outbound "
+                "auth to the real gateway."
+            )
+        from .lexsi_relay import LexsiCompletionsRelay
+        relay_obj = LexsiCompletionsRelay(
+            target_url=real_base_url, token=relay_token,
+            project_name=opts["project_name"], provider=opts["provider"], client_id=opts["client_id"],
+        )
 
     try:
         import lm_eval
@@ -339,6 +463,12 @@ def run_benchmark(
                     "the duration of the run only.)"
                 )
     try:
+        if relay_obj is not None:
+            # The fingerprint above was computed from the real base_url --
+            # only the live model_args dict is repointed at the relay's
+            # (ephemeral, per-run) local URL, so caching stays stable across
+            # runs regardless of which port the relay happens to bind.
+            kwargs["model_args"]["base_url"] = relay_obj.start()
         with _hf_token_env(hf_token), _temp_env("OPENAI_API_KEY", provider_key), stdout_cm:
             raw = lm_eval.simple_evaluate(**kwargs)
     except CapabilityError:
@@ -351,6 +481,9 @@ def run_benchmark(
                 f"logprob-capable model (hf:/vllm:/api: with base_url)."
             ) from exc
         raise
+    finally:
+        if relay_obj is not None:
+            relay_obj.stop()
 
     result = _to_runresult(raw, tasks, model, cfg, run_name, fingerprint)
     cache.set(fingerprint, result)
@@ -467,9 +600,11 @@ def _fingerprint(kwargs: dict, model_spec: str) -> str:
         version = getattr(lm_eval, "__version__", "?")
     except Exception:
         version = "?"
+    from auditkit import __version__ as _ak_version
     key = {
         "engine": "lmeval",
         "model_spec": model_spec,
+        "auditkit_version": _ak_version,
         "lm_eval_version": version,
         **{k: (sorted(v) if k == "tasks" and isinstance(v, list) else v) for k, v in kwargs.items()},
     }

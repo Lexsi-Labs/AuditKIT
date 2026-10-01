@@ -272,7 +272,7 @@ def cmd_list(args: argparse.Namespace) -> None:
         print("Model backends:")
         print("  precomputed             - Scores samples with actual_output already set")
         print("  openai:<model>          - OpenAI (e.g. openai:gpt-4o)")
-        print("  anthropic:<model>       - Anthropic (e.g. anthropic:claude-3-opus)")
+        print("  anthropic:<model>       - Anthropic (e.g. anthropic:claude-sonnet-5-5)")
         print("  hf:<model>              - HuggingFace Transformers")
         print("  lexsi:<model>           - Lexsi gateway (OpenAI-compatible)")
         print("  vllm:<model>            - vLLM")
@@ -358,11 +358,228 @@ def cmd_redteam(args: argparse.Namespace) -> None:
             json.dump(data, f, indent=2)
 
 
+def _agent_case_from_cfg(c: dict) -> "object":
+    """Build an AgentCase from a config dict (its outcome is a plain spec)."""
+    from .agent_eval import AgentCase, outcome_from_spec
+
+    return AgentCase(
+        id=c["id"],
+        task=c["task"],
+        category=c.get("category", "generic"),
+        allowed_tools=c.get("allowed_tools"),
+        budgets=c.get("budgets") or {},
+        outcome=outcome_from_spec(c.get("outcome")),
+        reference_turns=c.get("reference_turns"),
+        reference_contexts=c.get("reference_contexts"),
+        environment=c.get("environment"),
+        metadata=c.get("metadata") or {},
+    )
+
+
+def _agent_spec_from_cfg(cfg: dict) -> "object":
+    from .agent_eval import AgentEpisode, AgentEvalSpec
+
+    cases = [_agent_case_from_cfg(c) for c in cfg.get("cases", [])]
+    episodes = [AgentEpisode.from_dict(e) for e in cfg["episodes"]] if cfg.get("episodes") else None
+    return AgentEvalSpec(
+        cases=cases,
+        mode=cfg.get("mode", "recorded"),
+        agent=cfg.get("agent"),
+        agent_opts=cfg.get("agent_opts") or {},
+        episodes=episodes,
+        import_path=cfg.get("import_path"),
+        trials=cfg.get("trials", 1),
+        reset_confirmed=cfg.get("reset_confirmed", False),
+        reliability_k=cfg.get("reliability_k"),
+        scorers=cfg.get("scorers") or ["tool_call_f1", "tool_call_validity", "task_completion"],
+        judge=cfg.get("judge"),
+        name=cfg.get("name", "agent-eval"),
+    )
+
+
+def _agent_dry_run(spec) -> None:
+    """Validate a spec and print the call plan WITHOUT loading a model (UX-A3)."""
+    from .agent_eval import validate_cases
+    from .agent_eval.outcome import requires_external_action
+    from .agent_eval.runner import validate_scorers
+
+    validate_cases(spec.cases)
+    validate_scorers(spec.scorers)
+    print(f"Agent eval dry run   Mode: {spec.mode}   Cases: {len(spec.cases)}")
+    print(f"Scorers: {', '.join(spec.scorers)}")
+    if spec.trials != 1:
+        print(f"trials={spec.trials}: {spec.trials} trials per case (slice A3 reliability: "
+              "pass@k / all-k / variance). Independence is claimed only with "
+              "reset_confirmed=true; otherwise counts are shown but flagged.")
+    if spec.judge is not None:
+        print(f"Judge (diagnostic): {spec.judge}")
+    if spec.mode == "deployed":
+        print(f"Would POST to agent endpoint: {spec.agent}  ({len(spec.cases)} calls, "
+              "one per case)")
+        print("Answer evidence: expected (the reply's output); unknown until called.")
+        print("Trace evidence (tool calls, retrieved contexts): unknown until called; "
+              "cases whose reply has no transcript make trace metrics ineligible.")
+        print("State evidence: only when the reply carries 'final_state'/'artifacts' "
+              "(agent_opts state_path/artifacts_path); otherwise state oracles resolve "
+              "to 'unknown'.")
+    for c in spec.cases:
+        oc = c.outcome.identity()["type"] if c.outcome is not None else "none"
+        needs_state = requires_external_action(c)
+        print(f"  - {c.id}: oracle={oc}"
+              + (" [needs external state; unknown unless the reply carries it]" if needs_state and spec.mode == "deployed" else "")
+              + f"  tools={c.allowed_tools or '[]'}  refs={'yes' if c.reference_turns is not None else 'no'}")
+    print("Dry run only: no endpoint or model was called.")
+
+
+def _redact_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--redact-key", action="append", default=[], metavar="KEY",
+                   help="Replace the value of every KEY field in the saved JSON (repeatable)")
+    p.add_argument("--redact-env", action="append", default=[], metavar="VAR",
+                   help="Replace every occurrence of env var VAR's value in the saved JSON "
+                        "(repeatable; the secret never goes on the command line)")
+    p.add_argument("--redact-auto", action="store_true",
+                   help="Also AUTO-DETECT and redact common secrets (API keys, bearer/JWT "
+                        "tokens, AWS keys, PEM private keys, high-entropy strings) in the "
+                        "saved JSON, conservatively (see docs); prints a count to stderr")
+
+
+def _redacted(obj: object, args: argparse.Namespace) -> object:
+    auto = getattr(args, "redact_auto", False)
+    if not (args.redact_key or args.redact_env or auto):
+        return obj
+    import sys
+
+    from .agent_eval.types import detect_secrets, redact
+    missing = [v for v in args.redact_env if not os.environ.get(v)]
+    if missing:
+        raise SystemExit(f"--redact-env: {', '.join(missing)} not set; refusing to write unredacted output")
+    if auto:
+        found = detect_secrets(obj)
+        if found:
+            kinds = ", ".join(sorted({f["kind"] for f in found}))
+            print(f"auto-redaction: {len(found)} secret(s) detected and redacted "
+                  f"(kinds: {kinds})", file=sys.stderr)
+    return redact(obj, secrets=[os.environ[v] for v in args.redact_env],
+                  keys=args.redact_key, auto=auto)
+
+
+def cmd_agent(rest: list[str]) -> None:
+    """`auditkit agent` subcommand group: eval / import-agenttune / rescore."""
+    import json
+
+    p = argparse.ArgumentParser(prog="auditkit agent",
+                                description="End-to-end agent evaluation (AgentTune bridge)")
+    sub = p.add_subparsers(dest="subcmd")
+    pe = sub.add_parser("eval", help="Run an agent evaluation from a JSON config")
+    pe.add_argument("--config", required=True, help="Path to the JSON spec")
+    pe.add_argument("--output", "-o", help="Save the run (results + episodes) to JSON")
+    pe.add_argument("--dry-run", action="store_true",
+                    help="Validate tools/oracle/trials/judge and print the plan; no model call")
+    pe.add_argument("--cases", action="store_true", help="Also print a per-case drilldown")
+    _redact_args(pe)
+    pi = sub.add_parser("import-agenttune", help="Import/inspect an AgentTune file")
+    pi.add_argument("path", help="Path to an AgentTune JSONL/report file")
+    pi.add_argument("--inspect", action="store_true",
+                    help="Print detected format, row count, coverage and eligible metrics")
+    pi.add_argument("--output", "-o", help="Save imported episodes to JSON")
+    _redact_args(pi)
+    pr = sub.add_parser("rescore", help="Rescore saved episodes with new scorers (no agent call)")
+    pr.add_argument("--run", required=True, help="A run JSON saved by `agent eval --output`")
+    pr.add_argument("--scorers", required=True, help="Comma-separated scorer names")
+    pr.add_argument("--judge", help="Judge model spec for task_completion "
+                    "(default: the saved run's judge when it was a spec string)")
+    pr.add_argument("--cases", action="store_true", help="Also print a per-case drilldown")
+    args = p.parse_args(rest)
+    if args.subcmd in ("eval", "import-agenttune"):
+        _redacted({}, args)  # fail on an unset --redact-env before any endpoint call
+
+    if args.subcmd == "eval":
+        with open(args.config, encoding="utf-8") as fh:
+            cfg = json.load(fh)
+        spec = _agent_spec_from_cfg(cfg)
+        if args.dry_run:
+            _agent_dry_run(spec)
+            return
+        from .agent_eval import AgentEvalRunner
+        from .agent_eval.types import dumps_strict
+        result = AgentEvalRunner().run(spec)
+        print(result.summary())
+        if args.cases:
+            print(result.cases_report())
+        if args.output:
+            # Save results AND the scored episodes (incl. deployed ones) so
+            # `agent rescore` can replay offline without re-spending endpoint calls.
+            payload = {"result": result.to_dict(),
+                       "episodes": [e.to_dict() for e in result.episodes],
+                       "cases": [c.to_dict() for c in spec.cases]}
+            with open(args.output, "w", encoding="utf-8") as fh:
+                fh.write(dumps_strict(_redacted(payload, args), indent=2))
+        return
+
+    if args.subcmd == "import-agenttune":
+        from .agent_eval import episodes_from_agenttune, inspect_agenttune
+        from .agent_eval.runner import KNOWN_SCORERS
+        from .agent_eval.types import dumps_strict
+
+        info = inspect_agenttune(args.path)
+        print(f"Detected format(s): {info['formats']}")
+        print(f"Rows: {info['row_count']}  (tasks to run, not recorded episodes: {info['n_tasks']})")
+        print(f"Coverage labels: {info['coverage_labels']}")
+        # Only names `--scorers` accepts (the importer also lists 'answer', which
+        # is an oracle, not a scorer).
+        eligible = [m for m in info["eligible_metrics"] if m in KNOWN_SCORERS]
+        print(f"Eligible metrics (trace-supported): {', '.join(eligible)}")
+        if not args.inspect:
+            print("(pass --inspect for the coverage detail; use `agent eval` to score)")
+        else:
+            print(f"First-row coverage: {info['coverage_sample']}")
+        if args.output:
+            eps = episodes_from_agenttune(args.path)
+            with open(args.output, "w", encoding="utf-8") as fh:
+                fh.write(dumps_strict(_redacted([e.to_dict() for e in eps], args), indent=2))
+        return
+
+    if args.subcmd == "rescore":
+        from .agent_eval import AgentCase, AgentEpisode, outcome_from_spec, rescore
+
+        with open(args.run, encoding="utf-8") as fh:
+            saved = json.load(fh)
+        episodes = [AgentEpisode.from_dict(e) for e in saved.get("episodes", [])]
+        cases = []
+        for c in saved.get("cases", []):
+            try:
+                oc = outcome_from_spec(c.get("outcome"))
+            except ValueError:
+                oc = None  # e.g. a custom predicate can't be rebuilt from JSON
+            cases.append(AgentCase(id=c["id"], task=c["task"], category=c.get("category", "generic"),
+                                   allowed_tools=c.get("allowed_tools"), budgets=c.get("budgets") or {},
+                                   outcome=oc, reference_turns=c.get("reference_turns"),
+                                   reference_contexts=c.get("reference_contexts"),
+                                   environment=c.get("environment"),
+                                   metadata=c.get("metadata") or {}))
+        scorers = [s.strip() for s in args.scorers.split(",") if s.strip()]
+        judge = args.judge
+        if judge is None:
+            saved_judge = ((saved.get("result") or {}).get("spec_identity") or {}).get("judge")
+            judge = saved_judge if isinstance(saved_judge, str) else None
+        if "task_completion" in scorers and judge is None:
+            print("warning: task_completion requested but no judge is available (the saved "
+                  "run has no judge spec string); pass --judge. It is reported as ineligible.",
+                  file=sys.stderr)
+        result = rescore(episodes, scorers, cases=cases or None, judge=judge)
+        print(result.summary())
+        if args.cases:
+            print(result.cases_report())
+        return
+
+    p.print_help()
+
+
 def main(argv: list[str] | None = None) -> None:
     # Detect subcommand manually so --flags work in flat mode
     args_list = argv if argv is not None else sys.argv[1:]
     first_arg = args_list[0] if args_list else None
-    if first_arg and not first_arg.startswith("-") and first_arg in ("init", "list", "eval", "redteam", "compare"):
+    if first_arg and not first_arg.startswith("-") and first_arg in ("init", "list", "eval", "redteam", "compare", "agent"):
         command = first_arg
         rest = args_list[1:] if len(args_list) > 1 else []
     else:
@@ -405,6 +622,10 @@ def main(argv: list[str] | None = None) -> None:
         p.add_argument("--output", "-o", help="Save results to JSON file")
         args = p.parse_args(rest)
         cmd_compare(args)
+        return
+
+    if command == "agent":
+        cmd_agent(rest)
         return
 
     # Default: eval (with backwards compat for flat argument style)

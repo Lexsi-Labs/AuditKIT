@@ -1,6 +1,6 @@
 site_name: AuditKIT
 site_description: Evaluate any model on any dataset and any task — benchmark, judge, code, red-team, and performance metrics, all from a single spine.
-site_url: https://lexsi-labs.github.io/AuditKIT/
+site_url: https://auditkit.lexsi.ai/
 repo_url: https://github.com/Lexsi-Labs/AuditKIT
 repo_name: Lexsi-Labs/AuditKIT
 edit_uri: edit/main/docs/
@@ -90,6 +90,13 @@ plugins:
             merge_init_into_class: true
             docstring_section_style: table
 
+# docs/notes/ holds internal working notes (audit findings, plans, known-issue
+# snapshots), per AGENTS.md. They are not in the nav but mkdocs still built them,
+# which published internal planning into the site and made `mkdocs build --strict`
+# fail on their dangling cross-links. Exclude the directory from the build.
+exclude_docs: |
+  notes/**
+
 nav:
   - Home: index.md
   - Getting Started:
@@ -105,6 +112,10 @@ nav:
       - Encoder Judge Prebuilts (Factuality/Sentiment): encoder_judge_prebuilts.md
       - Guard Models (Safety): guard_models.md
       - Model Backends: model_backends.md
+      - Agents & RAG: agents_and_rag.md
+      - RAG Stress (Model Risk): rag_stress.md
+      - Agent Evaluation: agent_eval.md
+      - Lexsi Library Integration: lexsi_integration.md
       - Experiments: experiments.md
       - Reports: reports.md
       - Configuration: configuration.md
@@ -132,12 +143,17 @@ nav:
       - Known Issues: known_issues.md
       - Bugs: BUGS.md
       - vLLM Known Issues: VLLM_KNOWN_ISSUES.md
+      - SGLang: SGLANG.md
   - Community:
       - FAQ: community/faq.md
       - Roadmap: community/roadmap.md
       - Changelog: community/changelog.md
       - Contributing: community/contributing.md
       - Glossary: about/glossary.md
+  # Internal-only: removed from the public site in AuditKIT 242e2df, kept here.
+  - About (internal):
+      - Product / PRD: about/product.md
+      - Landscape Comparison: COMPARISON.md
 
 markdown_extensions:
   - admonition

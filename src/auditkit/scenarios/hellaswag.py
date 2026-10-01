@@ -21,7 +21,7 @@ class HellaSwagScenario(Scenario):
             import datasets
         except ImportError:
             raise ExtraNotInstalled("interop", "pip install auditkit[interop]")
-        data = datasets.load_dataset("hellaswag", split=self.split)
+        data = datasets.load_dataset("Rowan/hellaswag", split=self.split)
         return [
             Sample(
                 input=row["ctx"],

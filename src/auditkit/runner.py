@@ -12,8 +12,11 @@ isolation and lets techniques swap one stage without touching the others.
 from __future__ import annotations
 
 import logging
+import math
 import threading
 import time
+import traceback
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from dataclasses import asdict
 from typing import Any, Optional
@@ -24,6 +27,7 @@ from .errors import CapabilityError, ExtraNotInstalled, ModelError, ModelTimeout
 from .metric import Metric
 from .metrics.perf import LatencyStats, Throughput
 from .model import Generated, Model, Request, Result_, _prompt_text
+from .provenance import input_ref
 from .report import Prediction, RunResult
 from .runspec import RunConfig, RunSpec
 from .sample import Sample
@@ -55,6 +59,78 @@ def _score_doc(score: Score) -> dict[str, Any]:
     return doc
 
 
+# ParallelToolCalls' scores; a name carries an arg-mode suffix (parallel_recall_subset)
+_PARALLEL_SCORES = ("parallel_recall", "parallel_precision", "parallel_detection")
+
+
+def _run_notes(model: Any) -> dict[str, Any]:
+    """The backend's own facts about the run (``Model.run_notes``); a failure
+    there never takes down a finished run."""
+    try:
+        return dict(model.run_notes() or {}) if callable(getattr(model, "run_notes", None)) else {}
+    except Exception as e:  # noqa: BLE001
+        logger.warning("run_notes() failed for %s: %s", getattr(model, "name", model), e)
+        return {}
+
+
+def _token_count(value: Any) -> int:
+    """A backend-reported token count as an int; a string ("5") is parsed and
+    anything non-numeric or non-finite (NaN/Infinity) counts as 0, so neither
+    fails the sample nor puts NaN into saved (strict) JSON."""
+    try:
+        value = float(value or 0)
+    except (TypeError, ValueError):
+        return 0
+    return int(value) if math.isfinite(value) else 0
+
+
+# Finish reasons whose EMPTY reply is not an answer (see Runner.execute): recorded as errors.
+_NO_ANSWER_FINISH = ("length", "error", "abort", "content_filter")
+
+
+def _raised_during_import(exc: BaseException) -> bool:
+    """True when *exc* was raised while a module was being imported (e.g. torchaudio
+    refusing a CUDA-mismatched torch inside ``import vllm``). Python strips its import
+    machinery from tracebacks, but the imported module's top-level code still shows as
+    a ``<module>`` frame -- which a generate() call only runs by importing something."""
+    return any(f.name == "<module>" for f in traceback.extract_tb(exc.__traceback__))
+
+
+def _is_setup_error(exc: BaseException) -> bool:
+    """A failure every retry would repeat: a missing or broken import, a missing
+    model/file, or a bad argument/configuration. Transient failures (connection
+    resets, timeouts, 5xx/429) are not setup errors and keep their retries."""
+    e: Optional[BaseException] = exc
+    for _ in range(8):                      # follow explicit ``raise ... from`` causes
+        if e is None:
+            break
+        if isinstance(e, (ImportError, NotImplementedError, TypeError, ValueError,
+                          FileNotFoundError, IsADirectoryError, NotADirectoryError)):
+            return True
+        if isinstance(e, OSError) and not isinstance(e, (ConnectionError, TimeoutError)) and (
+                "not a valid model identifier" in str(e) or "is not a local folder" in str(e)):
+            return True
+        if _raised_during_import(e):
+            return True
+        e = e.__cause__
+    return False
+
+
+def unscored_status(score: Score) -> Optional[str]:
+    """``"unknown"`` / ``"not_tested"`` when *score* is not a measurement, else ``None``.
+
+    The codebase convention for "no measurement" is ``metadata["unknown"] = True``
+    with a placeholder value; ``metadata["status"]`` or ``label`` may say
+    ``not_tested`` (nothing to measure). ``metadata["count_in_aggregate"]`` means the
+    producer explicitly asked for the value to be used (e.g. a judge's opt-in
+    ``unknown_score``), so it is treated as a measurement.
+    """
+    meta = score.metadata or {}
+    if not meta.get("unknown") or meta.get("count_in_aggregate"):
+        return None
+    status = meta.get("status") or getattr(score, "label", None) or "unknown"
+    return "not_tested" if status == "not_tested" else "unknown"
+
 class Runner:
     """Drives a :class:`RunSpec` to a :class:`RunResult` in five stages."""
 
@@ -70,7 +146,19 @@ class Runner:
             samples = test or val or train
             if hasattr(adapter, 'pool') and train:
                 adapter.pool = train
-        return [(s, adapter.adapt(s, config)) for s in samples]
+        built = [(s, adapter.adapt(s, config)) for s in samples]
+        # Images ride on every request of their sample, whatever the adapter.
+        for s, reqs in built:
+            if s.images:
+                for r in reqs:
+                    r.params["images"] = s.images
+        # Chat-template kwargs from the RunConfig reach every request; a request's own win.
+        if config.chat_template_kwargs:
+            for _, reqs in built:
+                for r in reqs:
+                    r.params["chat_template_kwargs"] = {**config.chat_template_kwargs,
+                                                       **(r.params.get("chat_template_kwargs") or {})}
+        return built
 
     def _split_samples(self, samples, split_cfg):
         n = len(samples)
@@ -115,6 +203,18 @@ class Runner:
         flat, counts = self._flatten(batch)
         if not flat:
             return [(s, []) for s, _ in batch]
+        if getattr(model, "per_request", False):
+            # agent:/api: fail, retry (429/5xx/reset) and time out each request
+            # on its own and never raise, so a batch retry here would only
+            # re-send already-answered (side-effecting) requests, and a
+            # chunk-wide timeout would drop them and orphan the rest of the
+            # chunk. Hand the settings to the backend instead.
+            # ponytail: sets attributes on the model object; per-call plumbing
+            # if one model instance must serve runs with different settings.
+            model.max_retries, model.retry_delay = max_retries, retry_delay
+            if timeout is not None:
+                model.timeout = timeout
+            max_retries, timeout = 0, None
 
         # Fan out across threads ONLY when asked for it AND the model declares it
         # is safe to call concurrently. A single local model (HFGenModel/vLLM) is
@@ -130,11 +230,25 @@ class Runner:
             # generate([]) on empty chunks (wasteful, and some backends choke).
             n_chunks = min(concurrency, len(flat))
             chunks = self._chunk(flat, n_chunks)
+            # Parallel chunks OVERLAP in wall-clock, so letting each worker call
+            # throughput.record() with its own elapsed sums overlapping durations
+            # -- inflating total_time_ms ~n_chunks-fold and collapsing rps to the
+            # serial rate. Pass throughput=None into the workers (latency still
+            # records per call, which is honest -- those are call-level samples)
+            # and record ONE span for the whole parallel region. len(flat) is
+            # safe: a chunk that exhausts retries raises ModelError out of
+            # pool.map, so we only reach the record line when every request was
+            # served. Ceiling: the span also counts any retry-backoff sleeps that
+            # fall inside the region (the per-call design excludes them) -- a
+            # small effect that only fires when a chunk actually retries.
+            parallel_start = time.perf_counter()
             with ThreadPoolExecutor(max_workers=n_chunks) as pool:
                 chunk_results = list(pool.map(
-                    lambda c: self._retry_generate(model, c, max_retries, retry_delay, timeout, latency, throughput),
+                    lambda c: self._retry_generate(model, c, max_retries, retry_delay, timeout, latency, None),
                     chunks,
                 ))
+            if throughput is not None:
+                throughput.record((time.perf_counter() - parallel_start) * 1000.0, len(flat))
             results = [r for cr in chunk_results for r in cr]
 
         out: list[tuple[Sample, list[Result_]]] = []
@@ -184,24 +298,57 @@ class Runner:
             start = time.perf_counter()
             try:
                 if timeout is not None:
-                    with ThreadPoolExecutor(max_workers=1) as pool:
-                        future = pool.submit(model.generate, requests)
+                    # future.result(timeout) must bound the WAIT. A `with` block
+                    # would shutdown(wait=True) on exit and block until the slow
+                    # generate() actually returned, so the timeout never cut
+                    # anything (wall was bounded by generate(), not by `timeout`).
+                    # shutdown(wait=False) returns at the budget. Ceiling: Python
+                    # can't kill the worker, so the orphaned generate() runs on in
+                    # the background (result dropped; joined by concurrent.futures'
+                    # atexit hook at process exit) -- on a non-threadsafe local
+                    # backend that makes `timeout` best-effort, since the orphan
+                    # can overlap the next call the `parallel` guard serializes.
+                    pool = ThreadPoolExecutor(max_workers=1)
+                    future = pool.submit(model.generate, requests)
+                    try:
                         result = future.result(timeout=timeout)
+                    finally:
+                        pool.shutdown(wait=False)
                 else:
                     result = model.generate(requests)
             except FuturesTimeout:
                 _record((time.perf_counter() - start) * 1000.0, served=False)
                 raise ModelTimeout(f"generate timed out after {timeout}s")
+            except (ExtraNotInstalled, CapabilityError):
+                # Setup errors: every retry fails the same way, and wrapping
+                # them would hide the fix behind "generate failed after N retries".
+                raise
             except Exception as e:
                 _record((time.perf_counter() - start) * 1000.0, served=False)
+                if _is_setup_error(e):
+                    raise           # same reason as above: surface the real cause at once
                 last_exc = e
                 if attempt < max_retries:
                     time.sleep(retry_delay * (2 ** attempt))
                     logger.warning("Retry %d/%d: %s", attempt + 1, max_retries, e)
                 continue
-            _record((time.perf_counter() - start) * 1000.0, served=True)
+            elapsed_ms = (time.perf_counter() - start) * 1000.0
+            per_request = [getattr(r, "latency_ms", None) for r in (result or [])]
+            if (latency is not None and per_request
+                    and all(isinstance(v, (int, float)) for v in per_request)):
+                # A backend that times each request itself (api:, agent: through
+                # generate_each) gives a real per-request latency: record those.
+                # Throughput stays call-level: it is a wall-clock rate.
+                with _generate_lock:
+                    for v in per_request:
+                        latency.record(float(v))
+                    if throughput is not None:
+                        throughput.record(elapsed_ms, len(requests))
+            else:
+                _record(elapsed_ms, served=True)
             return result
-        raise ModelError(f"generate failed after {max_retries} retries") from last_exc
+        raise ModelError(f"generate failed after {max_retries} retries: "
+                         f"{type(last_exc).__name__}: {last_exc}") from last_exc
 
     def _flatten(self, batch):
         flat = []
@@ -249,6 +396,8 @@ class Runner:
             else:
                 logger.warning("extracted_by=%r has no 'extracted' entry in context", extracted_by)
         scores: list[Score] = []
+        failed_metrics: list[str] = []
+        primary_failed = False
         for metric in metrics:
             if not metric.applicable(sample):
                 continue
@@ -275,9 +424,24 @@ class Runner:
                 logger.error("Metric %s failed on sample %s: %s", metric.name, sample.id, e)
                 if errors is not None:
                     errors.append({"sample_id": sample.id, "metric": metric.name, "error": str(e)})
+                primary_failed = primary_failed or not scores
+                failed_metrics.append(metric.name)
                 continue
             produced_list = produced if isinstance(produced, list) else [produced]
             for s in produced_list:
+                # A Score flagged metadata["unknown"] is not a measurement (its value
+                # is a placeholder). "unknown" -- the metric could not decide, e.g. an
+                # unreadable judge verdict -- is recorded exactly like a metric that
+                # raised (same rule as task_completion). "not_tested" -- nothing to
+                # measure on this sample -- is not an error. Neither is averaged
+                # (see aggregate()); both stay on the prediction with their flag.
+                if unscored_status(s) == "unknown":
+                    reason = f"unknown result, not scored: {s.reason}" if s.reason else "unknown result, not scored"
+                    logger.warning("Metric %s gave no usable result on sample %s: %s", s.name, sample.id, reason)
+                    if errors is not None:
+                        errors.append({"sample_id": sample.id, "metric": s.name, "error": reason})
+                    if s.name not in failed_metrics:
+                        failed_metrics.append(s.name)
                 # Authoritative, not a fallback: metric.direction is required
                 # (Metric.__init_subclass__ enforces it), so every Score a
                 # metric produces carries ITS metric's declared direction,
@@ -287,9 +451,14 @@ class Runner:
                 s.direction = metric.direction
             scores.extend(produced_list)
 
-        primary = scores[0] if scores else None
+        # The first applicable metric is the primary one. If it crashed, the
+        # next metric must not stand in for it, and a sample any metric failed
+        # on (e.g. malformed tool_calls/contexts) is never "correct".
+        primary = scores[0] if scores and not primary_failed else None
         correct: Optional[bool]
-        if primary is None:
+        if failed_metrics:
+            correct = False
+        elif primary is None:
             correct = None
         elif primary.passed is not None:
             correct = primary.passed
@@ -311,29 +480,69 @@ class Runner:
             correct=correct,
             score=primary.value if primary else None,
             context=context,
-            metadata={"scores": [_score_doc(s) for s in scores]},
+            metadata={"scores": [_score_doc(s) for s in scores],
+                      **({"metric_errors": failed_metrics} if failed_metrics else {})},
         )
         return scores, prediction
 
     def aggregate(self, scores: list[Score]) -> dict[str, Stat]:
+        """Per-metric Stats over real measurements only.
+
+        A Score flagged ``metadata["unknown"]`` (``unknown`` / ``not_tested``) carries
+        a placeholder value, not a measurement, so it is left out -- averaging it
+        in would move the headline (a placeholder 0.0 made a lower-is-better
+        Brier look better). They are counted by :meth:`unscored_counts`. A score
+        whose producer explicitly opted in (``metadata["count_in_aggregate"]``,
+        e.g. ``LLMJudge(unknown_score=0.5)``) is averaged as asked.
+        """
         stats: dict[str, Stat] = {}
         for score in scores:
+            if unscored_status(score) is not None:
+                continue
             stats.setdefault(score.name, Stat(score.name)).add(score.value)
         return stats
+
+    @staticmethod
+    def unscored_counts(scores: list[Score]) -> dict[str, dict[str, int]]:
+        """``{metric: {"unknown": n, "not_tested": m}}`` for results left out of the aggregate."""
+        out: dict[str, dict[str, int]] = {}
+        for score in scores:
+            status = unscored_status(score)
+            if status is not None:
+                bucket = out.setdefault(score.name, {"unknown": 0, "not_tested": 0})
+                bucket[status] += 1
+        return out
 
     def run(self, spec: RunSpec, *, verbose: bool = False) -> RunResult:
         fingerprint = spec.fingerprint()
         config = spec.config
 
+        # What this run consumed, with each input's lexsi_provenance.json (a
+        # dataset folder via ak.load_dataset, an hf:/vllm: model folder).
+        inputs = [i for i in ((getattr(spec.scenario, "metadata", None) or {}).get("lexsi_input"),) if i]
+        model_ref = getattr(spec.model, "_model_name", None)
+        if isinstance(model_ref, str):
+            inputs.append(input_ref("model", model_ref))
+
         cache = DiskCache()
         cached = cache.get(fingerprint)
         if cached is not None:
+            cached.metadata = {**cached.metadata, "inputs": inputs}  # lineage of THIS call
             return cached
 
         run_id = spec.run_name or fingerprint
+        _run_notes(spec.model)   # drop what an earlier, aborted run left behind
 
         batch = self.build_requests(spec.scenario, spec.adapter, config)
         logger.info("Starting run with %d samples", len(batch))
+        if (any(s.tools for s, _ in batch) and getattr(spec.adapter, "method", "") != "tools"
+                and not getattr(spec.model, "reads_actual_output", False)):
+            # The model would never see the tools and every tool metric would
+            # quietly score it as "made no call" -- say so instead.
+            logger.warning(
+                "Samples carry tools but the adapter is %r, so the model is not "
+                "shown them. Pass adapter=ToolCallAdapter() (or adapter='auto').",
+                getattr(spec.adapter, "method", type(spec.adapter).__name__))
 
         has_loglikelihood = any(
             r.request_type == "loglikelihood"
@@ -357,7 +566,7 @@ class Runner:
         def _accumulate_usage(results: list[Result_]) -> None:
             for r in results:
                 for key in token_usage:
-                    token_usage[key] += r.usage.get(key, 0) or 0
+                    token_usage[key] += _token_count(r.usage.get(key))
 
         if getattr(spec.model, "reads_actual_output", False):
             # Score pre-generated answers (Sample.actual_output) — no model call.
@@ -368,6 +577,10 @@ class Runner:
                 context = self.annotate(
                     spec.annotators, sample, [Result_(completions=[Generated(text=output)])]
                 )
+                if sample.actual_trace:
+                    # A recorded agent/RAG run (tool-call turns, transcript,
+                    # retrieved contexts) scored offline, same key as live runs.
+                    context["trace"] = sample.actual_trace
                 scores, prediction = self.score_one(
                     spec.metrics, sample, output, context, run_id, errors,
                     extracted_by=spec.extracted_by,
@@ -464,6 +677,15 @@ class Runner:
                     print(".", end="", flush=True)
         else:
             requests = [r for _, reqs in batch for r in reqs]
+            if any(r.params.get("tools") for r in requests) and not spec.model.supports(Capability.TOOLS):
+                # Tool schemas travel as a request param; a backend without
+                # native tool support would silently drop them and the model
+                # would answer without ever seeing the tools.
+                raise CapabilityError(
+                    f"{spec.model.name} does not accept native tool schemas. Use an "
+                    f"'api:'/'agent:'/'hf:' backend, or ToolCallAdapter(mode='prompt') to "
+                    f"describe the tools in the prompt instead."
+                )
             logger.info("Executing %d requests", len(requests))
             executed = self.execute(
                 spec.model, batch, concurrency=config.concurrency, max_retries=config.max_retries,
@@ -478,6 +700,27 @@ class Runner:
                     output = results[0].text if results else ""
                     _accumulate_usage(results)
                     context = self.annotate(spec.annotators, sample, results)
+                    trace = results[0].completions[0].trace if results and results[0].completions else None
+                    if trace:
+                        # Structured output (native tool calls, an agent's
+                        # transcript, retrieved contexts) for agent/RAG metrics.
+                        context["trace"] = trace
+                    # An empty reply truncated at max_tokens (finish_reason
+                    # 'length', typical of reasoning models), a per-request
+                    # backend failure ('error'), a request the server aborted
+                    # ('abort', SGLang) or a filtered one ('content_filter')
+                    # carries no real answer. Scoring "" silently can even mark
+                    # an irrelevance sample "correct", so record it as a failed
+                    # sample (the except below) instead. Non-empty text or any
+                    # other finish_reason scores normally.
+                    gen = results[0].completions[0] if results and results[0].completions else None
+                    if (gen is not None and gen.finish_reason in _NO_ANSWER_FINISH
+                            and not trace and not output.strip()):
+                        hint = ("reasoning model truncated at max_tokens? raise RunConfig.max_tokens"
+                                if gen.finish_reason == "length" else "the server gave no answer")
+                        raise ModelError(gen.error or (
+                            f"empty output with finish_reason={gen.finish_reason!r} and no trace ({hint})"
+                        ))
                     # execute() preserves batch's order/length, so batch[index]
                     # is the (sample, requests) pair this result came from.
                     reqs = batch[index][1]
@@ -508,7 +751,22 @@ class Runner:
                 if verbose and (index + 1) % 10 == 0:
                     print(".", end="", flush=True)
 
+        notes = _run_notes(spec.model)
+        if "parallel_tool_calls" in notes.get("unverified_request_fields", {}):
+            # The one-call cap may never have reached the model: say so on every
+            # parallel score, so a reader doesn't take it as the capped behaviour.
+            for s in all_scores:
+                if s.name.startswith(_PARALLEL_SCORES):
+                    s.metadata = {**(s.metadata or {}), "cap_unverified": True}
+            for p in predictions:
+                for doc in (p.metadata or {}).get("scores", []):
+                    if str(doc.get("name", "")).startswith(_PARALLEL_SCORES):
+                        doc["metadata"] = {**doc.get("metadata", {}), "cap_unverified": True}
         stats = self.aggregate(all_scores)
+        unscored = self.unscored_counts(all_scores)
+        for name, n in Counter(e["metric"] for e in errors if "metric" in e).items():
+            logger.warning("Metric %s failed on %d sample(s); they are left out of its headline "
+                           "and marked incorrect (see RunResult.errors)", name, n)
         logger.info("Run complete – %d metrics computed", len(stats))
         if verbose:
             print(f" done – {len(stats)} metrics")
@@ -566,10 +824,14 @@ class Runner:
             config=spec.config,
             model_spec=str(spec.model) if spec.model else None,
             errors=errors,
-            failed_count=failed_count,
+            unscored=unscored,
+            # a sample whose metric crashed is a failed sample, not a silent skip
+            failed_count=failed_count + sum(
+                1 for p in predictions if (getattr(p, "metadata", None) or {}).get("metric_errors")),
             model_size=model_size,
             token_usage=token_usage,
             perf=perf,
+            metadata={"inputs": inputs, **notes},
         )
         cache.set(fingerprint, result)
         return result

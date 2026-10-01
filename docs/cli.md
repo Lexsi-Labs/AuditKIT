@@ -9,6 +9,8 @@ auditkit eval      Run an evaluation (default)
 auditkit init      Scaffold a new project
 auditkit list      List available resources
 auditkit compare   Compare multiple models on the same dataset
+auditkit redteam   Run red-team probes against a model
+auditkit agent     End-to-end agent evaluation: eval / import-agenttune / rescore
 ```
 
 ## `auditkit eval`
@@ -117,7 +119,7 @@ Run the same dataset against multiple models and compare performance:
 
 ```bash
 # Compare two models on a CSV dataset
-auditkit compare --models openai:gpt-4o,anthropic:claude-3 --csv data.csv
+auditkit compare --models openai:gpt-4o,anthropic:claude-sonnet-5-5 --csv data.csv
 
 # Use a built-in dataset
 auditkit compare --models hf:gpt2,hf:distilgpt2 --dataset mmlu
@@ -136,3 +138,38 @@ echo "hello world" | auditkit compare --models hf:gpt2,hf:distilgpt2
 | `--scorers` | Comma-separated scorer/metric names (default: auto) |
 | `--baseline` | Model spec (from `--models`) to anchor a base-vs-candidate comparison against |
 | `--output` / `-o` | Save results to JSON file |
+
+## `auditkit redteam`
+
+Run the built-in red-team probes against a model and score them with the built-in detectors:
+
+```bash
+auditkit redteam --model hf:gpt2
+auditkit redteam --model groq:llama-3.3-70b-versatile --probes prompt_injection,jailbreak -o redteam.json
+```
+
+| Flag | Description |
+|---|---|
+| `--model` | Model spec (required) |
+| `--probes` | Comma-separated probes: `prompt_injection`, `jailbreak`, `encoding`, `refusal` (default: all) |
+| `--detectors` | Comma-separated detectors: `keyword`, `refusal`, `injection_success`, `system_prompt_leak` (default: all) |
+| `--output` / `-o` | Save per-probe results to JSON file |
+
+## `auditkit agent`
+
+End-to-end agent evaluation, with three subcommands; see [Agent evaluation](agent_eval.md) for the config format:
+
+```bash
+auditkit agent import-agenttune trajectories.jsonl --inspect
+auditkit agent eval --config agent-suite.json --dry-run
+auditkit agent eval --config agent-suite.json --output agent-run.json
+auditkit agent rescore --run agent-run.json --scorers tool_call_f1,task_completion
+```
+
+| Subcommand | What it does | Main flags |
+|---|---|---|
+| `eval` | Run an agent evaluation from a JSON config | `--config` (required), `--output`, `--dry-run`, `--cases`, `--redact-key/-env/-auto` |
+| `import-agenttune` | Import or inspect an AgentTune JSONL/report file | `PATH`, `--inspect`, `--output`, `--redact-key/-env/-auto` |
+| `rescore` | Rescore saved episodes with new scorers, without calling the agent | `--run`, `--scorers` (required), `--judge`, `--cases` |
+
+The `--redact-*` flags scrub secrets from the saved JSON: `--redact-key KEY` blanks a field, `--redact-env VAR` replaces an env var's value wherever it appears, and `--redact-auto` also detects common secrets (API keys, tokens, private keys).

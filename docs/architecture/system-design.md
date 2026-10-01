@@ -271,8 +271,7 @@ Subclass `Metric`, implement `score()`, register it:
 
 ```python
 from auditkit.metric import Metric, Score
-from auditkit.scoring import ScoreKind
-from auditkit.types import Direction
+from auditkit.types import Direction, ScoreKind
 
 class MyMetric(Metric):
     name = "my_metric"

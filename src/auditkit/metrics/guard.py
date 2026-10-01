@@ -12,7 +12,8 @@ Design: a guard differs from other guards in only two ways -- how you format
 the input, and how you parse the output -- so each guard is a small *profile*
 ``{build_messages, parse}`` in :data:`GUARD_PROFILES`. Everything else (model
 transport for ``hf:`` / ``vllm:`` / ``groq:`` / ``api:`` specs, chat-template
-application, teardown) is reused from the model layer.
+application, teardown) is reused from the model layer. See
+``docs/notes/guard-judge-plan.md``.
 """
 from __future__ import annotations
 

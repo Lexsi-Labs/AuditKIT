@@ -21,7 +21,7 @@ class ARCScenario(Scenario):
             import datasets
         except ImportError:
             raise ExtraNotInstalled("interop", "pip install auditkit[interop]")
-        data = datasets.load_dataset("arc", "ARC-Challenge", split=self.split)
+        data = datasets.load_dataset("allenai/ai2_arc", "ARC-Challenge", split=self.split)
         return [
             Sample(
                 input=row["question"],

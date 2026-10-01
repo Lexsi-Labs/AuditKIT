@@ -1,0 +1,56 @@
+{
+  "pipeline_config_hash": "4158bf7d901d783a",
+  "run_timestamp": "2026-09-25T18:29:03.866473Z",
+  "source_files": [
+    {
+      "path": "inputs/placeholder.pdf"
+    }
+  ],
+  "stage_counts": {
+    "PDFReader": {
+      "output_count": 1,
+      "rejected_count": 1
+    },
+    "SchemaGate": {
+      "input_count": 1,
+      "output_count": 1,
+      "probe_recovered": 0,
+      "rejected_count": 0
+    },
+    "ExactDeduplicator": {
+      "input_count": 1,
+      "output_count": 1
+    },
+    "TextCleaner": {
+      "input_count": 1,
+      "output_count": 1
+    },
+    "CorpusExporter": {
+      "exported_count": 1
+    },
+    "AlpacaExporter": {
+      "exported_count": 1
+    }
+  },
+  "rejected_breakdown": {
+    "table_stubbed:extract_tables_disabled": 1
+  },
+  "dedup_stats": {
+    "exact_duplicates_removed": 0
+  },
+  "minhash_threshold": null,
+  "sampler_stats": null,
+  "token_stats": {
+    "total_prompt_tokens": 0,
+    "total_completion_tokens": 0,
+    "total_tokens": 0
+  },
+  "wall_clock_seconds": 0.002,
+  "tool_versions": {
+    "curatorkit": "0.1.6",
+    "python": "3.11.15"
+  },
+  "diversity_stats": null,
+  "diagnostic_stats": null,
+  "diagnostic_files": []
+}

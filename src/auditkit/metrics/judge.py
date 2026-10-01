@@ -13,17 +13,68 @@ valid is found it returns an explicit *Unknown* (recorded in ``reason`` and
 
 from __future__ import annotations
 
+import os
 import re
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional
 
 from auditkit.metric import Metric
-from auditkit.model import Request
+from auditkit.model import Request, _SESSION_KWARGS
 from auditkit.registry import METRICS
 from auditkit.sample import Sample
 from auditkit.score import Score
 from auditkit.types import Direction, ScoreKind
+
+# judge_model_args carries connection details (api_key / api_base / device /
+# hf_token / timeout / ...), never generation settings -- those go through
+# temperature=/max_tokens=/top_p=. Strip the transport+secret keys from the run
+# fingerprint: hashing them means rotating an API key or bumping a timeout
+# misses the cache for no scoring reason (and would put a secret in the
+# fingerprint blob). api_base is deliberately NOT stripped -- for a string spec
+# it is the only record of which server (hence which model) actually answered,
+# so dropping it would be a wrong cache HIT, not just a wasted miss (guarded by
+# test_judge_cache_identity_separates_callables_and_judge_args). Built off
+# model._SESSION_KWARGS so the transport list never drifts.
+_NON_IDENTITY_JUDGE_ARGS = _SESSION_KWARGS | {
+    "api_key", "hf_token", "token", "device", "organization",
+}
+
+# Judges run offline (not in a serving loop) and must tolerate slow reasoning
+# models; the api: backend's 120s default times a slow judge out. Bump it for
+# judge-resolved api: models. Override with the AUDITKIT_JUDGE_TIMEOUT env var,
+# or by passing timeout= in judge_model_args.
+_DEFAULT_JUDGE_TIMEOUT = 600.0
+
+# Words that CONTINUE the phrase a label opens, so the label is prose and not the verdict:
+# "the answer is no longer relevant" is not the verdict "no", it is a sentence about the
+# answer. A clause-introducing word ("because", "since", "as") starts a NEW clause and does
+# not belong here -- "the answer is yes because the context states the fee" IS the verdict
+# "yes". Deliberately a small explicit list: an open-ended test would have to guess at
+# English, and a wrong guess costs a real verdict.
+_CLAUSE_CONTINUATION = (
+    "longer|shorter|more|less|very|quite|rather|really|simply|merely|"
+    "clearly|obviously|definitely|certainly"
+)
+
+
+def judge_resolve_args(spec: Any, args: dict[str, Any]) -> dict[str, Any]:
+    """A copy of *args* for resolving a judge model, with the judge timeout default.
+
+    Shared by every judge family (LLM judges here, the RAG verdict judges in
+    ``rag_judge``) so a slow ``api:`` judge gets the same 600 s default
+    everywhere. Only the copy changes, so the judge's identity stays clean.
+    """
+    resolve_args = dict(args or {})
+    if isinstance(spec, str) and spec.startswith("api:") and "timeout" not in resolve_args:
+        resolve_args["timeout"] = float(os.environ.get("AUDITKIT_JUDGE_TIMEOUT") or _DEFAULT_JUDGE_TIMEOUT)
+    return resolve_args
+
+
+def judge_identity_args(args: dict[str, Any]) -> dict[str, Any]:
+    """The generation-affecting subset of ``judge_model_args`` for the run
+    fingerprint -- transport and secret kwargs stripped out."""
+    return {k: v for k, v in args.items() if k not in _NON_IDENTITY_JUDGE_ARGS}
 
 
 @dataclass
@@ -108,8 +159,12 @@ class LLMJudge(JudgeMetric):
     system_prompt, use_cot, name, prompt_version, threshold, required_fields
         Standard knobs. ``use_cot`` asks the judge to reason before the verdict.
     unknown_score
-        Score used when the reply can't be parsed into a valid verdict (default
-        ``0.0``); such scores are flagged ``metadata["unknown"] = True``.
+        What to do when the reply can't be parsed into a valid verdict. Default
+        ``None``: the result is flagged ``metadata["unknown"] = True`` and is **not**
+        averaged -- the Runner records it in ``RunResult.errors`` and leaves it out
+        of the headline (a placeholder 0.0 is never a measurement). Set a number
+        (e.g. ``0.5`` for "neutral") to opt in: that value is then averaged in, and
+        the score is still flagged ``unknown``.
     temperature, max_tokens, top_p
         Generation settings for the judge model's own call. The judge call
         never goes through an ``Adapter``/``RunConfig`` (there is no sample
@@ -132,12 +187,13 @@ class LLMJudge(JudgeMetric):
         prompt_version: Optional[str] = None,
         threshold: Optional[float] = None,
         required_fields: frozenset = frozenset(),
-        unknown_score: float = 0.0,
+        unknown_score: Optional[float] = None,
         judge_model_args: Optional[dict[str, Any]] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         direction: Direction = Direction.MAXIMIZE,
+        judge_chat_template_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         if choices is not None and scale is not None:
             raise ValueError("LLMJudge: pass either choices or scale, not both")
@@ -172,6 +228,11 @@ class LLMJudge(JudgeMetric):
             {"temperature": temperature, "max_tokens": max_tokens, "top_p": top_p}.items()
             if v is not None
         }
+        # The judge's own chat-template switches (e.g. Qwen3's {"enable_thinking": False}), sent on
+        # every judge request. Not inherited from RunConfig: the judge is usually a different model
+        # from the one under test. Part of gen_params, so of the judge's identity.
+        if judge_chat_template_kwargs:
+            self._gen_params["chat_template_kwargs"] = dict(judge_chat_template_kwargs)
 
     # -- model resolution --------------------------------------------------
     def _model(self) -> Any:
@@ -181,7 +242,7 @@ class LLMJudge(JudgeMetric):
                 raise NotImplementedError(f"{self.name} requires a judge_model")
             if isinstance(spec, str):
                 from auditkit.model import AutoModel
-                self._judge_model = AutoModel.resolve(spec, **self._judge_model_args)
+                self._judge_model = AutoModel.resolve(spec, **judge_resolve_args(spec, self._judge_model_args))
             else:
                 self._judge_model = spec  # a Model or any object with .generate
         return self._judge_model
@@ -243,9 +304,17 @@ class LLMJudge(JudgeMetric):
                              reason=reason, threshold=self.threshold,
                              metadata={"raw_score": value, "scale": [lo, hi], "raw": text[:2000]})
         # Unknown escape — explicit, not a silent midpoint.
-        return Score(name=self.name, value=self.unknown_score, kind=ScoreKind.JUDGE,
+        return Score(name=self.name, value=self.unknown_score if self.unknown_score is not None else 0.0,
+                     kind=ScoreKind.JUDGE,
                      reason=f"UNKNOWN — could not parse a verdict from: {text.strip()[:300]!r}",
-                     threshold=self.threshold, metadata={"unknown": True, "raw": text[:2000]})
+                     threshold=self.threshold, metadata=self._unknown_meta(raw=text[:2000]))
+
+    def _unknown_meta(self, **extra: Any) -> dict[str, Any]:
+        """Flag an unparsed verdict; mark it aggregatable only if ``unknown_score`` was set."""
+        meta: dict[str, Any] = {"unknown": True, **extra}
+        if self.unknown_score is not None:
+            meta["count_in_aggregate"] = True
+        return meta
 
     def _match_choice(self, text: str) -> Optional[str]:
         by_norm = {_norm(k): k for k in self.choices}  # type: ignore[union-attr]
@@ -266,15 +335,32 @@ class LLMJudge(JudgeMetric):
         # and silently returned the wrong label whenever iteration order and
         # text order disagreed (confirmed live: "irrelevant" beat "relevant"
         # here purely because it came later in self.choices, not in the text).
-        found: Optional[str] = None
-        found_pos = -1
-        low = _last_line(text).lower()
-        for norm_key, orig in by_norm.items():
-            for m in re.finditer(rf"\b{re.escape(norm_key)}\b", low):
-                if m.start() > found_pos:
-                    found_pos = m.start()
-                    found = orig
-        return found
+        #
+        # A label word inside that clause only counts when it is the verdict:
+        # the clause is the label or opens with it plus punctuation ("Yes",
+        # "No, the call is premature."), or it follows a verdict phrase ("the
+        # answer is yes, because ...", "Answer: yes"). A label merely ending
+        # the clause is not enough ("The tool choice is not correct." would read
+        # as "correct"). A label buried in prose ("no verdict here", "there is
+        # no clear issue") is not a verdict, and hedging between two labels
+        # ("yes and no") is ambiguous: all are unknown, never a silent decided score.
+        clause = re.sub(r"[*`]+", "", _last_line(text).lower()).strip()
+        alt = "|".join(re.escape(k) for k in sorted(by_norm, key=len, reverse=True))
+        hedge = re.search(rf"\b({alt})\s+(?:and|or|/)\s+({alt})\b", clause)
+        if hedge and hedge.group(1) != hedge.group(2):
+            return None
+        # After a verdict phrase, the label is the verdict unless the clause CONTINUES past it:
+        # a modifier ("the answer is no longer relevant" is prose, not the verdict "no") or a
+        # hyphenated form ("yes-ish"). Everything else is the label, including an explained
+        # verdict ("the answer is yes, because ...", "Verdict: yes the call is justified"),
+        # which a trailing-punctuation rule would drop.
+        for pattern in (rf"^\W*({alt})(?:\s*[,.:;!\-]|\W*$)",                # is it / opens it, then punctuation
+                        rf"\b(?:answer|verdict|choice|label)\s*(?:is|:)\s*({alt})"      # after a verdict phrase
+                        rf"(?![\w-])(?!\s+{_CLAUSE_CONTINUATION}\b)"):                    # ... and the clause stops there
+            m = re.search(pattern, clause)
+            if m:
+                return by_norm[m.group(1)]
+        return None
 
     def _match_number(self, text: str) -> Optional[float]:
         marked = _last_marker(text, "SCORE")
@@ -297,14 +383,20 @@ class LLMJudge(JudgeMetric):
         return self._parse(text)
 
     def identity(self) -> dict:
-        spec = self._judge_model_spec
-        model_id = spec if isinstance(spec, str) else getattr(spec, "name", type(spec).__name__)
+        from .rag_judge import judge_identity
         return {
-            "name": self.name, "kind": "judge", "judge_model": model_id,
+            "name": self.name, "kind": "judge",
+            # stable id-free identity, or a one-off token (never a wrong cache hit)
+            "judge_model": judge_identity(self._judge_model_spec),
+            # transport/secret kwargs (api_key, timeout, device, ...) stripped;
+            # api_base is kept because it selects which model answered.
+            "judge_model_args": judge_identity_args(self._judge_model_args),
             "prompt": self.prompt, "system_prompt": self.system_prompt,
             "choices": self.choices, "scale": list(self.scale) if self.scale else None,
             "use_cot": self.use_cot, "prompt_version": self.prompt_version,
             "gen_params": self._gen_params,
+            # an opted-in unknown_score is averaged, so it changes results
+            "unknown_score": self.unknown_score,
         }
 
 
@@ -340,6 +432,7 @@ class GEval(LLMJudge):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
+        judge_chat_template_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         if not rubric:
             raise ValueError("GEval requires a non-empty rubric")
@@ -354,7 +447,7 @@ class GEval(LLMJudge):
             judge_model_args=judge_model_args,
             temperature=temperature,
             max_tokens=max_tokens,
-            top_p=top_p,
+            top_p=top_p, judge_chat_template_kwargs=judge_chat_template_kwargs,
         )
 
     @staticmethod
@@ -431,12 +524,13 @@ class Factuality(LLMJudge):
                  system_prompt: str = _JUDGE_SYSTEM_PROMPT,
                  judge_model_args: Optional[dict[str, Any]] = None,
                  temperature: Optional[float] = None, max_tokens: Optional[int] = None,
-                 top_p: Optional[float] = None) -> None:
+                 top_p: Optional[float] = None,
+                 judge_chat_template_kwargs: Optional[dict[str, Any]] = None) -> None:
         super().__init__(
             judge_model=judge_model, name=name, judge_model_args=judge_model_args,
             prompt=_FACTUALITY_PROMPT, use_cot=True, system_prompt=system_prompt,
             choices={"A": 0.4, "B": 0.6, "C": 1.0, "D": 0.0, "E": 1.0},
-            temperature=temperature, max_tokens=max_tokens, top_p=top_p,
+            temperature=temperature, max_tokens=max_tokens, top_p=top_p, judge_chat_template_kwargs=judge_chat_template_kwargs,
         )
 
 
@@ -448,7 +542,8 @@ class ClosedQA(LLMJudge):
                  name: str = "closed_qa", system_prompt: str = _JUDGE_SYSTEM_PROMPT,
                  judge_model_args: Optional[dict[str, Any]] = None,
                  temperature: Optional[float] = None, max_tokens: Optional[int] = None,
-                 top_p: Optional[float] = None) -> None:
+                 top_p: Optional[float] = None,
+                 judge_chat_template_kwargs: Optional[dict[str, Any]] = None) -> None:
         prompt = (
             "You are assessing a submitted answer to a question.\n\n"
             "<question>\n{input}\n</question>\n\n"
@@ -459,7 +554,7 @@ class ClosedQA(LLMJudge):
             judge_model=judge_model, name=name, judge_model_args=judge_model_args,
             prompt=prompt, use_cot=True, system_prompt=system_prompt,
             choices={"yes": 1.0, "no": 0.0},
-            temperature=temperature, max_tokens=max_tokens, top_p=top_p,
+            temperature=temperature, max_tokens=max_tokens, top_p=top_p, judge_chat_template_kwargs=judge_chat_template_kwargs,
         )
 
 
@@ -471,7 +566,8 @@ class Relevance(LLMJudge):
                  system_prompt: str = _JUDGE_SYSTEM_PROMPT,
                  judge_model_args: Optional[dict[str, Any]] = None,
                  temperature: Optional[float] = None, max_tokens: Optional[int] = None,
-                 top_p: Optional[float] = None) -> None:
+                 top_p: Optional[float] = None,
+                 judge_chat_template_kwargs: Optional[dict[str, Any]] = None) -> None:
         prompt = (
             "<request>\n{input}\n</request>\n\n"
             "<response>\n{output}\n</response>\n\n"
@@ -480,7 +576,7 @@ class Relevance(LLMJudge):
         )
         super().__init__(
             judge_model=judge_model, name=name, judge_model_args=judge_model_args,
-            temperature=temperature, max_tokens=max_tokens, top_p=top_p,
+            temperature=temperature, max_tokens=max_tokens, top_p=top_p, judge_chat_template_kwargs=judge_chat_template_kwargs,
             prompt=prompt, use_cot=True, system_prompt=system_prompt,
             choices={"relevant": 1.0, "partially_relevant": 0.5, "irrelevant": 0.0},
         )
@@ -538,10 +634,11 @@ class BiasJudge(LLMJudge):
         judge_model_args: Optional[dict[str, Any]] = None,
         temperature: Optional[float] = None, max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
+        judge_chat_template_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         super().__init__(
             judge_model=judge_model, name=name, judge_model_args=judge_model_args,
             prompt=_BIAS_JUDGE_PROMPT, scale=(0.0, 1.0), use_cot=True,
             system_prompt=system_prompt, direction=Direction.MINIMIZE,
-            temperature=temperature, max_tokens=max_tokens, top_p=top_p,
+            temperature=temperature, max_tokens=max_tokens, top_p=top_p, judge_chat_template_kwargs=judge_chat_template_kwargs,
         )

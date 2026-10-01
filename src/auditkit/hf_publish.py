@@ -242,8 +242,13 @@ def push_rows_to_hub(
     method: str = "",
     model: str = "",
     extra_notes: str = "",
+    provenance: Optional[dict[str, Any]] = None,
 ) -> str:
-    """Push rows as a Hub dataset, then stamp the Lexsi / AuditKIT card."""
+    """Push rows as a Hub dataset, then stamp the Lexsi / AuditKIT card.
+
+    *provenance* (see :mod:`auditkit.provenance`) is uploaded as
+    ``lexsi_provenance.json`` and shown on the card.
+    """
     try:
         from datasets import Dataset
     except ImportError as e:
@@ -251,6 +256,18 @@ def push_rows_to_hub(
     safe = _parquet_safe_rows(rows)
     ds = Dataset.from_list(safe) if safe else Dataset.from_dict({"sample_id": []})
     ds.push_to_hub(repo_id, private=private, token=token)
+    if provenance:
+        import json
+        from .provenance import PROVENANCE_FILE
+        blob = json.dumps(provenance, indent=2, default=str)
+        try:  # like the card: a failed sidecar upload does not undo the pushed rows
+            _hub_import()(token=token).upload_file(
+                path_or_fileobj=blob.encode(), path_in_repo=PROVENANCE_FILE,
+                repo_id=repo_id, repo_type="dataset", token=token)
+        except Exception as e:
+            logger.warning("%s upload skipped for %s: %s", PROVENANCE_FILE, repo_id, e)
+        extra_notes = (extra_notes + "\n\n" if extra_notes else "") + (
+            f"## Provenance\n\n```json\n{blob}\n```")
     return _brand_safe(
         repo_id,
         kind=kind,

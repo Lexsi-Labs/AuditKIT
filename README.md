@@ -1,8 +1,8 @@
 <p align="center">
   <a href="https://github.com/Lexsi-Labs/AuditKIT">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/auditkit-logo-light.png">
-      <img src="docs/assets/auditkit-logo-dark.png" alt="AuditKit" width="480">
+      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/auditkit-logo-white.png">
+      <img src="docs/assets/auditkit-logo-black.png" alt="AuditKit" width="480">
     </picture>
   </a>
 </p>
@@ -14,15 +14,15 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/auditkit/"><img src="https://img.shields.io/badge/pypi-v1.0.0-0a8868" alt="PyPI v1.0.0"></a>
+  <a href="https://pypi.org/project/auditkit/"><img src="https://img.shields.io/badge/pypi-v1.2.0-0a8868" alt="PyPI v1.2.0"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+"></a>
   <a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-LSAL--1.2-lightgrey" alt="License: LSAL-1.2 (source-available, noncommercial)"></a>
-  <a href="https://lexsi-labs.github.io/AuditKIT/"><img src="https://img.shields.io/badge/docs-internal%20·%20Lexsi%20SSO-4c6ef5" alt="Documentation (internal, requires Lexsi SSO)"></a>
-  <a href="https://github.com/Lexsi-Labs/AuditKIT/actions"><img src="https://img.shields.io/badge/tests-750%20passing-brightgreen" alt="Tests"></a>
+  <a href="https://auditkit.lexsi.ai/"><img src="https://img.shields.io/badge/docs-auditkit.lexsi.ai-4c6ef5" alt="Documentation"></a>
+  <a href="https://github.com/Lexsi-Labs/AuditKIT/actions"><img src="https://img.shields.io/badge/tests-2.8k%20passing-brightgreen" alt="Tests: 2846 passing, 141 skipped"></a>
 </p>
 
 <p align="center">
-  <a href="https://lexsi-labs.github.io/AuditKIT/">Documentation (internal)</a> ·
+  <a href="https://auditkit.lexsi.ai/">Documentation</a> ·
   <a href="#quickstart">Quickstart</a> ·
   <a href="#examples">Examples</a> ·
   <a href="docs/community/contributing.md">Contributing</a>
@@ -36,11 +36,11 @@
 |---|---|
 | **What** | A unified Python library that evaluates any AI model on any dataset across any technique. |
 | **Architecture** | 5-stage spine: Dataset → Adapter → Model → Metrics → RunResult. `ak.evaluate()` orchestrates it all. |
-| **Techniques** | Benchmark, LLM-as-judge (GEval), code checks, RAG, hallucination, embedding similarity, toxicity/bias, pairwise/preference, red-teaming, security, performance |
-| **Models** | 9 backends: OpenAI, Anthropic, HuggingFace, Lexsi, vLLM, LiteLLM, API, Groq, OpenRouter — all resolved via `AutoModel.resolve()`. Any `list[str] → list[str]` callable also works. |
+| **Techniques** | Benchmark, LLM-as-judge (GEval), code checks, RAG, hallucination, embedding similarity, toxicity/bias, pairwise/preference, red-teaming, security, performance, agent/tool use |
+| **Models** | 10 backends: OpenAI, Anthropic, HuggingFace, Lexsi, vLLM, LiteLLM, API, Groq, OpenRouter, Agent (HTTP endpoint) — all resolved via `AutoModel.resolve()`. Any `list[str] → list[str]` callable also works. |
 | **Zero deps** | Core runs on stdlib. Backends and heavy metrics are optional extras (`pip install auditkit[openai]`). |
 | **Fingerprints** | Every run gets a stable sha256 — results are cacheable, comparable, and reproducible by construction. |
-| **Status** | 750+ tests, v1.0.0, LSAL-1.2 license (source-available, noncommercial). 10 metric families, 5 CLI subcommands, YAML config, MKDocs site. |
+| **Status** | ~3,000 tests, v1.2.0, LSAL-1.2 license (source-available, noncommercial). 11 metric families, 6 CLI subcommands, YAML config, MKDocs site. |
 
 ---
 
@@ -54,12 +54,13 @@ AuditKIT is that library. It provides a unified evaluation spine that supports e
 
 - **Metric families.** Benchmark (exact match, F1, BLEU, ROUGE, ChrF), LLM-as-judge (GEval, rubric items), code/deterministic (contains, regex, JSON validation), RAG (lexical groundedness, context overlap/coverage), embedding similarity, hallucination detection, toxicity/bias, pairwise/preference (win rate, Elo, preference accuracy), security (DEFCON grade), performance (latency, throughput).
 - **Zero required deps.** Core runs on the Python standard library alone. Heavy backends (BERTScore, vLLM, LiteLLM, OpenAI, Anthropic, HuggingFace) are optional extras.
-- **Any model backend.** `echo` for testing, `openai:`, `anthropic:`, `hf:`, `lexsi:`, `vllm:`, `litellm:` (which also reaches Ollama, e.g. `litellm:ollama/llama3.1`), `api:`, `groq:`, `openrouter:`, or any callable. Auto-resolved via `AutoModel.resolve()`.
+- **Any model backend.** `echo` for testing, `openai:`, `anthropic:`, `hf:`, `lexsi:`, `vllm:`, `litellm:` (which also reaches Ollama, e.g. `litellm:ollama/llama3.1`), `api:`, `groq:`, `openrouter:`, `agent:` (a deployed agent over HTTP), or any callable. Auto-resolved via `AutoModel.resolve()`.
 - **Many datasets, one model.** `evaluate_many()` runs one model across several datasets in a single call, returning one `RunResult` per dataset.
 - **Red teaming.** Built-in adversarial probes (prompt injection, jailbreak, encoding, over-refusal) and detectors (keyword, refusal, injection success, system prompt leak) via `RedTeamRunner`.
+- **Agent and RAG evaluation.** Score tool calls, parallel/dependency behavior and retrieval on any model. The `auditkit.agent_eval` layer evaluates a whole task episode: a verified outcome (final state, artifact, answer, or a custom predicate) as the headline, with tool, trace and judge scores as diagnostics. It reads recorded runs (AgentTune, OpenAI messages, a `Sample` trace) or calls a deployed `agent:` endpoint, and works with any framework that emits OpenAI messages or serves over HTTP.
 - **Experiment tracking.** Named experiments with `ExperimentDB`, MLflow logging, cross-run comparison with bootstrap significance tests.
 - **Model comparison.** `compare_models()` runs the same dataset against multiple models and produces side-by-side results with pairwise significance.
-- **CLI with YAML config.** `auditkit eval`, `init`, `list`, `redteam`, `compare` subcommands. Define evaluations in YAML files with `prompts:`, model config, tags, and split strategies.
+- **CLI with YAML config.** `auditkit eval`, `init`, `list`, `redteam`, `compare`, `agent` subcommands. Define evaluations in YAML files with `prompts:`, model config, tags, and split strategies.
 - **Provenance by default.** Every run writes a `RunResult` with a stable fingerprint (sha256 over model+seed+tasks+config). Results are cacheable and comparable by fingerprint.
 
 ## How it works
@@ -135,6 +136,57 @@ output: results.json
 auditkit eval --config auditkit.yaml
 ```
 
+### Cohere / Aya models
+
+Aya Expanse, Tiny Aya, Aya Vision and North Micro Vision run on the `hf:` backend
+(`pip install "auditkit[transformers,vision]"`, transformers 5.15 or newer).
+Score a model before and after fine-tuning:
+
+```python
+import auditkit as ak
+
+samples = [ak.Sample(input="Translate to French: good morning", target="bonjour")]
+metrics = ["exact_match", "f1_score"]
+
+base = ak.evaluate(samples, "hf:CohereLabs/aya-expanse-8b", metrics)
+tuned = ak.evaluate(samples, "hf:<you>/aya-expanse-8b-tuned", metrics)
+print(ak.compare(base, tuned).summary())
+```
+
+For the vision models (`CohereLabs/aya-vision-8b`, `CohereLabs/aya-vision-32b`,
+`CohereLabs/North-Micro-Vision-Instruct`), attach images to the sample; on the `hf:`
+backend they go through the model's processor:
+
+```python
+from PIL import Image
+
+sample = ak.Sample(input="What does this chart show?", target="sales by month",
+                   images=[Image.open("chart.png")])
+result = ak.evaluate([sample], "hf:CohereLabs/aya-vision-8b", ["f1_score"])
+```
+
+**Images travel on `hf:` and on `api:` in chat mode**, whichever host `api:` points
+at: a self-hosted vLLM or SGLang server, or a hosted provider. `api:` raw-prompt mode raises
+rather than drop them. The offline `vllm:` backend doesn't read `Sample.images` yet and drops
+them **without an error**: for a vision eval on vLLM, `vllm serve` the model and use `api:`.
+
+Aya Vision **does** work text-only on `hf:` — measured, vision tower unused, 5/5 on a
+five-language probe, and identical to Aya Expanse 8B on the same probe. For text
+work prefer Expanse: same quality or better, and it runs natively on vLLM and SGLang,
+where Aya Vision needs each one's Transformers backend.
+
+The Cohere models run on `hf:`, `vllm:` and SGLang (all nine measured on each), but not all natively. Aya Vision has no native server class (vLLM
+dropped it after 0.24.0, SGLang never had it), so both servers run it through their
+Transformers backends: automatically on vLLM, with `compat.py --patch-sglang` on SGLang. North Micro Vision is native on vLLM; on SGLang
+it needs transformers >= 5.15 in the SGLang env plus `--patch-sglang`. Tiny Aya and Aya Expanse
+are native on both. The full
+model-by-runtime table is in [docs/model_backends.md](docs/model_backends.md).
+
+Tiny Aya (`CohereLabs/tiny-aya-global` and siblings `fire`, `water`, `earth`),
+Aya Expanse and Aya Vision are gated
+on the Hub: accept the licence on the model page, then set `HF_TOKEN` (or pass `token=` to
+`auditkit.model.hf_gen.HFGenModel`). North Micro Vision is not gated.
+
 ## What it evaluates
 
 | Task | Technique | Example metrics |
@@ -177,6 +229,9 @@ Colab-ready notebooks with real models and real datasets — see
 | `GuardJudge` with real, flagship guard models | [`10_guard_judge_legit_models.ipynb`](examples/10_guard_judge_legit_models.ipynb) |
 | `EncoderJudge`: the base mechanism plus its two prebuilt subclasses | [`11_encoder_judge_prebuilts.ipynb`](examples/11_encoder_judge_prebuilts.ipynb) |
 | Performance metrics on a real, large-scale evaluation | [`12_performance_metrics_demo.ipynb`](examples/12_performance_metrics_demo.ipynb) |
+| SGLang: environment checks, server mode via `api:`, tool calls and parallel tool calls | [`13_sglang_compatibility.ipynb`](examples/13_sglang_compatibility.ipynb) |
+| Agent and RAG evals: tool calls, parallel tool calls, deployed agent endpoints, AgentTune data, retrieval and judged RAG metrics | [`14_agent_and_rag_evals.ipynb`](examples/14_agent_and_rag_evals.ipynb) |
+| End-to-end agent evaluation, fully offline (`.py` script): recorded episodes, a verified state outcome, and a fabricated answer that does not pass a state case | [`agent_eval_offline.py`](examples/agent_eval_offline.py) |
 
 ## Applications
 
@@ -205,10 +260,10 @@ evaluation; none of the others do.
 | [`src/auditkit/model/`](src/auditkit/model/) | Model backends (echo, openai, hf, vllm, etc.) | [README](src/auditkit/model/README.md) |
 | [`src/auditkit/redteam/`](src/auditkit/redteam/) | Red team probes and detectors | [README](src/auditkit/redteam/README.md) |
 | [`src/auditkit/scenarios/`](src/auditkit/scenarios/) | Built-in benchmark datasets | [README](src/auditkit/scenarios/README.md) |
-| [`tests/`](tests/) | Test suite (750+ tests) | [README](tests/README.md) |
+| [`tests/`](tests/) | Test suite (~3,000 tests) | [README](tests/README.md) |
 | [`examples/`](examples/) | Colab-ready example notebooks | [README](examples/README.md) |
 | [`examples/applications/`](examples/applications/) | Real-world application notebooks | [README](examples/applications/README.md) |
-| [`docs/`](docs/) | MkDocs documentation site (internal, requires Lexsi SSO) | [index](docs/index.md) |
+| [`docs/`](docs/) | MkDocs source for [auditkit.lexsi.ai](https://auditkit.lexsi.ai/) | [index](docs/index.md) |
 
 ---
 
@@ -217,6 +272,28 @@ evaluation; none of the others do.
 <p align="center">
   Created by the team at <strong>Lexsi Labs</strong>, AuditKIT provides a unified evaluation spine for AI models across every technique and modality.
 </p>
+
+Shreeyans Arora · Utsav Avaiya · Zera Lyngkhoi · Ram Mohan Rao Kadiyala · Hem Gosalia · Vinay Kumar Sankarapu · Pratinav Seth
+
+---
+
+## Citation
+
+If you use AuditKIT in research, please cite it:
+
+```bibtex
+@software{auditkit2026,
+  title  = {AuditKIT: one library to evaluate any model on any dataset and any task},
+  author = {Arora, Shreeyans and Avaiya, Utsav and Lyngkhoi, Zera and
+            Kadiyala, Ram Mohan Rao and Gosalia, Hem and Sankarapu, Vinay Kumar and
+            Seth, Pratinav},
+  year   = {2026},
+  version = {1.2.0},
+  url    = {https://github.com/Lexsi-Labs/AuditKIT}
+}
+```
+
+`CITATION.cff` carries the same author list for GitHub's citation widget.
 
 ---
 
@@ -229,4 +306,4 @@ This project is released under the [Lexsi Labs Source Available License (LSAL) v
 ## Join Community / Contribute
 
 - Issues and discussions are welcomed on the [GitHub issue tracker](https://github.com/Lexsi-Labs/AuditKIT/issues).
-- See the **Contributing** section for contribution standards, code reviews, and documentation tips.
+- See [Contributing](docs/community/contributing.md) for the development setup, code standards and the pull request process.

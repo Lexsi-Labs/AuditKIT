@@ -21,7 +21,7 @@ class GSM8KScenario(Scenario):
             import datasets
         except ImportError:
             raise ExtraNotInstalled("interop", "pip install auditkit[interop]")
-        data = datasets.load_dataset("gsm8k", "main", split=self.split)
+        data = datasets.load_dataset("openai/gsm8k", "main", split=self.split)
         return [
             Sample(
                 input=row["question"],

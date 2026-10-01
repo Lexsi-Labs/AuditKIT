@@ -37,6 +37,9 @@ class Report:
         wrong = len(self.result.wrong_only())
         if wrong:
             lines.append(f"{wrong} wrong / {len(self.result.predictions)} total")
+        prov = self.result.provenance_lines()
+        if prov:
+            lines += ["", "Inputs:"] + [f"  {p}" for p in prov]
         return "\n".join(lines)
 
     def markdown(self) -> str:
@@ -49,4 +52,7 @@ class Report:
                 f"| {r['name']} | {r['mean']:.4f} | {r['stderr']:.4f} "
                 f"| {r['std']:.4f} | {r['n']} |"
             )
+        prov = self.result.provenance_lines()
+        if prov:
+            lines += ["", "**Inputs**", ""] + [f"- {p}" for p in prov]
         return "\n".join(lines)

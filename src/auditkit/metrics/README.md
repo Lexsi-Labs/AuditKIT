@@ -10,6 +10,9 @@ Built-in metric families for evaluating model outputs:
 - **pairwise** — WinRate, EloScore, PreferenceAccuracy
 - **perf** — LatencyStats, Throughput
 - **rag** — LexicalGroundedness, ContextCoverage, ContextOverlap, AnswerOverlap
+- **retrieval**: RetrievalMetrics (hit rate, precision, recall, MRR, average precision, nDCG, with optional `@k`)
+- **rag_judge**: Faithfulness, ContextPrecision, ContextRecall (LLM-judged, numbered verdicts)
+- **agent**: ToolCallF1, TrajectoryMatch, ParallelToolCalls, ToolCallValidity, RedundantToolCalls, TaskCompletion
 - **security** — DefconGrade, KeywordDetector, ThreatCategory
 - **toxicity** — ToxicityScore, RepresentationSkew, HateSpeechScore
 - **guard** — GuardJudge (safety scoring via a guard model, e.g. Llama Guard)
