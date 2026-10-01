@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "auditkit"
-version = "1.2.0"
+version = "1.1.0"
 description = "Evaluate any model on any dataset and any task — standalone, no platform required"
 readme = "README.md"
 requires-python = ">=3.10"
