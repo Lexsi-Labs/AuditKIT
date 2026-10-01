@@ -266,9 +266,7 @@ once, with one BOS token. With `APIModel(..., chat_template=False)` the request 
 no BOS added. So don't pre-render a template into it; the server's tokenizer adds the
 BOS itself.
 
-The model rows marked *not yet live-tested* are checked by the fix plan's S0 triage on
-Colab. `tests/integrations_suite/colab_sglang.ipynb` runs the live suite against real
-servers.
+`tests/integrations_suite/colab_sglang.ipynb` runs the live suite against real servers.
 
 `parallel_tool_calls` defaults to true on SGLang. Setting it to false caps a response
 at one call only when output is grammar-constrained (`tool_choice="required"` or a named

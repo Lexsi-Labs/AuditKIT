@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "auditkit"
-version = "1.1.0"
+version = "1.1.1"
 description = "Evaluate any model on any dataset and any task — standalone, no platform required"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -55,7 +55,8 @@ litellm     = ["litellm"]
 bert-score  = ["bert-score", "torch>=2.4"]
 relay       = ["flask", "werkzeug", "requests"]   # LexsiCompletionsRelay (lexsi_relay.py)
 lexsi-sdk   = ["lexsi-sdk"]   # lexsi_login()/run_benchmark(lexsi_org=...) (lexsi_login.py) -- the only place it's imported
-dev         = ["pytest", "pytest-asyncio", "pytest-mock"]
+# pyyaml: tests/test_cli_yaml_model.py exercises `eval --config`, which needs it.
+dev         = ["pytest", "pytest-asyncio", "pytest-mock", "pyyaml"]
 all         = [
     "auditkit[openai,anthropic,transformers,lmeval,vision,interop,mlflow,requests,vllm,litellm,bert-score,relay,lexsi-sdk,dev]",
 ]

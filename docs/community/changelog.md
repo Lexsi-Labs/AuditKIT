@@ -1,10 +1,149 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `RunConfig.chat_template_kwargs`: passed to the chat template of every request on
+  `hf:` and `vllm:`, and sent as `chat_template_kwargs` to `api:` servers (vLLM /
+  SGLang), e.g. `{"enable_thinking": False}` for Qwen3. A request's own values win.
+  Part of the run fingerprint.
+- `api:` says when a server may have ignored `chat_template_kwargs` or
+  `parallel_tool_calls`: `RunResult.metadata["unverified_request_fields"]`, a
+  `summary()` line, one warning, and `cap_unverified` on the parallel scores. The
+  server is probed once (`GET /models` `owned_by`) and recorded in
+  `metadata["api_server"]`; only `APIModel(server="sglang"|"vllm")` clears the note.
+  New `Model.run_notes()` hook for backend facts about a run.
+- `ak.load_bfcl()` and `ak.bfcl_arg_match`: BFCL v3's 11 single-turn
+  categories plus the two irrelevance ones, read from the Hub files (JSON Lines). The
+  accepted-value lists stay on the reference, and `bfcl_arg_match` compares against
+  them as BFCL's AST checker does. It handles a drifted answer id, flags unsatisfiable
+  answers, passes system prompts through, converts BFCL types to JSON Schema, and has an
+  optional `dots_to_underscores`. Multi-turn is refused: its answers are call strings.
+- `RunResult.route_distribution()` and a `summary()` line: for samples whose
+  reference names several routes (`any_of`), which route each took and which rule
+  decided (`f1`, `recall`, `turn_structure`, `call_order`, `listed_order`), with the
+  ties broken by listed order counted. Information only: it never reaches the stats.
+  Multi-route scores carry `path_decided_by` in their metadata.
+- `check_compat()` rule (i): detects SGLang's `UnifiedRadixCache.dec_lock_ref()` bug
+  from the installed source. Every multimodal model on SGLang's Transformers backend
+  (Aya Vision, measured on 0.5.20) loads and then crashes on its first request; the bug
+  is also on sglang `main`. `python compat.py --patch-sglang`, run in the SGLang env,
+  fixes it idempotently (`auditkit.compat.patch_sglang()`). Patched, Aya Vision 8B scores
+  5/5 on text and passes an image check on SGLang.
+- `check_compat()` / `--patch-sglang` rule (l): SGLang's `Cohere2ForCausalLM` (Tiny Aya,
+  Command R7B) never reports its sliding window to the runner. With Triton attention (the
+  fallback where FlashInfer can't build), every sliding-window layer then crashes with
+  `kv_indptr=None`. The patch adds `get_attention_sliding_window_size()`, returning the
+  layers' own `config.sliding_window`. Rule (m) does the same for SGLang's generic
+  Transformers backend (Aya Vision: Triton decode crashed with `kv_indptr=None`),
+  returning a window only for models with sliding-window layers.
+- The `vllm:` column covers all nine Cohere models: the full matrix ran on an RTX PRO 6000
+  (CUDA 12.8) with the FlashInfer sampler fix, every check passing. Aya Expanse 32B and Aya
+  Vision 32B score 5/5; the other seven match their A100 scores exactly.
+- `vllm:` on SM 12.x GPUs (RTX PRO 6000, RTX 50-series) with a CUDA toolkit older than 12.9:
+  vLLM's default FlashInfer sampler can't compile there, and every model failed to load with
+  "FlashInfer requires GPUs with sm75 or higher" (Colab, CUDA 12.8). The backend now sets
+  `VLLM_USE_FLASHINFER_SAMPLER=0` before the engine starts (never overriding a value you set) and
+  reports it in `RunResult.metadata["vllm_launch_env"]`. `compat.vllm_launch_advice()` /
+  `compat.py --vllm-launch` give the same for `vllm serve`; `check_compat(check_cuda=True)` rule
+  (o) warns. One check, `compat.flashinfer_jit_blocked()`, now drives both this and SGLang's
+  Triton advice.
+- `--patch-sglang` rule (n): North Micro Vision's `rope_parameters` is keyed by layer
+  type, with `None` for its full-attention layers (no RoPE). SGLang's Transformers
+  backend calls `.get` on every entry while checking torch.compile, so North failed with
+  `'NoneType' object has no attribute 'get'` (measured: RTX PRO 6000, transformers 5.16.1).
+  The patch skips entries without RoPE; a dynamic-RoPE entry still disables compile.
+  Patched, North works on SGLang (text, image and layout checks pass), as does Aya Vision
+  32B: all nine Cohere models now run on SGLang 0.5.20. `colab_sglang_32b_north.ipynb`
+  measures the two.
+- `docs/model_backends.md`: the `vllm:` column is measured for the seven Cohere models that fit
+  a 40 GB A100 (vLLM 0.30.0): Tiny Aya 4/5 each, North 5/5, Aya Expanse 8B and Aya Vision
+  8B 5/5, image checks passing. vLLM falls back to its Transformers backend for Aya Vision on
+  its own.
+  "Aya Vision loads on neither vLLM nor SGLang" is corrected: it loads on both, non-natively.
+  The images section and README now say `api:` sends images and the offline
+  `vllm:` backend still drops them; the install trap names the cause (a stale auditkit 1.0.0).
+- `check_compat()` rule (j): with transformers >= 5.15 in the SGLang env (needed for North
+  Micro Vision), SGLang's Transformers backend rejects the `embedding_rowwise` TP style
+  that transformers adds for tied embeddings, so North still fails to load. The entry is
+  inert there (only `nn.Linear` reads the plan); `--patch-sglang` maps it to `replicate`.
+- transformers' "does not recognize this architecture" is rewritten by `hf:` and `vllm:` to
+  name the model type, the installed transformers and the version it needs:
+  "'…North-Micro-Vision-Instruct' is a 'cohere_compass' model, and the installed
+  transformers 4.57.6 does not know that architecture: it needs transformers>=5.15. The
+  checkpoint is fine." The original read like a broken checkpoint. The real cause was a
+  stale auditkit (1.0.0, `transformers<5`) installed from another repository.
+  `colab_cohere_models.ipynb` now installs from this repository and stops unless the
+  installed auditkit is 1.2+; the `docs/SGLANG.md` pin table shows the current extras.
+- Runs on any GPU, not just recent ones:
+  - `compat.sglang_launch_advice()` and `python compat.py --sglang-launch MODEL` print the
+    env and flags an SGLang server needs on the machine it runs on, with the machine's own
+    CUDA toolkit: `SGLANG_ENABLE_JIT_DEEPGEMM=0` on Hopper/Blackwell (DeepGEMM serves FP8
+    only, and its startup JIT needs nvcc >= 12.9), and `--dtype float16` without bf16
+    (T4, V100), and `--attention-backend triton --sampling-backend pytorch` on SM 12.x GPUs
+    with an nvcc older than 12.9. FlashInfer can't compile for them there; on Colab's RTX PRO
+    6000 it failed with "FlashInfer requires GPUs with sm75 or higher". When FlashInfer's
+    kernels don't build with the machine's toolkit for any other reason, the
+    fallback is `--attention-backend triton --sampling-backend pytorch` (no nvcc). The
+    SGLang matrix notebook switches to it automatically and labels the results.
+  - `check_compat(check_cuda=True)` rule (k) warns about the DeepGEMM case. On Colab's RTX
+    PRO 6000 every SGLang model failed to load with "NVCC version must be at least 12.9".
+  - `hf:` loads a bf16 checkpoint as fp16 on a CUDA GPU without native bf16; an explicit
+    `dtype=` still wins.
+- `vllm:`: an architecture vLLM refuses (Aya Vision, "supported until v0.24.0") now
+  says to try `model_impl="transformers"`, vLLM's Transformers backend.
+- `docs/SGLANG.md` and `docs/model_backends.md`: the SGLang column is measured for 7 of
+  the 9 Cohere models (the two 32B models need 80 GB). Aya Vision works on SGLang through
+  its Transformers backend, patched. Tiny Aya scores the same on SGLang as on `hf:` on the
+  same GPU. New Colab notebooks
+  `colab_sglang_cohere_matrix.ipynb` and `colab_vllm_cohere_matrix.ipynb` measure the
+  SGLang and vLLM columns.
+- `check_compat()`: warns for sglang on Python 3.13, and for accelerate < 1.0 with
+  transformers 5; with `check_cuda=True`, errors on a torchaudio that won't load
+  against torch's CUDA.
+
+### Fixed
+
+- The six built-in benchmark scenarios load again. They used bare Hub ids (`mmlu`, `arc` and
+  `truthfulqa` no longer exist; the others failed with `HfUriError`) and now use `cais/mmlu`,
+  `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`, `truthfulqa/truthful_qa` and
+  `openai/openai_humaneval`. HumanEval also referenced a `TaskKind.CODE` that doesn't exist; it loads
+  as a generative task (no code-execution metric, so use `ak.run_lmeval("humaneval", ...)` for pass@k).
+- Docs: no METEOR (never implemented) and no "Rich HTML reports" tick (not implemented); current
+  Claude model ids instead of retired Claude 3 ones; "source-available", not "open-source"; no
+  internal wording, links to a private repository or private issue numbers in public pages;
+  GUIDE's table of contents, catalog heading and version line match its sections and 1.2.0.
+
+### Changed
+
+- **`f1_score` now normalises SQuAD-style** (lowercase, punctuation and articles
+  removed) before comparing tokens, so "Red" matches "red" and "Triangle." matches
+  "triangle". **Scores change.** `F1Score(normalize=False)` keeps the old raw
+  whitespace split; the setting is part of the run fingerprint.
+- `[lmeval]` extra: `accelerate>=1.0`.
+- **`abstention`: `short_reply_markers` now takes regular expressions**. The
+  defaults require refusal-shaped wording ("insufficient information to/for/in/about…",
+  "no relevant information/documents/context…"), so a short real answer such as
+  "Yes, there is no relevant fee for domestic wires." is no longer a refusal, and a
+  first sentence opening with "yes" never is. Bare phrases passed to
+  `Abstention(short_reply_markers=...)` still work (a plain phrase is a valid regex);
+  a phrase containing regex metacharacters must be escaped (`re.escape`).
+- **An unnamed recorded tool call is unscored, not a measured 0.0**. An EventLog
+  or AgentTune trajectory action that carries call arguments (`arguments`,
+  `parameters`, `args`, `input`, `query`) but no tool name leaves
+  `tool_call_names` unavailable, so `tool_call_f1` / `trajectory_match` /
+  `parallel_tool_calls` are skipped, and `rescore` reports `trace.tool_call_names`.
+- **A trajectory whose actions are all empty is a measured zero calls**: it
+  scores (0.0 against expected calls, 1.0 on a no-call case) instead of being dropped.
+- Docs: SGLang needs Python 3.10-3.12 (a uv 3.12 venv on 3.13 hosts); example 13
+  builds its SGLang venv that way. `docs/VLLM_KNOWN_ISSUES.md` covers the Colab
+  torchaudio mismatch after `[vllm]`.
+
 ## 1.2.0
 
-Lexsi stack interop for the hackathon tracks (CuratorKIT, AlignTune, SafeTune,
-CircuitKIT and AgentTune outputs evaluate with no glue code), plus the
-hackathon readiness fixes for the permitted Cohere models.
+Lexsi stack interop (CuratorKIT, AlignTune, SafeTune, CircuitKIT and AgentTune
+outputs evaluate with no glue code), plus fixes for the Cohere models.
 
 ### Added
 
@@ -23,7 +162,7 @@ hackathon readiness fixes for the permitted Cohere models.
 - **Native tool calling on `hf:`.** Tool schemas go to the chat template
   (`apply_chat_template(tools=...)`), so `ToolCallAdapter()` works on local
   models whose template renders tools; a template without tool support raises
-  `CapabilityError`. None of the Cohere hackathon models' templates (Tiny Aya,
+  `CapabilityError`. None of the Cohere models' templates (Tiny Aya,
   Aya Expanse, Aya Vision, North) render tools: use
   `ToolCallAdapter(mode="prompt")` with them.
 - **Cohere tool-call format.** The tool-call parser reads Command R7B
@@ -109,8 +248,7 @@ hackathon readiness fixes for the permitted Cohere models.
 
 - **`auditkit.agent_eval` package.** Evaluates what an agent did and achieved
   across a complete task episode. Stdlib only; AgentTune, torch and transformers
-  are never imported. Implements slices A1 and A2 of
-  `docs/notes/agent-evals-agenttune-prd.md`. See
+  are never imported. See
   [Agent evaluation](../agent_eval.md).
   - **Episode contract.** `AgentCase` (stable `digest()`, validated id/task),
     `AgentEvent` (order, role, type, `timestamp`-or-`None`, `call_id`,
@@ -273,7 +411,7 @@ hackathon readiness fixes for the permitted Cohere models.
   and `shield_gemma`/`granite_guardian` (policy-parameterized — pass `policy=`
   to pick a harm policy/risk, threaded into the guard's chat template via a new
   `chat_template_kwargs` flag). Metric catalog is now 48 (the encoder judges
-  below were added the same cycle). See `docs/notes/guard-judge-plan.md`.
+  below were added the same cycle).
 - **Bias metrics reworked.** The old `bias_score` (`BiasScore`) was renamed to
   `representation_skew` (`RepresentationSkew`) *and* rewritten: it now measures
   demographic-representation balance per axis via total-variation distance from
@@ -497,7 +635,7 @@ hackathon readiness fixes for the permitted Cohere models.
   afterward. Verified live through the real `evaluate()` pipeline for both
   correctness (identical text → F1 ≈ 0.99999988) and discriminating power
   (unrelated text → F1 ≈ 0.43, not a degenerate always-high result). See
-  `docs/BUGS.md`.
+  [Known issues](../known_issues.md).
 - **`HFGenModel` now honors `stop_sequences`/`seed`** — `stop_sequences` maps
   to `generate()`'s real `stop_strings` kwarg (with the tokenizer
   auto-attached, which that kwarg needs); `seed` calls transformers'
@@ -505,7 +643,7 @@ hackathon readiness fixes for the permitted Cohere models.
   `generate()`/`pipeline()` actually offers) right before generating.
   Verified live: a stop sequence truncates output exactly at the match, and
   the same seed + prompt + settings reproduces identical output across
-  separate `evaluate()` calls. See `docs/BUGS.md`.
+  separate `evaluate()` calls. See [Known issues](../known_issues.md).
 - **`VLLMModel.model_info()` implemented** — previously always reported
   identity-only despite `is_local=True`. Now attempts real parameter
   count/size introspection (same approach as `HFGenModel.model_info()`) via

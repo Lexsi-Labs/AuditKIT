@@ -7,11 +7,9 @@ faithfulness score can still coexist with a wrong answer if the retrieved
 document was stale, incomplete, unauthorized, or misattributed; each of those is
 a separate, deterministic check here.
 
-This is build-order steps (1) and (2) of the RAG-stress PRD
-(`docs/notes/rag-stress-model-risk-research-prd-2026-09.md`): the trace/ID +
-corpus-manifest contract, and the evidence-set, freshness, ACL and citation
-checks. Judge calibration, stress-fixture generation and load/chaos are later
-steps.
+It covers the trace/ID and corpus-manifest contract, the evidence-set, freshness,
+ACL, citation and abstention checks, a paired stress runner, and judge calibration
+against human labels.
 
 ## The contract (`auditkit.metrics.rag_stress`)
 
@@ -24,7 +22,7 @@ Three stdlib dataclasses, all with strict-JSON `to_dict()` / `from_dict()`:
   `reranker_version` and `ingested_at`. It stores **digests, not raw text**
   (redaction seam). `changed(other)` returns doc ids whose digest differs;
   `invalidated(case)` returns doc ids whose pinned evidence digest no longer
-  matches (RST-01: a changed source invalidates its evidence view).
+  matches (a changed source invalidates its evidence view).
 - **`RAGCase`** — one question and its gold: `answerability`
   (`answerable`/`unanswerable`), `expected_action` (`answer`/`abstain`),
   `sufficient_evidence_sets` (a list of id sets — any one *complete* set is
@@ -47,11 +45,11 @@ The metrics read the case and snapshot from `sample.metadata["rag_case"]` and
 
 | Name (`ak.evaluate(scorers=...)`) | Needs | Reports |
 | --- | --- | --- |
-| `evidence_set_recall` (RST-02) | case `sufficient_evidence_sets`, trace `retrieved` | 1.0 iff one **complete** set is retrieved; ranking one chunk first is not enough; an alternate set passes |
-| `freshness` (RST-01/03) | case `decision_date`, corpus dates/versions, trace `retrieved` | `freshness` (fraction current) + `stale_hit_rate`; stale iff `superseded_date <= decision_date` or trace digest ≠ snapshot |
-| `acl_compliance` (RST-05) | case `tenant`/`identity`, corpus `acl`, trace `retrieved` | `acl_compliance` (fraction authorized) + `unauthorized_hit_rate`; prohibited / cross-tenant / not-in-snapshot hits fail |
-| `citation_support` (RST-06) | case `gold_citations`, corpus `spans`/`version`, trace `cited_spans` | `citation_support`/`citation_precision`/`citation_recall` + `wrong_version_rate`; a nonexistent or superseded-version span fails |
-| `abstention` (RST-04) | case `answerability`/`expected_action`, trace `abstained`/`answer_claims` or output | 1.0 for correct abstain / correct answer; 0.0 for answering an unanswerable case or false-refusing an answerable one |
+| `evidence_set_recall` | case `sufficient_evidence_sets`, trace `retrieved` | 1.0 iff one **complete** set is retrieved; ranking one chunk first is not enough; an alternate set passes |
+| `freshness` | case `decision_date`, corpus dates/versions, trace `retrieved` | `freshness` (fraction current) + `stale_hit_rate`; stale iff `superseded_date <= decision_date` or trace digest ≠ snapshot |
+| `acl_compliance` | case `tenant`/`identity`, corpus `acl`, trace `retrieved` | `acl_compliance` (fraction authorized) + `unauthorized_hit_rate`; prohibited / cross-tenant / not-in-snapshot hits fail |
+| `citation_support` | case `gold_citations`, corpus `spans`/`version`, trace `cited_spans` | `citation_support`/`citation_precision`/`citation_recall` + `wrong_version_rate`; a nonexistent or superseded-version span fails |
+| `abstention` | case `answerability`/`expected_action`, trace `abstained`/`answer_claims` or output | 1.0 for correct abstain / correct answer; 0.0 for answering an unanswerable case or false-refusing an answerable one |
 
 Every metric returns a score in `[0, 1]` **or** an explicit `unknown` /
 `not_tested` result (`label` set, `metadata["unknown"] = True`) when the required
@@ -63,19 +61,15 @@ gold or trace is missing — never a silent `0`. Decisions worth knowing:
   with strict `date.fromisoformat`.
 - **abstention**: the oracle is `expected_action` (derived from `answerability`
   if unset). Abstention is read from `trace.abstained`, else empty
-  `answer_claims`, else a naive keyword scan of the output (an LLM judge
-  replaces the keyword fallback in build step 4).
+  `answer_claims`, else a keyword scan of the output.
 - **citation**: existence = the cited offsets fall inside a declared source
   span; a gold match = same-doc overlap.
 
-### Aggregation caveat
+### Aggregation
 
-`Runner.aggregate` averages every score's `value` and does **not** yet exclude
-`unknown`-flagged scores (it has no hook to, and the runner is out of scope for
-this step). Read the per-score `label` / `metadata["unknown"]` rather than
-trusting the mean when any sample is `unknown`/`not_tested`. A first-class
-`not_tested` run status (the PRD's `StressResult`) arrives with the paired
-runner below (build-order step (3), `auditkit.metrics.rag_stress_runner`).
+`unknown` and `not_tested` results are left out of a metric's mean and counted
+in `RunResult.unscored` (`{metric: {"unknown": n, "not_tested": m}}`), so an
+untestable case never pulls an average down or up.
 
 ## Example
 
@@ -104,7 +98,7 @@ print(result.stats["evidence_set_recall"].mean)  # 1.0 — a complete set retrie
 table/footnote doc, a private-tenant doc, and a poisonable (prohibited) doc —
 enough to prove each check locates its failure independently.
 
-## Stress-fixture generator and paired runner (step 3)
+## Stress-fixture generator and paired runner
 
 `auditkit.metrics.rag_stress_runner` builds benign synthetic stress scenarios
 and scores the deterministic metrics above on a **stress (attack) arm** and a
@@ -147,13 +141,13 @@ run is >= 20 cases; the structural failure is identical across repeats.
 
 Each scenario is built so that **only** its `expected_failure` metric flags on
 the stress arm — every other metric passes or is `unknown`/`not_tested` — so the
-matrix locates each failure independently (RST-02..06). Two locators live in the
+matrix locates each failure independently. Two locators live in the
 runner, not in `rag_stress.py`, so the report can separate an answer-stage
 numeric error from a citation error and a context-assembly drop from a retrieval
 miss:
 
-- `numeric_accuracy` — gold-answer numbers ⊆ answer-claim numbers (naive; a
-  unit/currency-aware judge is build step 4).
+- `numeric_accuracy` — gold-answer numbers ⊆ answer-claim numbers (plain
+  number matching, not unit- or currency-aware).
 - `context_retention` — a complete sufficient evidence set survives into
   `trace.final_context` (the `context` stage the retrieval metrics do not read).
 
@@ -174,17 +168,16 @@ miss:
 
 The `ingestion` stage is declared in `STAGE_ORDER` but has no deterministic
 metric yet: a changed source digest surfaces as an `evidence_set_recall`
-`unknown` (RST-01), not a stage failure. Judge calibration, human review and
-load/chaos are the next section (build steps 4-5).
+`unknown`, not a stage failure.
 
-## Judge calibration, human review, and operational checks (steps 4-5)
+## Judge calibration, human review, and operational checks
 
 `auditkit.metrics.rag_stress_ops` adds three stdlib, model-free pieces that
 consume **supplied data** — an adjudicated label set, a `StressReport`, or
 scripted timing/error samples — and follow the same `unknown` convention (value
 `None`, never a silent `0`) as the metrics above.
 
-### `judge_calibration(labeled_rows)` — test the judge against a local set (RST-08)
+### `judge_calibration(labeled_rows)` — test the judge against a local set
 
 RAGBench/TRACe and ARES both warn that an automated RAG judge can disagree with
 humans substantially, so the judge is calibrated against a small
@@ -200,9 +193,9 @@ strict-JSON dict:
 | `agreement` | observed agreement (fraction where judge == human) |
 | `cohens_kappa` | chance-corrected agreement; `None` when chance agreement is 1.0 (a degenerate all-one-class set) |
 | `false_pass_rate` | P(judge=pass \| human=fail) — the judge lets a human-failed answer through (the model-risk-dangerous miss); `None` when there are no human-fail rows |
-| `false_negative_rate` | P(judge=fail \| human=pass) — the judge rejects a human-passed answer (a false alarm; the PRD's false-fail); `None` when there are no human-pass rows |
-| `confusion`, `n`, `n_human_pass`, `n_human_fail` | the 2x2 counts and denominators (the PRD asks to record denominators; a rate is uninterpretable without them) |
-| `by_dimension` | the same block per `dimension` when rows carry it — RST-08's per-slice agreement for routing low-agreement slices to review |
+| `false_negative_rate` | P(judge=fail \| human=pass) — the judge rejects a human-passed answer (a false alarm); `None` when there are no human-pass rows |
+| `confusion`, `n`, `n_human_pass`, `n_human_fail` | the 2x2 counts and denominators (a rate is uninterpretable without its denominator) |
+| `by_dimension` | the same block per `dimension` when rows carry it — per-slice agreement for routing low-agreement slices to review |
 
 Rows missing a `human` label are not counted (`n_unlabeled`); rows with a human
 label but no `judge` verdict are counted separately (`n_missing_judge`) and left
@@ -243,7 +236,7 @@ for hr in review_queue(report, budget=5):
     hr.record(detected=True, override="fail", final_answer_changed=True)
 ```
 
-### `operational_stress(scenarios)` — load / chaos, deterministic from samples (RST-07)
+### `operational_stress(scenarios)` — load / chaos, deterministic from samples
 
 A deterministic replay of scripted `concurrency` / `burst` / `slow_store` /
 `timeout` / `partial_search_failure` / `rate_limit` / `judge_failure` scenarios
@@ -268,6 +261,3 @@ signal is present. The rollup reports `any_false_answer` (`None` if none were
 determinable) beside `n_partial_retrieval_checked` / `n_partial_retrieval_unknown`
 so a pass cannot hide an untested slice.
 
-Jurisdiction-specific evidence packs (also PRD step 5) are out of scope here:
-they select which evidence view is requested per the jurisdiction matrix and are
-additive on top of these checks.

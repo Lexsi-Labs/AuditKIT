@@ -8,31 +8,31 @@
 
 > **Version:** 1.2.0 (written for 1.0.0; counts, red-teaming, scenarios and the CLI re-checked for 1.2.0) · **Python:** ≥ 3.10 · **License:** LSAL v1.2
 >
-> This guide is written **against the actual code on this branch**, not the marketing README. Where the code diverges from older docs (the top-level `README.md` and the docstrings), this guide follows the code and calls the divergence out. This guide states limitations inline, in context, wherever they matter. Nothing is hidden to make a feature look better than it is.
+> This guide is written against the code. Limitations are stated inline, in context, wherever they matter.
 
 ---
 
 ## Table of contents
 
 1. [What AuditKIT is, and why it exists](#1-what-auditkit-is-and-why-it-exists)
-2. [Install & optional extras](#2-install--optional-extras)
-3. [The mental model & architecture](#3-the-mental-model--architecture)
+2. [Install and optional extras](#2-install-and-optional-extras)
+3. [The mental model and architecture](#3-the-mental-model-and-architecture)
 4. [Core concepts (the data model)](#4-core-concepts-the-data-model)
 5. [The Python API](#5-the-python-api)
-6. [Configuration reference — `RunConfig`](#6-configuration-reference--runconfig)
+6. [Configuration reference: `RunConfig`](#6-configuration-reference-runconfig)
 7. [Model backends](#7-model-backends)
 8. [Two engines: native vs lm-eval](#8-two-engines-native-vs-lm-eval)
-9. [Adapters & routing](#9-adapters--routing)
+9. [Adapters and routing](#9-adapters-and-routing)
 10. [The metric catalog](#10-the-metric-catalog)
 11. [LLM-as-judge](#11-llm-as-judge)
-12. [Comparison & experiments](#12-comparison--experiments)
+12. [Comparison and experiments](#12-comparison-and-experiments)
 13. [Red-teaming (a basic probe suite)](#13-red-teaming-a-basic-probe-suite)
 14. [Performance metrics](#14-performance-metrics)
-15. [CLI & YAML reference](#15-cli--yaml-reference)
-16. [Scenarios & data loading](#16-scenarios--data-loading)
+15. [CLI and YAML reference](#15-cli-and-yaml-reference)
+16. [Scenarios and data loading](#16-scenarios-and-data-loading)
 17. [Extending AuditKIT](#17-extending-auditkit)
 18. [Known limitations (consolidated)](#18-known-limitations-consolidated)
-19. [Appendix: glossary & file map](#19-appendix-glossary--file-map)
+19. [Appendix: glossary and file map](#19-appendix-glossary-and-file-map)
 
 ---
 
@@ -63,11 +63,11 @@ Model evaluation today is fragmented: academic benchmarks (MMLU, GSM8K) live in 
 - **Provenance by default.** Every run produces a `RunResult` carrying a `fingerprint` (a sha256 over model + config + tasks + scorers). Identical inputs → identical fingerprint → a disk-cache hit. Change any knob and the fingerprint changes.
 - **The spine never changes to add a feature.** A new modality, technique, or backend is a new plugin file + one registry line — never an edit to `runner.py`/`score.py`/`sample.py`.
 
-> **Candor — what was recently removed.** AuditKit deliberately excludes four feature families: **multimodal, agentic, conversation, and tabular** evaluation. Their modules and metrics are gone. If you read older docs describing `Conversation`/`Turn`/`evaluate_conversation()` or agent traces — those are **stale**; none of it exists in this release. This guide documents only what is present.
+> **What it evaluates.** Text generation, multiple choice, RAG, LLM-as-judge, code and string checks, safety and security, performance, red-teaming probes, and agents and tool use (`ToolCallAdapter`, `ak.agent_eval`). Vision models take images through `Sample.images` on `hf:` and `api:`.
 
 ---
 
-## 2. Install & optional extras
+## 2. Install and optional extras
 
 ```bash
 pip install auditkit                 # core, zero third-party deps
@@ -81,23 +81,26 @@ The complete extras table (from `pyproject.toml`):
 |---|---|---|
 | `openai` | `openai` | `openai:` backend |
 | `anthropic` | `anthropic` | `anthropic:` backend |
-| `transformers` | `torch`, `transformers` | `hf:` backend, `perplexity`, `factual_consistency`, `toxicity_score`(model), `hate_speech_score`(model) |
+| `transformers` | `torch`, `transformers`, `peft` | `hf:` backend (including PEFT adapter folders), `perplexity`, `factual_consistency`, `toxicity_score`(model), `hate_speech_score`(model) |
 | `lmeval` | `lm-eval`, `accelerate` | the **lm-eval engine** (`ak.run_lmeval`, `engine="lmeval"`) |
-| `vision` | `pillow`, `torchmetrics` | (declared; note the multimodal *code* was removed — see §1) |
-| `interop` | `datasets`, `mlcroissant` | native built-in scenarios (`load_hf`, `load_croissant`) |
+| `vision` | `pillow`, `torchvision`, `torchmetrics` | images for vision models (`Sample.images`): PIL images and local paths; `torchvision` for transformers' image processors |
+| `interop` | `datasets`, `mlcroissant`, `GitPython` | native built-in scenarios (`load_hf`, `load_croissant`) |
 | `mlflow` | `mlflow` | `Experiment.log_mlflow()`, `lexsi:` MLflow logging |
 | `requests` | `requests` | `api:`, `groq:`, `openrouter:`, `lexsi:` backends |
+| `sglang` | `sglang` | SGLang in its own environment (it can't share one with `vllm`/`transformers`); evaluate a running SGLang server with `api:` |
 | `vllm` | `vllm` | `vllm:` backend |
 | `litellm` | `litellm` | `litellm:` backend (Ollama, 100+ providers) |
 | `bert-score` | `bert-score`, `torch` | `bert_score` metric |
+| `relay` | `flask`, `werkzeug`, `requests` | `LexsiCompletionsRelay` |
+| `lexsi-sdk` | `lexsi-sdk` | `lexsi_login()`, `run_benchmark(lexsi_org=...)` |
 | `dev` | `pytest`, `pytest-asyncio`, `pytest-mock` | test suite |
-| `all` | all of the above | — |
+| `all` | all of the above except `sglang` and `dev` | — |
 
-> **Candor — extra-hint mismatches.** Two lazy imports print a hint that doesn't match the real extra name: `bert_score` says `pip install bert-score` (works, but the extra is spelled `bert-score`), and `LexsiModel`'s missing-`requests` hint is a bare `pip install requests` rather than `auditkit[requests]`. Harmless, but you'll see it. There is **no standalone `groq` extra** — the Groq backend rides the `requests` extra.
+> **Install hints.** Two lazy imports print a hint that doesn't match the real extra name: `bert_score` says `pip install bert-score` (works, but the extra is spelled `bert-score`), and `LexsiModel`'s missing-`requests` hint is a bare `pip install requests` rather than `auditkit[requests]`. Harmless, but you'll see it. There is **no standalone `groq` extra** — the Groq backend rides the `requests` extra.
 
 ---
 
-## 3. The mental model & architecture
+## 3. The mental model and architecture
 
 Everything flows through one directional pipeline, **the spine**, driven by `runner.py`:
 
@@ -131,7 +134,7 @@ flowchart TD
 - **Native engine** (`engine="native"`, the default): AuditKIT owns the whole pipeline above — it builds prompts via adapters, calls the model backend, and scores with its own metrics.
 - **lm-eval engine** (`engine="lmeval"` or the dedicated `ak.run_lmeval()`): delegates to the real [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) — its task templates, filters, and metrics — then maps lm-eval's aggregates + per-doc samples back into a `RunResult`. Requires `auditkit[lmeval]`. See [§8](#8-two-engines-native-vs-lm-eval).
 
-> The native `scenarios/` package (mmlu, gsm8k, …) is a **separate reimplementation** that does *not* use lm-eval, and does less: no few-shot prompting and no code execution (see [§16](#16-scenarios--data-loading)). For academic benchmarks, `ak.run_lmeval()` (the lm-eval engine) is the more complete path.
+> The native `scenarios/` package (mmlu, gsm8k, …) is a **separate reimplementation** that does *not* use lm-eval, and does less: no few-shot prompting and no code execution (see [§16](#16-scenarios-and-data-loading)). For academic benchmarks, `ak.run_lmeval()` (the lm-eval engine) is the more complete path.
 
 ### Provenance & caching
 
@@ -166,10 +169,15 @@ ak.Sample(
     metadata={},                 # dict — anything; judge prompts can reference keys
     tags=[],                     # list[str]
     actual_output=None,          # str — pre-generated output (precomputed/generate flow)
+    tools=None,                  # list[dict] — tool schemas offered to the model (ToolCallAdapter)
+    expected_tool_calls=None,    # list | dict | str — expected tool calls (agent metrics)
+    reference_contexts=None,     # list[str] | dict[id, grade] — gold contexts for ranked retrieval metrics
+    actual_trace=None,           # dict — a recorded agent/RAG run to score offline (messages, tool_calls, retrieved_contexts)
+    images=None,                 # list — images for vision models (PIL images, paths or URLs; hf: and api:)
 )
 ```
 - `sample.is_golden` → `target is not None`. When `scorers=None`, this decides whether `ExactMatch` is auto-selected.
-- **Two fields drive automatic adapter routing**: `choices` → MCQ, `retrieval_context` → RAG (see [§9](#9-adapters--routing)).
+- **Two fields drive automatic adapter routing**: `choices` → MCQ, `retrieval_context` → RAG (see [§9](#9-adapters-and-routing)).
 
 ### `Model` & `Capability`
 
@@ -214,10 +222,12 @@ Every run returns a **`RunResult`**:
 | `config` | the `RunConfig` used |
 | `model_spec` | the model (see serialization caveat below) |
 | `errors` / `failed_count` | per-sample/metric errors (never abort the run) |
+| `unscored` | per metric, results left out of the aggregate because they aren't measurements (`unknown` / `not_tested` counts) |
 | `experiment_name` / `tags` | optional tracking metadata |
 | `perf` | `{latency_ms: {...}, throughput: {...}}` — measured (see [§14](#14-performance-metrics)) |
 | `model_size` | introspected params/sparsity/MB for local models; identity-only for hosted |
 | `token_usage` | provider-reported `{prompt_tokens, completion_tokens, total_tokens}` |
+| `metadata` | run-level facts: input lineage (`inputs`) and backend notes such as `api_server` |
 
 Each **`Prediction`**: `run_id`, `task`, `sample_id`, `prompt`, `raw_output`, `parsed_answer`, `expected`, `correct` (`bool|None`), `score`, `choice_likelihoods`, `context`, `metadata` (holds the per-score dicts under `metadata["scores"]` — the source for per-task deltas and direction).
 
@@ -226,7 +236,7 @@ Useful `RunResult` methods:
 - `cost(pricing)` → dollar cost; `pricing = {"input_per_1m": ..., "output_per_1m": ...}`. Returns `None` if no token usage; **raises `KeyError`** if a pricing key is missing (only reachable when there *is* usage). No bundled price table by design.
 - `save(path, fmt="json"|"csv")` / `RunResult.load(path)` / `to_dict()` / `from_dict()`.
 
-> **Candor — `model_spec` doesn't serialize cleanly.** `to_dict()` stores the live `Model` object, so `save()`/cache writes render it as an unusable repr string like `"<auditkit.model.groq_gen.GroqModel object at 0x…>"`. Everything else (`config`, `headline`, `predictions`, `perf`, `token_usage`) round-trips fine. This also affects cached runs.
+> **`model_spec` doesn't serialize cleanly.** `to_dict()` stores the live `Model` object, so `save()`/cache writes render it as an unusable repr string like `"<auditkit.model.groq_gen.GroqModel object at 0x…>"`. Everything else (`config`, `headline`, `predictions`, `perf`, `token_usage`) round-trips fine. This also affects cached runs.
 
 `ak.Result` is a public alias of `RunResult`.
 
@@ -272,9 +282,9 @@ result = ak.evaluate(
 | `scorers` = `@scorer` fn / bare callable | wrapped as `FunctionScorer` → `ScorerMetric` |
 | `scorers` = `Metric` | used as-is |
 | `adapter` = `None` | `GenerationAdapter()` |
-| `adapter` = `"auto"` | `route_adapter(samples)` — shape-based ([§9](#9-adapters--routing)) |
+| `adapter` = `"auto"` | `route_adapter(samples)` — shape-based ([§9](#9-adapters-and-routing)) |
 
-> **Candor — string scorers only work for zero-config metrics.** Passing `scorers="contains"` (or `regex`, `keyword_detector`, `g_eval`, …) fails, because the registry does `METRICS.get(name)()` with no args and those classes need constructor arguments. Pass an **instance** for parameterized metrics: `scorers=[ak.Contains("cat")]`. Bare strings are fine for `exact_match`, `quasi_exact_match`, `acc`, `bleu`, `rouge_l`, `f1_score`, `token_overlap`, `lexical_groundedness`, etc.
+> **String scorers only work for zero-config metrics.** Passing `scorers="contains"` (or `regex`, `keyword_detector`, `g_eval`, …) fails, because the registry does `METRICS.get(name)()` with no args and those classes need constructor arguments. Pass an **instance** for parameterized metrics: `scorers=[ak.Contains("cat")]`. Bare strings are fine for `exact_match`, `quasi_exact_match`, `acc`, `bleu`, `rouge_l`, `f1_score`, `token_overlap`, `lexical_groundedness`, etc.
 
 ```python
 import auditkit as ak
@@ -333,7 +343,7 @@ ak.compare([r1, r2, r3], metric="exact_match")   # → leaderboard: list[dict] s
 ak.compare(baseline_run, candidate_run)          # → RunComparison (per-task deltas, grades)
 ak.compare(base, cand, pass_threshold=0.02, warn_threshold=0.05)   # thresholds forwarded
 ```
-Two results → a rich `RunComparison` ([§12](#12-comparison--experiments)). A list → a simple leaderboard of `{run_id, fingerprint, **headline}` rows.
+Two results → a rich `RunComparison` ([§12](#12-comparison-and-experiments)). A list → a simple leaderboard of `{run_id, fingerprint, **headline}` rows.
 
 ### `ak.compare_models(...)` — run several models, then compare
 
@@ -363,11 +373,11 @@ of those for one model only — the rest of that dict (`api_key`, `dtype`, `devi
 shared metric set across models, so it stays a single top-level argument. This is
 the only place per-model adapter/annotators are configurable — there's no
 separate `adapters=`/`annotators_by_model=` param.
-Runs each model on the shared dataset, isolates per-model failures into `res.errors`, and gives a leaderboard + per-task tables + pairwise significance ([§12](#12-comparison--experiments)).
+Runs each model on the shared dataset, isolates per-model failures into `res.errors`, and gives a leaderboard + per-task tables + pairwise significance ([§12](#12-comparison-and-experiments)).
 
 ---
 
-## 6. Configuration reference — `RunConfig`
+## 6. Configuration reference: `RunConfig`
 
 Every knob, with its real default:
 
@@ -375,10 +385,10 @@ Every knob, with its real default:
 |---|---|---|---|
 | `num_fewshot` | `int \| None` | `None` | few-shot count; overrides an adapter's own `num_shots` |
 | `limit` | `int \| None` | `None` | cap samples (applied after scenario load) |
-| `seed` | `int` | `0` | fingerprint + split shuffling |
+| `seed` | `int \| None` | `None` | fingerprint + split shuffling |
 | `trials` | `int` | `1` | repeated trials |
 | `batch_size` | `str \| int` | `"auto"` | forwarded to lm-eval / batched backends |
-| `concurrency` | `int` | `1` | **default 1 on purpose** — see the chunking caveat below |
+| `concurrency` | `int` | `1` | parallel chunks; only used when the model is `threadsafe` |
 | `split` | `SplitConfig \| None` | `None` | train/val/test partition (few-shot pool) |
 | `temperature` | `float` | `0.0` | |
 | `top_p` | `float \| None` | `None` | |
@@ -394,13 +404,15 @@ Every knob, with its real default:
 | `retry_delay` | `float` | `1.0` | base backoff (seconds); `retry_delay * 2**attempt` |
 | `judge_model` | `str \| None` | `None` | |
 | `judge_prompt_version` | `str \| None` | `None` | |
-| `extra` | `dict` | `{}` | hashed into the fingerprint but **not read anywhere** yet |
+| `track_performance` | `bool` | `True` | record latency, throughput, token usage and model size in `RunResult.perf` |
+| `chat_template_kwargs` | `dict \| None` | `None` | passed to the chat template on `hf:`/`vllm:` and sent to `api:` servers (e.g. `{"enable_thinking": False}`); a request's own values win |
+| `extra` | `dict` | `{}` | hashed into the fingerprint; no built-in component reads it |
 
 `SplitConfig`: `strategy` (`"sequential"` default, or `"random"`/`"stratified"`), `train_ratio` (0.0), `val_ratio` (0.0), `test_ratio` (1.0), `fold` (0), `seed` (fixed at 0 so baseline/candidate don't reshuffle differently).
 
-> **Candor — the concurrency chunking bug.** `concurrency` defaults to `1` deliberately, because the parallel path in `Runner._chunk()` always splits requests into exactly `concurrency` chunks; if you have fewer samples than `concurrency`, it creates empty chunks and wastes model/API calls on them. Also, threading only kicks in when the model declares `threadsafe=True` (see [§7](#7-model-backends)) — a non-threadsafe local model stays serial even at `concurrency>1`. Passing a high `concurrency` with a small dataset can still trigger the empty-chunk waste.
+> **Concurrency.** With `concurrency > 1`, the Runner splits requests into at most `concurrency` chunks (never more chunks than requests) and runs them in parallel, but only when the model declares `threadsafe=True`; otherwise it runs sequentially.
 >
-> **Candor — generation params depend on the backend.** Each backend forwards only the params in its own key-map; the rest are silently dropped. E.g. `HFGenModel` ignores `num_completions` (`stop_sequences`/`seed` are now forwarded — `seed` via `transformers.set_seed()`, a global RNG reset, since `generate()` has no per-call seed kwarg); `LexsiModel` forwards only `temperature`/`max_tokens`. See the forwarding table in [§7](#7-model-backends).
+> **Generation params depend on the backend.** Each backend forwards only the params in its own key-map; the rest are silently dropped. E.g. `HFGenModel` ignores `num_completions` (`stop_sequences`/`seed` are now forwarded — `seed` via `transformers.set_seed()`, a global RNG reset, since `generate()` has no per-call seed kwarg); `LexsiModel` forwards only `temperature`/`max_tokens`. See the forwarding table in [§7](#7-model-backends).
 
 ---
 
@@ -531,7 +543,7 @@ ak.run_lmeval("arc_easy", model="lexsi:my-model",   # auto-infers tokenizer=
 
 ---
 
-## 9. Adapters & routing
+## 9. Adapters and routing
 
 An **adapter** turns a `Sample` into one or more `Request`s (the wire format sent to the model). There are **7**, all registered by name:
 
@@ -571,7 +583,7 @@ ak.evaluate(rag_samples, adapter="auto", scorers=["lexical_groundedness","contex
 
 The system prompt / messages story: `ChatAdapter` puts a structured `messages` list in `request.params["messages"]` **and** a flattened `System:…\n\nUser:…` string in `request.prompt`. Chat backends (OpenAI, Anthropic, Groq, OpenRouter, LiteLLM, `api:` with `chat_template=True`) read `messages` via the `resolve_messages()` helper; `hf:` re-derives chat formatting through the tokenizer's own `chat_template`; `vllm:`/`lexsi:` use the raw prompt text.
 
-> **Candor.** `apply_chat_template`, `system_instruction`, and `fewshot_as_multiturn` are **lm-eval engine knobs, not native adapter features** — don't expect them on the native path; use `ChatAdapter`/`FewShotAdapter` there instead.
+> **Note.** `apply_chat_template`, `system_instruction`, and `fewshot_as_multiturn` are **lm-eval engine knobs, not native adapter features** — don't expect them on the native path; use `ChatAdapter`/`FewShotAdapter` there instead.
 
 ---
 
@@ -649,7 +661,7 @@ All four share one tokenizer (lowercase + strip punctuation). Contexts come from
 | `hate_speech_score` | `0.6*toxicity + 0.4*(1 - representation_skew)` | `use_model=True` | `transformers` (model path) |
 | `bias_judge` | **MINIMIZE**, 0 = no bias. LLM-as-judge: fraction of the output's own opinions flagged biased | `judge_model=...` | judge model |
 
-> **Candor.** `representation_skew` measures demographic-*representation* balance, not bias — it can't see meaning (a balanced-but-sexist sentence scores 0.0) and is best read in aggregate over a run. For biased *content* use `bias_judge` (reads meaning via a judge, but is non-deterministic and inherits the judge's own biases — pin the model, `temperature=0`); for whether the model *treats groups differently*, run BBQ/CrowS-Pairs via `run_lmeval`. `toxicity_score`/`hate_speech_score` with `use_model=False` are keyword-blacklist heuristics.
+> **Note.** `representation_skew` measures demographic-*representation* balance, not bias — it can't see meaning (a balanced-but-sexist sentence scores 0.0) and is best read in aggregate over a run. For biased *content* use `bias_judge` (reads meaning via a judge, but is non-deterministic and inherits the judge's own biases — pin the model, `temperature=0`); for whether the model *treats groups differently*, run BBQ/CrowS-Pairs via `run_lmeval`. `toxicity_score`/`hate_speech_score` with `use_model=False` are keyword-blacklist heuristics.
 
 ### Pairwise / preference (`metrics/pairwise.py`) — MAXIMIZE, requires `target`
 
@@ -659,7 +671,7 @@ All four share one tokenizer (lowercase + strip punctuation). Contexts come from
 | `elo_score` | Elo from `context["pairwise_results"]` | `k=32`, `initial_rating=1000` | **returns 0–2000**, not 0–1; falls back to a token-overlap proxy |
 | `preference_accuracy` | accuracy over `context["preference_data"]` pairs | — | **returns 0.5** when no preference data |
 
-> **Candor.** All three silently fall back to a crude token-overlap proxy when you don't populate the relevant `context` key — easy to use without realizing you're getting the degraded path. `elo_score` is the only metric not on a 0–1 scale.
+> **Note.** All three silently fall back to a crude token-overlap proxy when you don't populate the relevant `context` key — easy to use without realizing you're getting the degraded path. `elo_score` is the only metric not on a 0–1 scale.
 
 ### Security (`metrics/security.py`)
 
@@ -745,7 +757,7 @@ All prebuilt judges ship a default `system_prompt` that guards against verbosity
 
 ---
 
-## 12. Comparison & experiments
+## 12. Comparison and experiments
 
 Comparison is a **read-side layer over finished `RunResult`s**. It re-reads the stored per-sample scores and never re-runs models. (`compare_models()` is the exception — it runs the models first, then hands you the read-side view.)
 
@@ -813,7 +825,7 @@ Per-model failures are isolated into `res.errors[name]` — a crashing model nev
 
 `significance()` / `CompareResult.significance()` / `Experiment.significance()` all call `paired_bootstrap(score_pairs(...))`, aligned by `sample_id`. The result dict: `{n, mean_baseline, mean_candidate, delta, p_value, significant}` (`significant = p < 0.05`, deterministic with `seed=42`).
 
-> **Candor — it's a conservative heuristic, not a rigorous test.** The bootstrap resamples the observed per-sample diffs and compares each resample's mean magnitude to the observed mean — the reference distribution is centered on the observed effect, not a null centered at zero. So a large but *low-variance* difference (every sample flips the same way) can report `significant=False`. Treat it as a rough guard; a proper paired-permutation/sign test is a follow-up.
+> **It's a conservative heuristic, not a rigorous test.** The bootstrap resamples the observed per-sample diffs and compares each resample's mean magnitude to the observed mean — the reference distribution is centered on the observed effect, not a null centered at zero. So a large but *low-variance* difference (every sample flips the same way) can report `significant=False`. Treat it as a rough guard.
 
 ### Experiment tracking
 
@@ -873,25 +885,27 @@ print(r.token_usage)                        # {prompt_tokens, completion_tokens,
 print(r.cost({"input_per_1m": 0.59, "output_per_1m": 0.79}))
 ```
 
-> **Candor — measurement caveats to know before you quote these numbers.**
-> - **Latency is call-level, not per-request.** The Runner times each `generate()` call (a batched backend answers many requests in one call), so at the default `concurrency=1` a whole run makes **one** call → the latency distribution has *n=1* (mean == p50 == p95). The `summary()` therefore prints just the mean; the percentile fields exist in `perf["latency_ms"]` but are only meaningful at `concurrency>1` (n = number of chunks). Separately, `groq:`/`api:` compute a precise per-request latency that the Runner currently ignores in favor of the coarser call-level number — a wiring follow-up.
-> - **Two open accuracy limitations on this branch.** `LatencyStats.percentile()` computes percentiles by index truncation, so at small *n* p95/p99 collapse toward the minimum — read the mean, not the tail, until this is fixed. And `Throughput.rps`/tokens-per-sec divide by the **summed** per-call service time, which overcounts elapsed time under `concurrency>1` and understates true throughput (~3–4×). Both have prepared fixes (interpolated percentiles + wall-clock throughput) that aren't merged into this branch yet.
-> - **`VLLMModel` reports no size** — it's `is_local=True` but never overrides `model_info()`, so vLLM↔vLLM size comparisons show "size not introspected" rather than real MB.
+> **Measurement caveats to know before you quote these numbers.**
+> - **Latency is call-level, not per-request.** The Runner times each `generate()` call (a batched backend answers many requests in one call), so at the default `concurrency=1` a whole run makes **one** call → the latency distribution has *n=1* (mean == p50 == p95). The `summary()` therefore prints just the mean; the percentile fields exist in `perf["latency_ms"]` but are only meaningful at `concurrency>1` (n = number of chunks). `groq:`/`api:` also compute a per-request latency, which the Runner doesn't use; it reports the call-level number.
+> - **Percentiles and throughput.** `LatencyStats` computes percentiles by index truncation, so at small *n* p95/p99 collapse toward the minimum; read the mean. `Throughput.rps` and tokens-per-second divide by the **summed** per-call service time, which overcounts elapsed time under `concurrency>1` and understates real throughput.
+
 
 ---
 
-## 15. CLI & YAML reference
+## 15. CLI and YAML reference
 
-Installed as `auditkit`. Five subcommands; a bare invocation defaults to `eval`.
+Installed as `auditkit`. Six subcommands (`eval`, `init`, `list`, `compare`, `redteam`, `agent`); a bare invocation defaults to `eval`.
 
 ```bash
 auditkit eval    ...   # run an evaluation (default if no subcommand)
 auditkit compare ...   # compare multiple models
 auditkit list    ...   # list registered metrics/datasets/adapters/annotators/models
 auditkit init    [dir] # scaffold an auditkit.yaml
+auditkit redteam ...   # run the red-team probes against a model
+auditkit agent   ...   # end-to-end agent evaluation: eval / import-agenttune / rescore
 ```
 
-**`eval`** — key flags: `--config <yaml>`, `--model` (required), `--csv --input-col --target-col`, `--dataset <mmlu|gsm8k|arc> --subject`, `--engine <native|lmeval> --tasks`, `--adapter <generation|chat|instruction|fewshot|rag|template> --system-prompt --instruction --template`, generation flags (`--temperature --top-p --max-tokens --stop --seed`), `--limit --trials --num-fewshot --concurrency`, split flags (`--split-strategy --train-ratio --val-ratio --test-ratio`), `--experiment --tag --mlflow-uri`, `--output/-o --format <json|csv|md>`, `--verbose`. `--engine lmeval` (or any `--tasks`) routes to `run_lmeval()`.
+**`eval`** — key flags: `--config <yaml>`, `--model` (required, unless the config sets `model:`), `--csv --input-col --target-col`, `--dataset <mmlu|gsm8k|arc|hellaswag|truthfulqa|humaneval> --subject`, `--engine <native|lmeval> --tasks`, `--adapter <generation|chat|instruction|fewshot|rag|template> --system-prompt --instruction --template`, generation flags (`--temperature --top-p --max-tokens --stop --seed`), `--limit --trials --num-fewshot --concurrency`, split flags (`--split-strategy --train-ratio --val-ratio --test-ratio`), `--experiment --tag --mlflow-uri`, `--output/-o --format <json|csv|md>`, `--verbose`. `--engine lmeval` (or any `--tasks`) routes to `run_lmeval()`.
 
 **`compare`** — `--models` (**required**, comma-sep), `--csv`/`--dataset`, `--scorers`, `--baseline <model>` (prints a `RunComparison.summary()` of each other model against this one), `--output`.
 
@@ -911,8 +925,8 @@ model: openai:gpt-4o-mini
 temperature: 0.0
 max_tokens: 256
 seed: 42
-concurrency: 8              # note the chunking caveat in §6
-prompts:                    # inline dataset (or: csv/input_col/target_col, or dataset/subject)
+concurrency: 8              # parallel only for threadsafe models (§6)
+prompts:                    # inline dataset (or dataset/subject; a CSV goes through --csv)
   - "What is the capital of France?"
 adapter: generation         # chat + system_prompt, or fewshot + num_fewshot, etc.
 output: results.json
@@ -924,7 +938,7 @@ CLI flags override YAML values (when the flag is set).
 
 ---
 
-## 16. Scenarios & data loading
+## 16. Scenarios and data loading
 
 A **`Scenario`** yields `Sample`s. Three ways in:
 
@@ -980,20 +994,20 @@ The six registries: `SCENARIOS`, `ADAPTERS`, `MODELS`, `METRICS`, `ANNOTATORS`, 
 
 ## 18. Known limitations (consolidated)
 
-A single list of everything flagged inline above, for a quick pre-demo scan. None of these break the *correctness of a score* unless noted. Most are about coverage, ergonomics, or reporting.
+A single list of everything flagged inline above. None of these break the *correctness of a score* unless noted. Most are about coverage, ergonomics, or reporting.
 
 **Confirmed bugs / rough edges**
-- **Concurrency chunking** (`Runner._chunk`): a `concurrency` higher than your sample count creates empty chunks and wastes calls. Default is `1` to sidestep it.
 - **`model_spec` doesn't serialize**: `save()`/cache store an unusable object-repr string for the model; everything else round-trips.
 - **String scorers only work zero-config**: parameterized metrics (`contains`, `regex`, `keyword_detector`, `g_eval`, …) must be passed as instances.
-- **Native built-in scenarios**: 4 of 6 (`mmlu`/`arc`/`hellaswag`/`truthfulqa`) fail on stale HF dataset IDs. Use `ak.run_lmeval()`.
+- **Native built-in scenarios** have no few-shot prompting or code execution (HumanEval can't be scored for pass@k); `ak.run_lmeval()` covers both.
 - **Latency is call-level**: at `concurrency=1`, latency percentiles are a single sample (n=1). Per-request latency from `groq:`/`api:` is computed but unused.
-- **`VLLMModel` size**: `is_local`, `model_info()` attempts real introspection with graceful fallback (unverified against a real vLLM install).
+- **Percentiles and throughput**: `LatencyStats` percentiles use index truncation (they differ from `Stat.percentile()`), and throughput divides by summed call time, understating it under `concurrency>1`.
+- **`VLLMModel` size**: `model_info()` introspects the loaded model where the installed vLLM allows it, else reports identity only.
 - **`num_completions`/`best_of`**: reach the API but only `completions[0]` is scored. `RunConfig.extra` is hashed but never read.
 - **`LexsiModel`** forwards only `temperature`/`max_tokens`.
 
 **Proxy metrics (names oversell them)**
-- `representation_skew` — measures demographic-representation balance, not bias (renamed from the old `bias_score` so the name no longer oversells it); use `bias_judge` for biased content.
+- `representation_skew` — measures demographic-representation balance, not bias; use `bias_judge` for biased content.
 - `win_rate` / `elo_score` / `preference_accuracy` — silently fall back to a token-overlap proxy without their `context` data; `elo_score` returns 0–2000, not 0–1.
 - `toxicity_score`/`hate_speech_score` with `use_model=False` — keyword blacklist.
 
@@ -1001,19 +1015,19 @@ A single list of everything flagged inline above, for a quick pre-demo scan. Non
 - `paired_bootstrap` significance is a conservative heuristic (can under-report significance for low-variance differences), not an exact permutation/sign test.
 - `CompareResult` runs an independent p-test per model pair with no multiple-comparisons correction; `winner()` ignores significance (picks the raw best mean).
 
-**bert_score** hits an upstream `bert_score`-vs-`transformers>=5` tokenizer incompatibility on its own — `BertScore.score()` works around it with a scoped monkeypatch clamping the affected tokenizer's `model_max_length` (see `docs/BUGS.md`); `cosine_similarity` was never affected.
+**bert_score** hits an upstream `bert_score`-vs-`transformers>=5` tokenizer incompatibility on its own — `BertScore.score()` works around it with a scoped monkeypatch clamping the affected tokenizer's `model_max_length`; `cosine_similarity` isn't affected.
 
 ---
 
-## 19. Appendix: glossary & file map
+## 19. Appendix: glossary and file map
 
 **Glossary.** *Spine* — the fixed Sample→Adapter→Model→Metric→RunResult pipeline. *Engine* — native (owned) vs lm-eval (delegated). *Adapter* — Sample→Request wire-format builder. *Scorer/Metric* — turns output into a `Score`. *Direction* — whether higher or lower is better. *Fingerprint* — sha256 provenance/cache key over the full `RunSpec`. *RunResult* — the uniform output object. *Prediction* — one per-sample record.
 
-**Repo map (this branch):**
+**Repo map:**
 
 | Path | What |
 |---|---|
-| `src/auditkit/api.py` | `evaluate` / `benchmark` / `generate` / `compare` |
+| `src/auditkit/api.py` | `evaluate` / `run_lmeval` / `generate` / `compare` / `evaluate_many` |
 | `src/auditkit/runner.py` | the Runner (5 stages, 3 execution paths, retry/timeout/concurrency) |
 | `src/auditkit/runspec.py` | `RunConfig`, `RunSpec`, `fingerprint()` |
 | `src/auditkit/sample.py`, `score.py`, `report.py`, `types.py` | the data model |
@@ -1022,7 +1036,10 @@ A single list of everything flagged inline above, for a quick pre-demo scan. Non
 | `src/auditkit/metric.py`, `metrics/` | built-ins + 11 metric families (68 registered metrics) |
 | `src/auditkit/lmeval_engine.py` | the lm-eval bridge |
 | `src/auditkit/comparison.py`, `diff.py`, `model_compare.py`, `_bootstrap.py`, `experiment.py` | comparison + significance + tracking |
-| `src/auditkit/redteam/` | probes + detectors + `RedTeamRunner` (future work — not part of the release) |
+| `src/auditkit/redteam/` | probes + detectors + `RedTeamRunner` |
+| `src/auditkit/agent_eval/` | end-to-end agent evaluation (episodes, importers, outcome oracles, rescoring) |
+| `src/auditkit/trace.py`, `bfcl.py` | tool-call parsing and matching; the BFCL loader |
+| `src/auditkit/compat.py` | `check_compat()` and the SGLang/vLLM launch advice |
 | `src/auditkit/scenarios/`, `loaders.py` | built-in datasets + loaders |
 | `src/auditkit/cache.py`, `cli.py`, `scorers.py`, `scoring.py`, `annotator.py` | cache, CLI, custom-scorer plumbing, annotators |
 | `examples/` | runnable scripts + the model-comparison notebook |

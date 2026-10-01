@@ -23,8 +23,6 @@ safety regressions flow into `RunResult` and `compare_models` for free.
 > traffic filtering on live requests is a serving-layer concern and out of
 > scope — see [Non-goals](#non-goals-and-limits).
 
-For the design rationale, see
-`docs/notes/guard-judge-plan.md` (internal). This guide covers *using* it.
 
 > **What's a "profile"?** Every guard model has its own way of being called —
 > a different input format and a different output to parse. A **profile** is the
@@ -493,5 +491,4 @@ GuardJudge(
 ```
 
 See also: [Metrics](metrics.md) · [Scorer Reference](scorers_reference.md) ·
-[Model Backends](model_backends.md) · design note
-`guard-judge-plan.md` (internal).
+[Model Backends](model_backends.md).

@@ -7,7 +7,7 @@ from importlib import metadata as _metadata
 try:
     __version__ = _metadata.version("auditkit")
 except _metadata.PackageNotFoundError:  # a source checkout that was never installed
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
 from .api import run_lmeval, compare, evaluate, evaluate_many, generate, scorer
 from .lexsi_login import lexsi_login

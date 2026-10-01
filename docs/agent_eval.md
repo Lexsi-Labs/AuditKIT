@@ -289,11 +289,6 @@ oracle = AssertionOracle("agent shipped the order", judge_model="openai:gpt-4o-m
 `AssertionOracle` is also buildable from a JSON spec
 (`{"type": "assertion", "criterion": ..., "judge_model": ..., "state_oracle": {...}}`).
 
-> Follow-up: `AgentEvalRunner` does not yet know the three new metric names, and
-> `runner._sample_for` drops `case.metadata`, so today these are reached via
-> direct metric calls / `ak.evaluate`. To wire them into the runner, add the
-> names to `runner._make_scorer`/`eligibility` and copy `case.metadata` into
-> `Sample.metadata` in `runner._sample_for`.
 
 ## Running an evaluation
 
@@ -302,7 +297,7 @@ Build an `AgentEvalSpec` and run it with `AgentEvalRunner().run(spec)`.
 `AgentEvalSpec` fields: `cases`, `mode` (`recorded` / `deployed` / `harness`),
 `agent` (deployed endpoint or harness policy), `agent_opts`, `episodes`
 (recorded), `import_path` (recorded, an AgentTune file), `trials`,
-`reset_confirmed` and `reliability_k` (A3 reliability), `scorers`, `judge` and
+`reset_confirmed` and `reliability_k` (reliability), `scorers`, `judge` and
 `name`. The scorers are diagnostic and default to
 `["tool_call_f1", "tool_call_validity", "task_completion"]`. The valid scorer
 names are:
@@ -454,7 +449,7 @@ from auditkit.agent_eval import rescore
 result = rescore(result.episodes, ["tool_call_f1", "trajectory_match"], cases=[case])
 ```
 
-## Reliability across trials (A3)
+## Reliability across trials
 
 `trials=N` runs each case `N` times and reports whether the agent succeeds
 *reliably*, not once by luck. In recorded mode the `N` episodes that match a
@@ -488,21 +483,19 @@ sets `k` (default: the decided-trial count). In the CLI config, set `trials`,
 
 **Independence is not assumed.** A `trials=N` config does not prove the trials
 were independent -- the endpoint may share a session or state across calls
-(AG-12). AuditKit claims independence only when the caller confirms a
+. AuditKit claims independence only when the caller confirms a
 reset-per-trial contract with `reset_confirmed=True`; otherwise the counts are
 shown but the reliability dict is flagged as not an independence-backed claim,
-and a duplicate `trial_id` across trials adds its own flag. The formal
-resettable-environment adapter (initial-state digests, verified reset) is the
-remaining piece and is still deferred.
+and a duplicate `trial_id` across trials adds its own flag.
 
-## Harness-owned loop (A4)
+## Harness-owned loop
 
 `mode="harness"` lets AuditKit -- not the agent -- own the turn loop. `spec.agent`
 is the **policy** model (any `Model`, or a spec string `AutoModel.resolve`
 accepts); `agent_opts` carries a caller-supplied tool double and the step bound:
 
 ```python
-class ShipEnv:                       # a resettable test double (AG-17)
+class ShipEnv:                       # a resettable test double
     def __init__(self): self.state = {}
     def __call__(self, name, arguments):
         if name == "ship": self.state["shipped"] = True; return "shipped ok"
@@ -534,7 +527,7 @@ as `stop_reason="no_tool_env"` when no double is supplied). A true multi-step
 server loop needs an endpoint that returns one assistant step and accepts
 intermediate tool results -- beyond the current single-shot `agent:` contract.
 
-## AgentTune sidecar export (A5)
+## AgentTune sidecar export
 
 `write_sidecar(result, path)` emits a compact, strict-JSON JSONL sidecar -- one
 record per case keyed by `source_id` (falling back to `case_id`) -- carrying the
@@ -551,13 +544,10 @@ write_sidecar(result, "agent-eval-sidecar.jsonl")
 records = read_sidecar("agent-eval-sidecar.jsonl")
 ```
 
-Writing these records *back into* AgentTune training data, and a `Project` intake
-that reconstructs episodes from a Project on disk, both need an AgentTune-side
-serializer that does not exist at the pinned mirror commit (its only on-disk
-output is the lossy heal-audit JSONL, which the importers refuse). That half, and
-a side-by-side AuditKit/AgentTune diagnostic comparison, stay deferred.
+The sidecar is export-only: AuditKIT doesn't write records back into AgentTune
+training data or read an AgentTune `Project` from disk.
 
-## Judge/oracle disagreement (AG-05)
+## Judge/oracle disagreement
 
 A verified oracle always wins the headline; when a diagnostic judge or an
 imported source verdict *disagrees* with a decided oracle, the disagreement is
@@ -575,7 +565,7 @@ result.disagreements(min_rate=0.5)   # cases where a majority of trials disagree
 
 `result.disagreements(min_rate=)` is the configurable filter: over repeated
 trials the `rate` is the fraction of trials that disagreed. A single trial has
-rate `1.0`. Voting across *multiple independent judges* is a seam, not built.
+rate `1.0`. There's no voting across several judges.
 `source_verdict` is populated only when an imported report row carries `passed`;
 AgentTune's `Report.save` at the pinned commit does not write it, so in practice
 `source_vs_oracle` fires only for sources that do.
@@ -654,63 +644,18 @@ to the right command:
 cannot be rebuilt from that JSON, so its case falls back to the judge or to
 `unknown` on replay.
 
-## What is deferred
+## Limitations
 
-This release ships slices A1-A4 and the achievable part of A5 of the
-AgentTune bridge PRD (`docs/notes/agent-evals-agenttune-prd.md`, internal).
+- **Trial independence is asserted, not verified.** `trials=N` reruns each case
+  and computes reliability, but AuditKIT doesn't reset the environment itself:
+  pass `reset_confirmed=True` only when your setup really starts each trial fresh.
+  Without it, the counts are shown but flagged.
+- **One judge per check.** A judge or source verdict that disagrees with a decided
+  oracle is recorded on `row.disagreement`; there's no voting across several
+  judges. `source_vs_oracle` needs report rows that carry `passed`.
+- **Memory operations** are kept as raw events and aren't scored.
+- **`AgentCase.environment`** is accepted and serialized, but the runner doesn't
+  use it.
+- **The `inferred` coverage marker** is emitted only for a call/result pairing
+  taken from a step observation (trace rows and `EventLog`s with one call per turn).
 
-Shipped:
-
-- **A1.** The versioned case/episode/event records, importers for every
-  `load_agenttune` shape plus OpenAI messages, `Sample` traces and AgentTune
-  `EventLog` objects, loss-aware coverage, offline rescore, JSON export and the
-  `import-agenttune --inspect` CLI.
-- **A2.** State, artifact, answer and custom-predicate oracles with a judge
-  fallback, deployed capture through `agent:` (output, trace, contexts,
-  errors, latency, usage, and `final_state`/`artifacts` when the reply
-  carries them), the summary and per-case drilldown, the `agent eval` and
-  `agent rescore` CLI, and opt-in export redaction (`--redact-key`,
-  `--redact-env`, `redact()`).
-- **A3, reliability and trials.** `trials=N` runs each case N times and reports
-  pass@k / all-k / variance / consistency and a stable majority aggregate over
-  decided trials ([Reliability across trials](#reliability-across-trials-a3)).
-  Independence is claimed only with `reset_confirmed=True`; otherwise counts are
-  shown but flagged.
-- **A4, harness-owned loop.** `mode="harness"` drives a bounded tool loop that
-  AuditKit owns, with a caller-supplied tool double and step budget, real state
-  verification, and call/turn ids per step
-  ([Harness-owned loop](#harness-owned-loop-a4)).
-- **A5, sidecar export.** `write_sidecar` / `read_sidecar` emit and round-trip
-  an AgentTune-compatible JSONL sidecar keyed by `source_id`, read-only and
-  without importing AgentTune ([AgentTune sidecar export](#agenttune-sidecar-export-a5)).
-- **AG-05, disagreement filter.** A judge or source verdict that disagrees with
-  a decided oracle is recorded on `row.disagreement` (the verified oracle still
-  wins) and filtered by `result.disagreements(min_rate=)`
-  ([Judge/oracle disagreement](#judgeoracle-disagreement-ag-05)).
-- **Automatic secret detection.** `--redact-auto` / `redact(auto=True)` and
-  `detect_secrets()` conservatively flag and redact common secrets in a
-  shareable export, on top of the configured keys/strings (see the CLI section).
-
-Still deferred:
-
-- **A3 reset/snapshot protocol.** Trials run and reliability is computed, but
-  the formal resettable-environment adapter (initial-state digests, an AuditKit-
-  verified reset) is not built; independence is asserted by the caller
-  (`reset_confirmed`), not proven by AuditKit.
-- **A5, rest of the AgentTune bridge.** A `Project` intake, writing the sidecar
-  back into AgentTune training data, and a side-by-side comparison with
-  AgentTune's own diagnostics all need an AgentTune-side serializer that does not
-  exist at the pinned mirror commit. Memory operations are kept as raw events and
-  are not scored.
-- **AG-05, multiple judges.** The filter covers judge-vs-oracle and
-  source-vs-oracle over trials; voting across multiple independent judges is a
-  seam, not built. `source_verdict` is set only when a report row carries
-  `passed`; AgentTune's `Report.save` at the pinned commit does not write it, so
-  in practice `source_vs_oracle` fires only for sources that do.
-
-As-built notes against the PRD: the `inferred` coverage marker is emitted only
-for a call/result pairing taken from a step observation (trace rows and
-`EventLog`s with one call per turn). `AgentEpisode.trial_id` is now set by the
-runner in deployed/harness trials and read by the reliability aggregate;
-`AgentCase.environment` is accepted and serialized but not yet used by the
-runner (it belongs with the deferred reset/snapshot protocol).

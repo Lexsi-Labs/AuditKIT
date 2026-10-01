@@ -13,7 +13,7 @@ config = RunConfig(
     stop_sequences=["\n"],
     seed=42,
     timeout=30,
-    concurrency=1,  # default; raise for parallel requests across a chunked batch
+    concurrency=1,  # default; raise for parallel requests (threadsafe models only)
     limit=100,
     trials=3,
     num_fewshot=5,
@@ -28,6 +28,8 @@ config = RunConfig(
 
 result = ak.evaluate(dataset, model="hf:gpt2", config=config)
 ```
+
+Every `RunConfig` field, with its default, is listed in [Data model → RunConfig](architecture/data-model.md#runconfig).
 
 ## Split Strategies
 

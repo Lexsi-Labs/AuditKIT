@@ -13,6 +13,12 @@
         - run_lmeval
         - scorer
         - load_csv
+        - load_jsonl
+        - load_dataset
+        - load_hf
+        - load_croissant
+        - load_agenttune
+        - load_bfcl
         - RunConfig
         - RunResult
         - Report
@@ -31,6 +37,9 @@
         - CompareResult
         - ScoreGate
         - WeightedSum
+        - ToolCallAdapter
+        - check_compat
+        - configure_logging
 
 ## Model Backends
 

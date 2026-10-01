@@ -49,22 +49,32 @@ auditkit eval --engine lmeval --tasks mmlu,gsm8k --model hf:gpt2
 | `--csv` | Path to CSV dataset |
 | `--input-col` | CSV input column (default: input) |
 | `--target-col` | CSV target column (default: target) |
-| `--dataset` | Built-in dataset (mmlu, gsm8k, arc) |
-| `--subject` | MMLU subject |
+| `--dataset` | Built-in scenario: `mmlu`, `gsm8k`, `arc`, `hellaswag`, `truthfulqa`, `humaneval` |
+| `--subject` | MMLU subject (with `--dataset mmlu`) |
 | `--output` / `-o` | Output file path |
 | `--format` | json, csv, or md |
 | `--experiment` | Experiment name |
 | `--tag` | Tag (can repeat) |
 | `--temperature` | Generation temperature |
 | `--max-tokens` | Max tokens |
+| `--top-p` | Nucleus sampling top-p |
+| `--stop` | Stop sequences |
 | `--seed` | Random seed |
+| `--trials` | Number of trials |
+| `--num-fewshot` | Few-shot examples count |
 | `--concurrency` | Max concurrent requests |
 | `--limit` | Max samples |
 | `--adapter` | Input adapter (generation, chat, instruction, fewshot, rag, template) |
-| `--system-prompt` | System prompt (for chat adapter) |
-| `--split-strategy` | Dataset split strategy |
+| `--system-prompt` | System prompt (for the chat adapter) |
+| `--instruction` | Instruction prefix (for the instruction adapter; default `Answer the following question:`) |
+| `--template` | Template string (for the template adapter; default `{input}`) |
+| `--split-strategy` | Dataset split strategy: `sequential` or `random` |
+| `--train-ratio` / `--val-ratio` / `--test-ratio` | Split ratios (defaults `0.0` / `0.0` / `1.0`) |
+| `--split-seed` | Split random seed |
 | `--mlflow-uri` | MLflow tracking URI |
 | `--engine` | `native` (default) or `lmeval` — runs the lm-evaluation-harness engine instead |
+| `--gpu-memory-utilization` | vLLM GPU memory fraction (for `vllm:` models) |
+| `--verbose` | Verbose output |
 | `--tasks` | lm-eval task name(s), comma-separated (needs `--engine lmeval`) |
 
 ## YAML Config File

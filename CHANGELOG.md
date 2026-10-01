@@ -11,19 +11,18 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   SGLang), e.g. `{"enable_thinking": False}` for Qwen3. A request's own values win.
   Part of the run fingerprint.
 - `api:` says when a server may have ignored `chat_template_kwargs` or
-  `parallel_tool_calls` (#43): `RunResult.metadata["unverified_request_fields"]`, a
+  `parallel_tool_calls`: `RunResult.metadata["unverified_request_fields"]`, a
   `summary()` line, one warning, and `cap_unverified` on the parallel scores. The
   server is probed once (`GET /models` `owned_by`) and recorded in
   `metadata["api_server"]`; only `APIModel(server="sglang"|"vllm")` clears the note.
   New `Model.run_notes()` hook for backend facts about a run.
-- `ak.load_bfcl()` and `ak.bfcl_arg_match` (#45 phase 2): BFCL v3's 11 single-turn
+- `ak.load_bfcl()` and `ak.bfcl_arg_match`: BFCL v3's 11 single-turn
   categories plus the two irrelevance ones, read from the Hub files (JSON Lines). The
   accepted-value lists stay on the reference, and `bfcl_arg_match` compares against
   them as BFCL's AST checker does. It handles a drifted answer id, flags unsatisfiable
   answers, passes system prompts through, converts BFCL types to JSON Schema, and has an
   optional `dots_to_underscores`. Multi-turn is refused: its answers are call strings.
-  Counts at the pinned revision are in `docs/notes/bfcl-possible-answer-counts.md`.
-- `RunResult.route_distribution()` and a `summary()` line (#45): for samples whose
+- `RunResult.route_distribution()` and a `summary()` line: for samples whose
   reference names several routes (`any_of`), which route each took and which rule
   decided (`f1`, `recall`, `turn_structure`, `call_order`, `listed_order`), with the
   ties broken by listed order counted. Information only: it never reaches the stats.
@@ -41,7 +40,7 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   layers' own `config.sliding_window`. Rule (m) does the same for SGLang's generic
   Transformers backend (Aya Vision: Triton decode crashed with `kv_indptr=None`),
   returning a window only for models with sliding-window layers.
-- The `vllm:` column covers all nine Cohere models (#52): the full matrix ran on an RTX PRO 6000
+- The `vllm:` column covers all nine Cohere models: the full matrix ran on an RTX PRO 6000
   (CUDA 12.8) with the FlashInfer sampler fix, every check passing. Aya Expanse 32B and Aya
   Vision 32B score 5/5; the other seven match their A100 scores exactly.
 - `vllm:` on SM 12.x GPUs (RTX PRO 6000, RTX 50-series) with a CUDA toolkit older than 12.9:
@@ -61,18 +60,18 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   32B: all nine Cohere models now run on SGLang 0.5.20. `colab_sglang_32b_north.ipynb`
   measures the two.
 - `docs/model_backends.md`: the `vllm:` column is measured for the seven Cohere models that fit
-  a 40 GB A100 (#52; vLLM 0.30.0): Tiny Aya 4/5 each, North 5/5, Aya Expanse 8B and Aya Vision
+  a 40 GB A100 (vLLM 0.30.0): Tiny Aya 4/5 each, North 5/5, Aya Expanse 8B and Aya Vision
   8B 5/5, image checks passing. vLLM falls back to its Transformers backend for Aya Vision on
   its own.
   "Aya Vision loads on neither vLLM nor SGLang" is corrected: it loads on both, non-natively.
-  The images section and README now say `api:` sends images (since #50) and the offline
-  `vllm:` backend still drops them; the install trap names #51's cause (a stale auditkit 1.0.0).
+  The images section and README now say `api:` sends images and the offline
+  `vllm:` backend still drops them; the install trap names the cause (a stale auditkit 1.0.0).
 - `check_compat()` rule (j): with transformers >= 5.15 in the SGLang env (needed for North
   Micro Vision), SGLang's Transformers backend rejects the `embedding_rowwise` TP style
   that transformers adds for tied embeddings, so North still fails to load. The entry is
   inert there (only `nn.Linear` reads the plan); `--patch-sglang` maps it to `replicate`.
 - transformers' "does not recognize this architecture" is rewritten by `hf:` and `vllm:` to
-  name the model type, the installed transformers and the version it needs (#51):
+  name the model type, the installed transformers and the version it needs:
   "'…North-Micro-Vision-Instruct' is a 'cohere_compass' model, and the installed
   transformers 4.57.6 does not know that architecture: it needs transformers>=5.15. The
   checkpoint is fine." The original read like a broken checkpoint. The real cause was a
@@ -108,14 +107,26 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- `auditkit eval --config FILE` accepts `model:` from the config file. `--model` was
+  `required=True` on the parser, so argparse rejected the command with "the following
+  arguments are required: --model" before the YAML was read, even though `docs/cli.md`
+  documents exactly that invocation. It is now optional on the parser and checked after the
+  config merge; a genuinely missing model still exits 2, naming both ways to supply it.
 - The six built-in benchmark scenarios load again. They used bare Hub ids (`mmlu`, `arc` and
   `truthfulqa` no longer exist; the others failed with `HfUriError`) and now use `cais/mmlu`,
   `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`, `truthfulqa/truthful_qa` and
   `openai/openai_humaneval`. HumanEval also referenced a `TaskKind.CODE` that doesn't exist; it loads
   as a generative task (no code-execution metric, so use `ak.run_lmeval("humaneval", ...)` for pass@k).
+- Docs: the scorer reference and metrics overview cover all 68 registered metrics, and the
+  data model documents `Sample.images`, `RunConfig.seed`/`track_performance`/
+  `chat_template_kwargs` and `RunResult.unscored`/`metadata`; every `eval` flag is in
+  `docs/cli.md`; the extras table matches `pyproject.toml`; the claimed-but-unimplemented
+  features are gone, as are the internal pages that were still being published to the site.
+- The `dev` extra declares `pyyaml`, which the `--config` tests need. PyYAML remains an
+  optional runtime dependency; the core install is still dependency-free.
 - Docs: no METEOR (never implemented) and no "Rich HTML reports" tick (not implemented); current
   Claude model ids instead of retired Claude 3 ones; "source-available", not "open-source"; no
-  "hackathon" wording, links to a private repository or personal-repo issue numbers in public pages;
+  internal wording, links to a private repository or private issue numbers in public pages;
   GUIDE's table of contents, catalog heading and version line match its sections and 1.2.0.
 
 ### Changed
@@ -125,19 +136,19 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   "triangle". **Scores change.** `F1Score(normalize=False)` keeps the old raw
   whitespace split; the setting is part of the run fingerprint.
 - `[lmeval]` extra: `accelerate>=1.0`.
-- **`abstention`: `short_reply_markers` now takes regular expressions** (#35). The
+- **`abstention`: `short_reply_markers` now takes regular expressions**. The
   defaults require refusal-shaped wording ("insufficient information to/for/in/about…",
   "no relevant information/documents/context…"), so a short real answer such as
   "Yes, there is no relevant fee for domestic wires." is no longer a refusal, and a
   first sentence opening with "yes" never is. Bare phrases passed to
   `Abstention(short_reply_markers=...)` still work (a plain phrase is a valid regex);
   a phrase containing regex metacharacters must be escaped (`re.escape`).
-- **An unnamed recorded tool call is unscored, not a measured 0.0** (#36). An EventLog
+- **An unnamed recorded tool call is unscored, not a measured 0.0**. An EventLog
   or AgentTune trajectory action that carries call arguments (`arguments`,
   `parameters`, `args`, `input`, `query`) but no tool name leaves
   `tool_call_names` unavailable, so `tool_call_f1` / `trajectory_match` /
   `parallel_tool_calls` are skipped, and `rescore` reports `trace.tool_call_names`.
-- **A trajectory whose actions are all empty is a measured zero calls** (#37): it
+- **A trajectory whose actions are all empty is a measured zero calls**: it
   scores (0.0 against expected calls, 1.0 on a no-call case) instead of being dropped.
 - Docs: SGLang needs Python 3.10-3.12 (a uv 3.12 venv on 3.13 hosts); example 13
   builds its SGLang venv that way. `docs/VLLM_KNOWN_ISSUES.md` covers the Colab
@@ -145,9 +156,8 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ## [1.2.0] - 2026-09-28
 
-Lexsi stack interop for the hackathon tracks (CuratorKIT, AlignTune, SafeTune,
-CircuitKIT and AgentTune outputs evaluate with no glue code), plus the
-hackathon readiness fixes for the permitted Cohere models.
+Lexsi stack interop (CuratorKIT, AlignTune, SafeTune, CircuitKIT and AgentTune
+outputs evaluate with no glue code), plus fixes for the Cohere models.
 
 ### Added
 
@@ -166,7 +176,7 @@ hackathon readiness fixes for the permitted Cohere models.
 - **Native tool calling on `hf:`.** Tool schemas go to the chat template
   (`apply_chat_template(tools=...)`), so `ToolCallAdapter()` works on local
   models whose template renders tools; a template without tool support raises
-  `CapabilityError`. None of the Cohere hackathon models' templates (Tiny Aya,
+  `CapabilityError`. None of the Cohere models' templates (Tiny Aya,
   Aya Expanse, Aya Vision, North) render tools: use
   `ToolCallAdapter(mode="prompt")` with them.
 - **Cohere tool-call format.** The tool-call parser reads Command R7B
@@ -189,11 +199,11 @@ hackathon readiness fixes for the permitted Cohere models.
 ### Fixed
 
 - A JSON-string reference (a CSV cell, a JSONL field) now fingerprints like its
-  decoded form (#44), in the dataset fingerprint and in `AgentCase.digest()`, so the
+  decoded form, in the dataset fingerprint and in `AgentCase.digest()`, so the
   same dataset read from a file reuses the cached run. Dict and list references keep
   their digests. `auditkit agent --dry-run` shows `refs=yes` for an explicit `[]`
   reference ("expect no call").
-- A bare prefix is now decided per backend (#43). `api:`, `hf:` and `vllm:` raise
+- A bare prefix is now decided per backend. `api:`, `hf:` and `vllm:` raise
   "empty model spec" (`api:` used to send `{"model": null}`). The hosted prefixes
   (`openai:`, `anthropic:`, `groq:`, `openrouter:`, `lexsi:`, `litellm:`) fall back
   to their backend's default model, and `agent:` still takes its URL from `url=`.

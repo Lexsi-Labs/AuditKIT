@@ -48,7 +48,7 @@ class Sample:
     # "tool_calls": [[...turns...]], "retrieved_contexts": [...]}`` (any subset).
     actual_trace: Optional[dict[str, Any]] = None
     # Images for vision models (PIL images, paths or URLs), sent alongside
-    # ``input`` by backends that support them (``hf:`` on a vision model).
+    # ``input`` by backends that support them (``hf:`` on a vision model, ``api:`` in chat mode).
     images: Optional[list[Any]] = None
 
     @property

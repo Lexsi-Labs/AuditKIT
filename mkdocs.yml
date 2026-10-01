@@ -101,7 +101,6 @@ nav:
   - Home: index.md
   - Getting Started:
       - Overview: getting_started.md
-      - Release Notes: RELEASE.md
   - Guides:
       - CLI & YAML: cli.md
       - Metrics: metrics.md
@@ -112,6 +111,7 @@ nav:
       - Encoder Judge Prebuilts (Factuality/Sentiment): encoder_judge_prebuilts.md
       - Guard Models (Safety): guard_models.md
       - Model Backends: model_backends.md
+      - Hosted Endpoints (HF/TGI): HF_ENDPOINT.md
       - Agents & RAG: agents_and_rag.md
       - RAG Stress (Model Risk): rag_stress.md
       - Agent Evaluation: agent_eval.md
@@ -138,10 +138,10 @@ nav:
       - Platform Integration: about/platform-integration.md
   - Reference:
       - API: api.md
+      - Complete Technical Guide: GUIDE.md
       - Development: development.md
   - Troubleshooting:
       - Known Issues: known_issues.md
-      - Bugs: BUGS.md
       - vLLM Known Issues: VLLM_KNOWN_ISSUES.md
       - SGLang: SGLANG.md
   - Community:
@@ -150,10 +150,6 @@ nav:
       - Changelog: community/changelog.md
       - Contributing: community/contributing.md
       - Glossary: about/glossary.md
-  # Internal-only: removed from the public site in AuditKIT 242e2df, kept here.
-  - About (internal):
-      - Product / PRD: about/product.md
-      - Landscape Comparison: COMPARISON.md
 
 markdown_extensions:
   - admonition

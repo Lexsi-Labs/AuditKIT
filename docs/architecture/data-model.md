@@ -36,6 +36,11 @@ class Sample:
     metadata: dict[str, Any] = field(default_factory=dict)
     tags: list[str] = field(default_factory=list)
     actual_output: Optional[str] = None
+    tools: Optional[list[dict[str, Any]]] = None
+    expected_tool_calls: Optional[Union[list[Any], dict[str, Any], str]] = None
+    reference_contexts: Optional[Union[list[str], dict[str, float]]] = None
+    actual_trace: Optional[dict[str, Any]] = None
+    images: Optional[list[Any]] = None
 ```
 
 | Field | Type | Description |
@@ -44,12 +49,17 @@ class Sample:
 | `target` | `Optional[str \| int]` | The reference answer (gold). When present the sample is *golden* (`is_golden == True`). |
 | `id` | `Optional[str]` | Unique identifier for the sample. Auto-assigned from index if `None`. |
 | `task` | `str` | Task name or label (e.g. `"mmlu:stem"`). Used for grouping in reports. |
-| `kind` | `TaskKind` | The kind of evaluation task. One of `mcq`, `generative`, `rag`, `security`, `performance`, `language_modeling`. |
+| `kind` | `TaskKind` | The kind of evaluation task. One of `mcq`, `generative`, `rag`, `agent`, `security`, `performance`, `language_modeling`. |
 | `choices` | `Optional[list[str]]` | Candidate answers for multiple-choice or loglikelihood tasks. |
 | `retrieval_context` | `Optional[list[str]]` | Retrieved document chunks for RAG evaluation. |
 | `metadata` | `dict[str, Any]` | Arbitrary key-value metadata attached to the sample. |
 | `tags` | `list[str]` | Tags for filtering and categorising samples. |
 | `actual_output` | `Optional[str]` | The output produced by the model during a previous run. Used when re-scoring without re-running. |
+| `tools` | `Optional[list[dict]]` | Tool schemas offered to the model (`ToolCallAdapter`). |
+| `expected_tool_calls` | `Optional[list \| dict \| str]` | Expected tool calls, read by the agent metrics. |
+| `reference_contexts` | `Optional[list[str] \| dict[str, float]]` | Gold contexts (chunk ids or texts) for ranked retrieval metrics; a `{id: grade}` dict gives graded relevance for nDCG. |
+| `actual_trace` | `Optional[dict]` | A recorded agent/RAG run to score offline: `messages`, `tool_calls`, `retrieved_contexts` (any subset). |
+| `images` | `Optional[list]` | Images for vision models (PIL images, paths or URLs), sent by `hf:` and by `api:` in chat mode. |
 
 **Properties:**
 
@@ -173,12 +183,14 @@ class RunResult:
     config: Any = None
     model_spec: Any = None
     errors: list[dict] = field(default_factory=list)
+    unscored: dict[str, dict[str, int]] = field(default_factory=dict)
     failed_count: int = 0
     experiment_name: str | None = None
     tags: list[str] = field(default_factory=list)
     perf: dict[str, Any] = field(default_factory=dict)
     model_size: dict[str, Any] = field(default_factory=dict)
     token_usage: dict[str, int] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 ```
 
 | Field | Type | Description |
@@ -191,12 +203,14 @@ class RunResult:
 | `config` | `Any` (RunConfig) | The configuration used for this run. |
 | `model_spec` | `Any` | String or object describing the model. |
 | `errors` | `list[dict]` | Errors encountered during the run, each with `sample_id`, `metric`, and `error`. |
+| `unscored` | `dict[str, dict[str, int]]` | Per metric, results left out of the aggregate because they are not measurements: `{metric: {"unknown": n, "not_tested": m}}`. |
 | `failed_count` | `int` | Number of samples that failed during evaluation. |
 | `experiment_name` | `str \| None` | Optional experiment name for grouping runs. |
 | `tags` | `list[str]` | Tags for categorising the run. |
 | `perf` | `dict[str, Any]` | Measured latency/throughput (incl. real token throughput), timed from the run's own model calls. `{}` on the `reads_actual_output` path or a zero-request run. |
 | `model_size` | `dict[str, Any]` | Real introspected parameter count/size for local backends; `{"is_local": False, "model_name": ...}` for hosted APIs (never a guess). |
 | `token_usage` | `dict[str, int]` | Real, provider-reported `prompt_tokens`/`completion_tokens`/`total_tokens` — zero for backends that don't report usage. The only input `.cost()` needs. |
+| `metadata` | `dict[str, Any]` | Run-level facts: input lineage (`inputs`, written out as `lexsi_provenance.json` by `save()`/`push_to_hub()`) and backend notes such as `api_server` and `unverified_request_fields`. |
 
 **Methods:**
 
@@ -219,7 +233,7 @@ The knobs that shape a run. All are optional, with sensible defaults.
 class RunConfig:
     num_fewshot: Union[int, None] = None
     limit: Union[int, None] = None
-    seed: int = 0
+    seed: int | None = None
     trials: int = 1
     batch_size: Union[str, int] = "auto"
     concurrency: int = 1
@@ -238,6 +252,8 @@ class RunConfig:
     retry_delay: float = 1.0
     judge_model: Union[str, None] = None
     judge_prompt_version: Union[str, None] = None
+    track_performance: bool = True
+    chat_template_kwargs: dict[str, Any] | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 ```
 
@@ -245,7 +261,7 @@ class RunConfig:
 |---|---|---|
 | `num_fewshot` | `int \| None` | Number of few-shot examples. |
 | `limit` | `int \| None` | Limit on the number of samples evaluated. |
-| `seed` | `int` | Random seed (default `0`). |
+| `seed` | `int \| None` | Random seed (default `None`). |
 | `trials` | `int` | Number of repeated trials per sample (default `1`). |
 | `batch_size` | `str \| int` | Batch size for model inference (default `"auto"`). |
 | `concurrency` | `int` | Max concurrent requests (default `1` -- only takes the chunked/parallel path above `1`, and only if the model backend declares `threadsafe = True`). |
@@ -264,7 +280,9 @@ class RunConfig:
 | `retry_delay` | `float` | Base retry delay in seconds (default `1.0`, doubles each attempt). |
 | `judge_model` | `str \| None` | Model used for LLM-as-judge scoring. |
 | `judge_prompt_version` | `str \| None` | Version of the judge prompt template. |
-| `extra` | `dict[str, Any]` | Catch-all for backend-specific parameters. |
+| `track_performance` | `bool` | Record latency, throughput, token usage and model size in `RunResult.perf` (default `True`). |
+| `chat_template_kwargs` | `dict \| None` | Passed to the chat template on `hf:`/`vllm:` and sent to `api:` servers; a request's own values win. |
+| `extra` | `dict[str, Any]` | Hashed into the run fingerprint; no built-in component reads it. |
 
 ## SplitConfig
 
