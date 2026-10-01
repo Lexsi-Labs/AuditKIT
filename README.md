@@ -40,7 +40,7 @@
 | **Models** | 10 backends: OpenAI, Anthropic, HuggingFace, Lexsi, vLLM, LiteLLM, API, Groq, OpenRouter, Agent (HTTP endpoint) — all resolved via `AutoModel.resolve()`. Any `list[str] → list[str]` callable also works. |
 | **Zero deps** | Core runs on stdlib. Backends and heavy metrics are optional extras (`pip install auditkit[openai]`). |
 | **Fingerprints** | Every run gets a stable sha256 — results are cacheable, comparable, and reproducible by construction. |
-| **Status** | ~3,000 tests, v1.2.0, LSAL-1.2 license (source-available, noncommercial). 11 metric families, 6 CLI subcommands, YAML config, MKDocs site. |
+| **Status** | ~3,000 tests, v1.1.2, LSAL-1.2 license (source-available, noncommercial). 11 metric families, 6 CLI subcommands, YAML config, MKDocs site. |
 
 ---
 
@@ -288,7 +288,7 @@ If you use AuditKIT in research, please cite it:
             Kadiyala, Ram Mohan Rao and Gosalia, Hem and Sankarapu, Vinay Kumar and
             Seth, Pratinav},
   year   = {2026},
-  version = {1.2.0},
+  version = {1.1.2},
   url    = {https://github.com/Lexsi-Labs/AuditKIT}
 }
 ```

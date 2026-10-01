@@ -20,7 +20,7 @@ evaluation — zero required deps.
 [View on GitHub](https://github.com/Lexsi-Labs/AuditKIT){ .md-button }
 
 <p class="ak-chips">
-<span>v1.2.0</span>
+<span>v1.1.2</span>
 <span>LSAL v1.2</span>
 <span>Python 3.10+</span>
 <span>zero required deps</span>
@@ -124,7 +124,7 @@ If you use AuditKIT in research, please cite it:
             Kadiyala, Ram Mohan Rao and Gosalia, Hem and Sankarapu, Vinay Kumar and
             Seth, Pratinav},
   year   = {2026},
-  version = {1.2.0},
+  version = {1.1.2},
   url    = {https://github.com/Lexsi-Labs/AuditKIT}
 }
 ```
