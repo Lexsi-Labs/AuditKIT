@@ -113,7 +113,7 @@
 - Docs: no METEOR (never implemented) and no "Rich HTML reports" tick (not implemented); current
   Claude model ids instead of retired Claude 3 ones; "source-available", not "open-source"; no
   internal wording, links to a private repository or private issue numbers in public pages;
-  GUIDE's table of contents, catalog heading and version line match its sections and 1.2.0.
+  GUIDE's table of contents, catalog heading and version line match its sections and 1.1.2.
 
 ### Changed
 
@@ -140,7 +140,7 @@
   builds its SGLang venv that way. `docs/VLLM_KNOWN_ISSUES.md` covers the Colab
   torchaudio mismatch after `[vllm]`.
 
-## 1.2.0
+## 1.1.2 — 2026-10-02
 
 Lexsi stack interop (CuratorKIT, AlignTune, SafeTune, CircuitKIT and AgentTune
 outputs evaluate with no glue code), plus fixes for the Cohere models.

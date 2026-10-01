@@ -1,12 +1,12 @@
 <!--
   AuditKIT — Complete Technical Guide
-  Written against the AuditKit 1.0.0 source; counts, red-teaming, scenarios and the CLI re-checked against 1.2.0.
+  Written against the AuditKit 1.0.0 source; counts, red-teaming, scenarios and the CLI re-checked against 1.1.2.
   Renders on GitHub (mermaid + tables) and as a hosted page.
 -->
 
 # AuditKIT — Complete Technical Guide
 
-> **Version:** 1.2.0 (written for 1.0.0; counts, red-teaming, scenarios and the CLI re-checked for 1.2.0) · **Python:** ≥ 3.10 · **License:** LSAL v1.2
+> **Version:** 1.1.2 (written for 1.0.0; counts, red-teaming, scenarios and the CLI re-checked for 1.1.2) · **Python:** ≥ 3.10 · **License:** LSAL v1.2
 >
 > This guide is written against the code. Limitations are stated inline, in context, wherever they matter.
 
@@ -1061,4 +1061,4 @@ flowchart TD
 
 ---
 
-*Written against AuditKit 1.0.0, with counts, red-teaming, scenarios and the CLI re-checked against 1.2.0. If a detail here ever disagrees with the code, the code wins — regenerate this guide.*
+*Written against AuditKit 1.0.0, with counts, red-teaming, scenarios and the CLI re-checked against 1.1.2. If a detail here ever disagrees with the code, the code wins — regenerate this guide.*
