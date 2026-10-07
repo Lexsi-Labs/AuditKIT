@@ -75,4 +75,5 @@ Yes. The CLI returns exit codes and supports JSON output for downstream processi
 
 ## Where can I report issues?
 
-On the [GitHub issue tracker](https://github.com/Lexsi-Labs/AuditKIT/issues).
+On the [GitHub issue tracker](https://github.com/Lexsi-Labs/AuditKIT/issues). For questions and
+general discussion, join the [Lexsi Labs Discord](https://discord.gg/MhVUGVYE8q).

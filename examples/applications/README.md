@@ -1,7 +1,7 @@
 # Applications
 
 Real-world scenarios built on AuditKit — not feature tours (see
-[`examples/`](../examples/) for those), but a specific question answered
+[`examples/`](../) for those), but a specific question answered
 end to end with real data, real models, and a real verdict.
 
 All 7 notebooks are capped at 20 real samples (01/03 currently run at a

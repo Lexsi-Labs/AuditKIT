@@ -18,6 +18,7 @@
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+"></a>
   <a href="https://github.com/Lexsi-Labs/AuditKIT/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-LSAL--1.2-lightgrey" alt="License: LSAL-1.2 (source-available, noncommercial)"></a>
   <a href="https://auditkit.lexsi.ai/"><img src="https://img.shields.io/badge/docs-auditkit.lexsi.ai-4c6ef5" alt="Documentation"></a>
+  <a href="https://discord.gg/MhVUGVYE8q"><img src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
   <a href="https://github.com/Lexsi-Labs/AuditKIT/actions"><img src="https://img.shields.io/badge/tests-2.8k%20passing-brightgreen" alt="Tests: 2846 passing, 141 skipped"></a>
 </p>
 
@@ -306,4 +307,5 @@ This project is released under the [Lexsi Labs Source Available License (LSAL) v
 ## Join Community / Contribute
 
 - Issues and discussions are welcomed on the [GitHub issue tracker](https://github.com/Lexsi-Labs/AuditKIT/issues).
+- Questions and chat: join the [Lexsi Labs Discord](https://discord.gg/MhVUGVYE8q).
 - See [Contributing](https://github.com/Lexsi-Labs/AuditKIT/blob/main/docs/community/contributing.md) for the development setup, code standards and the pull request process.
