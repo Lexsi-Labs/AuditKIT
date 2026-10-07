@@ -6,6 +6,9 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Added
 
+- Discord link (`https://discord.gg/MhVUGVYE8q`, Lexsi Labs) in the docs footer, the README badges and
+  community section, the FAQ, and the PyPI project URLs, which now also list the docs site, the issue
+  tracker and `Homepage` pointing at `auditkit.lexsi.ai`.
 - `RunConfig.chat_template_kwargs`: passed to the chat template of every request on
   `hf:` and `vllm:`, and sent as `chat_template_kwargs` to `api:` servers (vLLM /
   SGLang), e.g. `{"enable_thinking": False}` for Qwen3. A request's own values win.
@@ -107,6 +110,8 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- Broken relative link in `examples/applications/README.md`: `../examples/` resolved to
+  `examples/examples/`; it now points at `../`.
 - `auditkit eval --config FILE` accepts `model:` from the config file. `--model` was
   `required=True` on the parser, so argparse rejected the command with "the following
   arguments are required: --model" before the YAML was read, even though `docs/cli.md`

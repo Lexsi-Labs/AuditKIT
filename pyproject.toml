@@ -62,8 +62,11 @@ all         = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Lexsi-Labs/AuditKIT"
+Homepage = "https://auditkit.lexsi.ai/"
+Documentation = "https://auditkit.lexsi.ai/"
 Repository = "https://github.com/Lexsi-Labs/AuditKIT"
+Issues = "https://github.com/Lexsi-Labs/AuditKIT/issues"
+Discord = "https://discord.gg/MhVUGVYE8q"
 
 [project.scripts]
 auditkit = "auditkit.cli:main"
