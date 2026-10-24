@@ -61,9 +61,12 @@ def paired_bootstrap(
     mean_candidate = sum(c for _, c in pairs) / n
     observed = sum(diffs) / n
     rng = random.Random(seed)
+    # Null hypothesis: no difference. Centre the differences on zero before resampling; resampling the raw
+    # differences centres the resampled means on `observed`, which puts p near 0.5 whatever the effect.
+    centred = [d - observed for d in diffs]
     count = 0
     for _ in range(n_resamples):
-        resample = [rng.choice(diffs) for _ in range(n)]
+        resample = [rng.choice(centred) for _ in range(n)]
         if abs(sum(resample) / n) >= abs(observed):
             count += 1
     p = (count + 1) / (n_resamples + 1)
