@@ -1,7 +1,7 @@
 # Scorer reference — every registered metric
 
 All scorers registered in `METRICS` (`src/auditkit/registry.py`), grouped by
-module (68 in all). Every scorer implements the same
+module (70 in all). Every scorer implements the same
 fixed `score(sample, output, context=None) -> Score` interface described in
 [LLM-as-Judge Rendering](llm_judge_rendering.md) — the differences below are
 in constructor arguments, `required_fields` (which fields the runner checks
@@ -34,6 +34,13 @@ constraint on what the scorer measures.
 | `word_count` | `WordCount` | CODE | — | 1.0 iff `len(output.split())` falls within `[min_words, max_words]` (constructor args; either bound optional). |
 | `is_json` | `IsJson` | CODE | — | 1.0 iff `output` parses as JSON; optionally also requires specific top-level keys (`require_keys=`) to be present in a parsed dict. |
 | `f1_score` | `F1Score` | CODE | — | Token-level F1 between `output` and `sample.target`, computed via set intersection over whitespace-split tokens (order and duplicates ignored). |
+
+## Structured output (`src/auditkit/metrics/structured.py`)
+
+| Registry name | Class | Kind | Required fields | What it does |
+|---|---|---|---|---|
+| `json_schema_valid` | `JsonSchemaValid` | CODE | - (a schema, from `schema=` or `sample.metadata["schema"]`; samples without one are skipped) | 1.0 iff `output` parses as JSON and validates against the schema. `backend="auto"` uses `jsonschema` when installed (`pip install auditkit[jsonschema]`), else a built-in validator covering type, enum, const, required, properties, additionalProperties, patternProperties, items, array/string/number bounds, anyOf/oneOf/allOf/not and local `$ref` (`format` is not asserted); it raises `ValueError` for a schema using any other keyword instead of skipping it. `strip_fences=True` accepts one Markdown code fence. The `Score.reason` of a 0.0 names the first failure. |
+| `field_f1` | `FieldF1` | CODE | `target` (a JSON object or array) | Flattens `output` and `target` to scalar leaves by path and returns `field_f1`, `field_precision` and `field_recall`, micro-averaged within the sample. A leaf is a true positive when the target has the same path with an equal normalised value. Lists are aligned first (multiset for scalars, `list_keys` for objects, else greedy by matching leaves). Options: `normalize_numbers`/`number_tol`, `case_sensitive`, `strip`, `date_formats`, `normalizers={path pattern: fn}`, `ignore`, `strip_fences`. Output that is not JSON scores 0 on all three. |
 
 ## Generation quality (`src/auditkit/metrics/generation.py`)
 

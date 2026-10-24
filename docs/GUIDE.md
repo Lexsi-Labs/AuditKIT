@@ -617,6 +617,15 @@ Target/output accept three encodings: choice text, 0-based index, or a single A�
 | `is_json` | parses as JSON (+ required keys) | — | `require_keys=None` |
 | `f1_score` | token-set F1 (continuous) | `target` | — |
 
+### Structured output (`metrics/structured.py`) - MAXIMIZE, deterministic
+
+| Name | Measures | Requires | Params | Extra |
+|---|---|---|---|---|
+| `json_schema_valid` | output parses as JSON and validates against a JSON Schema; reason = first failing path | schema via `schema=` or `metadata["schema"]` | `schema=None`, `backend="auto"\|"jsonschema"\|"minimal"`, `strip_fences=False`, `schema_key="schema"` | `jsonschema` (optional; a built-in subset validator is used without it) |
+| `field_f1` | micro precision / recall / F1 over the scalar leaves of the output JSON vs `target` JSON; emits `field_f1`, `field_precision`, `field_recall` | `target` | `normalize_numbers=False`, `number_tol=0.0`, `case_sensitive=True`, `strip=True`, `date_formats=None`, `normalizers=None`, `list_keys=None`, `ignore=()`, `strip_fences=False` | - |
+
+`field_f1` aligns lists before comparing: scalar lists as multisets, object lists by `list_keys` (a key field name, or `{path pattern: key field}`) and otherwise greedily by most matching leaves. Path patterns use `*` and write list indices as `[]` (`items[].price`).
+
 ### Generation quality (`metrics/generation.py`)
 
 | Name | Measures | Dir | Det | Requires | Params | Extra |
@@ -1034,7 +1043,7 @@ A single list of everything flagged inline above. None of these break the *corre
 | `src/auditkit/sample.py`, `score.py`, `report.py`, `types.py` | the data model |
 | `src/auditkit/adapter.py`, `router.py` | adapters + shape routing |
 | `src/auditkit/model/` | 10 backends + echo/callable/precomputed |
-| `src/auditkit/metric.py`, `metrics/` | built-ins + 11 metric families (68 registered metrics) |
+| `src/auditkit/metric.py`, `metrics/` | built-ins + 12 metric families (70 registered metrics) |
 | `src/auditkit/lmeval_engine.py` | the lm-eval bridge |
 | `src/auditkit/comparison.py`, `diff.py`, `model_compare.py`, `_bootstrap.py`, `experiment.py` | comparison + significance + tracking |
 | `src/auditkit/redteam/` | probes + detectors + `RedTeamRunner` |
