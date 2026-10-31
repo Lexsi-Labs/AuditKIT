@@ -400,10 +400,11 @@ class GuardJudge(Metric):
                      reason=text.strip()[:200], metadata=meta)
 
     def identity(self) -> dict:
-        spec = self._spec
-        model_id = spec if isinstance(spec, str) else getattr(spec, "name", type(spec).__name__)
+        from .judge import judge_identity_args
+        from .rag_judge import judge_identity
         return {
-            "name": self.name, "kind": "security", "guard_model": model_id,
+            "name": self.name, "kind": "security", "guard_model": judge_identity(self._spec),
+            "judge_model_args": judge_identity_args(self._judge_model_args),
             "profile": self._profile.get("id", "custom"), "assess": self._assess,
             "policy": self._policy, "max_tokens": self._max_tokens,
             "single_message": self._single_message,
