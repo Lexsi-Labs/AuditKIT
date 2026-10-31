@@ -8,12 +8,20 @@ A *scorer* is the user-facing way to define a custom metric: decorate a
 
 from __future__ import annotations
 
+import inspect
 from typing import Any, Callable, Optional, Union
 
 from .metric import Metric
 from .sample import Sample
 from .score import Score
 from .types import Direction, ScoreKind
+
+
+def _names_context(fn: Callable[..., Any]) -> bool:
+    try:
+        return "context" in inspect.signature(fn, follow_wrapped=False).parameters
+    except (TypeError, ValueError):  # some builtins expose no signature
+        return False
 
 
 class FunctionScorer:
@@ -45,6 +53,8 @@ class FunctionScorer:
         try:
             result = self.fn(sample, output, context=context)
         except TypeError:
+            if _names_context(self.fn):  # the call bound, so the scorer raised this
+                raise
             result = self.fn(sample, output)
         if isinstance(result, Score):
             result.direction = self.direction
