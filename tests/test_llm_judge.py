@@ -16,7 +16,7 @@ from auditkit.model import EchoModel
 from auditkit.metric import ExactMatch
 from auditkit.adapter import TemplateAdapter, GenerationAdapter
 from auditkit.sample import Sample
-from auditkit.types import ScoreKind
+from auditkit.types import Direction, ScoreKind
 
 
 class FakeJudge:
@@ -325,6 +325,16 @@ def test_judge_identity_excludes_api_key_and_timeout():
                   judge_model_args={**base, "reasoning_effort": "high"})
     assert j3.identity()["judge_model_args"] == {"api_base": "http://h/v1",
                                                  "reasoning_effort": "high"}
+
+
+def test_judge_identity_includes_threshold_and_direction():
+    # Both are written onto every Score, and threshold decides passed/correct,
+    # so a cached run scored under other values must not be served back.
+    def judge(**kwargs):
+        return LLMJudge(prompt="{output}", judge_model="api:x", name="j", **kwargs)
+
+    assert judge(threshold=0.5).identity() != judge(threshold=0.9).identity()
+    assert judge().identity() != judge(direction=Direction.MINIMIZE).identity()
 
 
 # --- judge-resolved api: models get a long default timeout -----------------
