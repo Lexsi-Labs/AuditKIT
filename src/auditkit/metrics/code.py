@@ -113,7 +113,7 @@ class Levenshtein(Metric):
 
     def __init__(self) -> None:
         self.name = "levenshtein"
-        self.required_fields = frozenset()
+        self.required_fields = frozenset({"target"})
 
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
         ref = sample.target or ""

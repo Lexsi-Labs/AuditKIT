@@ -30,7 +30,7 @@ constraint on what the scorer measures.
 | `starts_with` | `StartsWith` | CODE | — | 1.0 iff `output` starts with a given `prefix` (constructor arg). |
 | `ends_with` | `EndsWith` | CODE | — | 1.0 iff `output` ends with a given `suffix` (constructor arg). |
 | `regex` | `Regex` | CODE | — | 1.0 iff a given regex `pattern` (constructor arg) matches anywhere in `output`. |
-| `levenshtein` | `Levenshtein` | CODE | — | `1 - (edit distance / max(len(output), len(target)))` — a real Wagner–Fischer DP edit distance, not an approximation. |
+| `levenshtein` | `Levenshtein` | CODE | `target` | `1 - (edit distance / max(len(output), len(target)))` — a real Wagner–Fischer DP edit distance, not an approximation. |
 | `word_count` | `WordCount` | CODE | — | 1.0 iff `len(output.split())` falls within `[min_words, max_words]` (constructor args; either bound optional). |
 | `is_json` | `IsJson` | CODE | — | 1.0 iff `output` parses as JSON; optionally also requires specific top-level keys (`require_keys=`) to be present in a parsed dict. |
 | `f1_score` | `F1Score` | CODE | — | Token-level F1 between `output` and `sample.target`, computed via set intersection over whitespace-split tokens (order and duplicates ignored). |
