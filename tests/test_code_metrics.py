@@ -192,6 +192,11 @@ class TestLevenshtein:
         assert 0.0 < score.value < 1.0
         assert isinstance(score, Score)
 
+    def test_requires_target(self):
+        m = Levenshtein()
+        assert "target" in m.required_fields
+        assert m.applicable(Sample(input="q")) is False
+
     def test_name(self):
         assert Levenshtein().name == "levenshtein"
 
