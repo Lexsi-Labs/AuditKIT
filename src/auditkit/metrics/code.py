@@ -79,7 +79,8 @@ class EndsWith(Metric):
     def __init__(self, suffix: str, ignore_case: bool = False) -> None:
         self._suffix = suffix
         self._ignore_case = ignore_case
-        self.name = f"endswith({suffix})"
+        suffix_label = "endswith_ci" if ignore_case else "endswith"
+        self.name = f"{suffix_label}({suffix})"
         self.required_fields = frozenset()
 
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:

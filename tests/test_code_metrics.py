@@ -133,6 +133,11 @@ class TestEndsWith:
 
     def test_name(self):
         assert EndsWith("x").name == "endswith(x)"
+        assert EndsWith("x", ignore_case=True).name == "endswith_ci(x)"
+
+    def test_identity_depends_on_ignore_case(self):
+        # Base identity() is {"name": self.name}, and it feeds the run fingerprint.
+        assert EndsWith("x").identity() != EndsWith("x", ignore_case=True).identity()
 
 
 # ============================================================================
