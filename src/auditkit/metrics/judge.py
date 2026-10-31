@@ -397,6 +397,8 @@ class LLMJudge(JudgeMetric):
             "gen_params": self._gen_params,
             # an opted-in unknown_score is averaged, so it changes results
             "unknown_score": self.unknown_score,
+            # written onto every Score; threshold also decides passed/correct
+            "threshold": self.threshold, "direction": self.direction,
         }
 
 
