@@ -110,9 +110,21 @@
   not `\w`, into spaces. `दिन` and `दान` both became `द न` and matched, and Tamil pairs matched too.
   Punctuation is still removed in every script, and the zero-width joiners are dropped inside words.
   **Scores change** for text in these scripts.
-- `f1_score` is 1.0 for identical text when a word repeats. It took the overlap from a set but
-  divided by the token list lengths, so `New York, New York` scored 0.5. Both sides now use sets, as
-  `docs/scorers_reference.md` says, so duplicates are ignored. **Scores change** where a word repeats.
+- **`f1_score` counted repeated tokens inconsistently.** The overlap came from a set intersection but the
+  precision and recall denominators were the token-list lengths, so `to be or not to be` scored 0.667
+  against itself and `New York, New York` scored 0.5. The overlap is now the multiset (`Counter`)
+  intersection, as in the SQuAD script, so identical text scores 1.0 and `paris paris paris` against
+  `paris` scores 0.5. Two strings with no tokens left after normalization (empty, or only articles such as
+  `a a a`) now score 1.0 instead of 0.0. Unicode punctuation (the Devanagari danda, the Arabic comma,
+  full-width stops) is now ignored, so `नमस्ते।` matches `नमस्ते`. **Scores change** for samples with
+  repeated tokens, an empty side or such punctuation, and `identity()` gains `"overlap": "multiset"`, so
+  cached `f1_score` results are not reused.
+- **`correct` depended on the order of the scorers.** The first scorer decides `Prediction.correct` and
+  `score`, and the run fingerprint does not include scorer order, so two orders also shared a cached result.
+  `ak.evaluate(..., primary="name")` (and `RunSpec.primary`) now names the scorer that decides, independent of
+  order: an unknown name raises `ValueError` before the run, a crashed primary makes the sample incorrect, and an
+  explicit primary is part of the fingerprint. The default is unchanged (the first scorer, no fingerprint
+  change) and, with several scorers and no `primary`, the run logs a warning that says so.
 - `is_json` rejects `NaN`, `Infinity` and `-Infinity`, which JSON does not allow. Python's parser accepts them.
 - The six built-in benchmark scenarios load again. They used bare Hub ids (`mmlu`, `arc` and
   `truthfulqa` no longer exist; the others failed with `HfUriError`) and now use `cais/mmlu`,

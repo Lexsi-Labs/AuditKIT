@@ -382,6 +382,7 @@ class Runner:
         errors: list | None = None,
         prompt: Optional[str] = None,
         extracted_by: str | None = None,
+        primary: Optional[str] = None,
     ) -> tuple[list[Score], Prediction]:
         # extracted_by names an annotator whose context["extracted"] value
         # should be scored instead of the raw output (e.g. RegexAnnotator
@@ -398,6 +399,7 @@ class Runner:
         scores: list[Score] = []
         failed_metrics: list[str] = []
         primary_failed = False
+        by_metric: dict[str, list[Score]] = {}
         for metric in metrics:
             if not metric.applicable(sample):
                 continue
@@ -450,11 +452,20 @@ class Runner:
                 # actually reliable for RunComparison/compare_models grading.
                 s.direction = metric.direction
             scores.extend(produced_list)
+            by_metric[metric.name] = produced_list
 
-        # The first applicable metric is the primary one. If it crashed, the
-        # next metric must not stand in for it, and a sample any metric failed
-        # on (e.g. malformed tool_calls/contexts) is never "correct".
-        primary = scores[0] if scores and not primary_failed else None
+        # The primary metric decides ``correct`` and ``Prediction.score``. By default it is the
+        # first applicable metric, so the order of ``scorers`` matters; ``primary=`` names the
+        # metric instead. If it crashed, the next metric must not stand in for it, and a sample
+        # any metric failed on (e.g. malformed tool_calls/contexts) is never "correct".
+        if primary is not None:
+            if primary in failed_metrics:
+                primary_failed = True
+            chosen = by_metric.get(primary) or []
+            primary_score = chosen[0] if chosen else None
+        else:
+            primary_score = scores[0] if scores else None
+        primary = primary_score if not primary_failed else None
         correct: Optional[bool]
         if failed_metrics:
             correct = False
@@ -514,6 +525,12 @@ class Runner:
         return out
 
     def run(self, spec: RunSpec, *, verbose: bool = False) -> RunResult:
+        names = [m.name for m in spec.metrics]
+        if spec.primary is not None and spec.primary not in names:
+            raise ValueError(f"primary={spec.primary!r} is not one of the scorers {names}")
+        if spec.primary is None and len(names) > 1:
+            logger.warning("%d scorers and no primary=: 'correct' and Prediction.score follow the first, %r; "
+                           "their order is not part of the cache key. Pass primary= to fix it.", len(names), names[0])
         fingerprint = spec.fingerprint()
         config = spec.config
 
@@ -583,7 +600,7 @@ class Runner:
                     context["trace"] = sample.actual_trace
                 scores, prediction = self.score_one(
                     spec.metrics, sample, output, context, run_id, errors,
-                    extracted_by=spec.extracted_by,
+                    extracted_by=spec.extracted_by, primary=spec.primary,
                 )
                 all_scores.extend(scores)
                 predictions.append(prediction)
@@ -653,6 +670,7 @@ class Runner:
                     # scoring is structurally disabled here.
                     scores, prediction = self.score_one(
                         spec.metrics, sample, output, context, run_id, errors, prompt=prompt,
+                        primary=spec.primary,
                     )
                     all_scores.extend(scores)
                     predictions.append(prediction)
@@ -727,7 +745,7 @@ class Runner:
                     prompt = _prompt_text(reqs[0].prompt) if reqs else None
                     scores, prediction = self.score_one(
                         spec.metrics, sample, output, context, run_id, errors, prompt=prompt,
-                        extracted_by=spec.extracted_by,
+                        extracted_by=spec.extracted_by, primary=spec.primary,
                     )
                     all_scores.extend(scores)
                     predictions.append(prediction)

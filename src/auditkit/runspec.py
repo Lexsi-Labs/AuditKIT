@@ -119,6 +119,9 @@ class RunSpec:
     extracted_by: Union[str, None] = None
     config: RunConfig = field(default_factory=RunConfig)
     run_name: str = ""
+    # Name of the metric that decides ``Prediction.correct`` and ``Prediction.score``. None
+    # (default): the first metric in ``metrics``, so their order matters.
+    primary: Union[str, None] = None
 
     def fingerprint(self) -> str:
         """A stable sha256[:16] over the identity-defining parts of the run.
@@ -169,5 +172,10 @@ class RunSpec:
             "run_name": self.run_name,
             "config": self.config.to_dict(),
         }
+        # An explicit primary changes ``correct``, so it is part of the identity. Without one the metric
+        # list is hashed sorted (the order does not change the fingerprint, by design), so two scorer
+        # orders share a cached result; name a ``primary`` to make ``correct`` independent of the order.
+        if self.primary is not None:
+            key["primary"] = self.primary
         blob = json.dumps(key, sort_keys=True, default=str).encode("utf-8")
         return hashlib.sha256(blob).hexdigest()[:16]
