@@ -64,6 +64,23 @@ def test_quasi_exact_match_ignores_case_and_articles():
     assert m.score(s, "London").value == 0.0
 
 
+def test_quasi_exact_match_keeps_indic_words_apart():
+    # Vowel signs are combining marks, which \\w does not match. They used to become spaces, so
+    # these two different Hindi words both normalised to "द न" and matched.
+    m = QuasiExactMatch()
+    s = Sample(input="q", target="दिन")
+    assert m.score(s, "दिन").value == 1.0
+    assert m.score(s, "दान").value == 0.0
+    assert m.score(Sample(input="q", target="நாள்"), "நீர்").value == 0.0
+
+
+def test_quasi_exact_match_still_strips_punctuation_in_any_script():
+    m = QuasiExactMatch()
+    assert m.score(Sample(input="q", target="नमस्ते"), "नमस्ते!").value == 1.0
+    assert m.score(Sample(input="q", target="नमस्ते"), "नमस्ते।").value == 1.0  # danda
+    assert m.score(Sample(input="q", target="می‌خواهم"), "می‌خواهم؟").value == 1.0  # keeps the ZWNJ word whole
+
+
 # ---- async wrapper -------------------------------------------------------
 
 def test_ascore_defaults_to_score():

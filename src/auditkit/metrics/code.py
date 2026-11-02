@@ -170,6 +170,11 @@ class WordCount(Metric):
         return Score(name=self.name, value=1.0 if hit else 0.0, kind=self.kind)
 
 
+def _refuse_constant(name: str) -> None:
+    """Python's parser accepts NaN, Infinity and -Infinity, which JSON does not allow."""
+    raise ValueError(f"{name} is not valid JSON")
+
+
 @METRICS.register("is_json")
 class IsJson(Metric):
     kind = ScoreKind.CODE
@@ -186,7 +191,7 @@ class IsJson(Metric):
 
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
         try:
-            parsed = json.loads(output)
+            parsed = json.loads(output, parse_constant=_refuse_constant)
         except (json.JSONDecodeError, ValueError):
             return Score(name=self.name, value=0.0, kind=self.kind)
         if self._require_keys is not None:
@@ -229,8 +234,10 @@ class F1Score(Metric):
         out_set = set(output_tokens)
         tgt_set = set(target_tokens)
         intersection = out_set & tgt_set
-        precision = len(intersection) / len(output_tokens) if output_tokens else 0.0
-        recall = len(intersection) / len(target_tokens) if target_tokens else 0.0
+        # Sets on both sides, as docs/scorers_reference.md says: duplicates are ignored, so identical
+        # text always scores 1.0.
+        precision = len(intersection) / len(out_set) if out_set else 0.0
+        recall = len(intersection) / len(tgt_set) if tgt_set else 0.0
         if precision == 0.0 and recall == 0.0:
             f1 = 0.0
         else:

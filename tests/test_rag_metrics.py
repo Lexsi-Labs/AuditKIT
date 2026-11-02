@@ -178,3 +178,9 @@ class TestSharedTokenizer:
             Sample(input="q", target="Paris!", retrieval_context=["the capital is paris"]), "").value == 1.0
         assert AnswerOverlap().score(
             Sample(input="q", target="Paris"), "the capital is paris.").value == 1.0
+
+
+def test_answer_overlap_keeps_indic_words_apart():
+    # vowel signs are combining marks; दिन and दान must not both become "द न"
+    assert AnswerOverlap().score(Sample(input="q", target="दिन"), "दान").value == 0.0
+    assert AnswerOverlap().score(Sample(input="q", target="दिन"), "दिन").value == 1.0

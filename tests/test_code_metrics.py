@@ -243,6 +243,16 @@ class TestWordCount:
 # ============================================================================
 
 class TestIsJson:
+    def test_non_finite_numbers_are_not_json(self):
+        m = IsJson()
+        for text in ('{"a": NaN}', "[Infinity]", "-Infinity", '{"a": -Infinity}'):
+            assert m.score(Sample(input="q"), text).value == 0.0, text
+
+    def test_finite_values_still_pass(self):
+        m = IsJson(require_keys=["a"])
+        for text in ('{"a": 1.5}', '{"a": null, "b": [1, 2]}'):
+            assert m.score(Sample(input="q"), text).value == 1.0, text
+
     def test_valid_json_object(self):
         m = IsJson()
         s = Sample(input="q")
@@ -276,6 +286,17 @@ class TestIsJson:
 # ============================================================================
 
 class TestF1Score:
+    def test_identical_text_with_repeated_words_is_1(self):
+        m = F1Score()
+        for text in ("New York, New York", "to be or not to be", "paris paris paris", "दिन दिन"):
+            assert m.score(Sample(input="q", target=text), text).value == 1.0, text
+
+    def test_duplicates_are_ignored_in_the_overlap(self):
+        # sets on both sides, as docs/scorers_reference.md says
+        m = F1Score()
+        assert m.score(Sample(input="q", target="paris"), "paris paris paris").value == 1.0
+        assert abs(m.score(Sample(input="q", target="x y z"), "x y y").value - 0.8) < 1e-9
+
     def test_exact_match_is_1(self):
         m = F1Score()
         s = Sample(input="q", target="the cat sat")
