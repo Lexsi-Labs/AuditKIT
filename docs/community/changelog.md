@@ -125,6 +125,10 @@
   order: an unknown name raises `ValueError` before the run, a crashed primary makes the sample incorrect, and an
   explicit primary is part of the fingerprint. The default is unchanged (the first scorer, no fingerprint
   change) and, with several scorers and no `primary`, the run logs a warning that says so.
+- `token_overlap`: two empty sides scored 0.0 although identical; they now score 1.0, like `exact_match`,
+  `equals`, `rouge_l`, `word_error_rate` and `f1_score`.
+- `perplexity` on an empty output returned a NaN score. It now skips the sample, as other metrics do when
+  there is nothing to score.
 - `is_json` rejects `NaN`, `Infinity` and `-Infinity`, which JSON does not allow. Python's parser accepts them.
 - The six built-in benchmark scenarios load again. They used bare Hub ids (`mmlu`, `arc` and
   `truthfulqa` no longer exist; the others failed with `HfUriError`) and now use `cais/mmlu`,
