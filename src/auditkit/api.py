@@ -190,6 +190,7 @@ def evaluate(
     tags: list[str] | None = None,
     dataset_config: str | None = None,
     dataset_split: str | None = None,
+    primary: str | None = None,
     **opts: Any,
 ) -> RunResult:
     """Evaluate a model on a dataset and return a :class:`RunResult`.
@@ -240,6 +241,11 @@ def evaluate(
         For a folder or Hub id *dataset*: the config name (HF
         ``load_dataset(path, name)``) and split (default: the first of test /
         validation / train present).
+    primary
+        Native engine only: the name of the scorer that decides each prediction's ``correct`` and
+        ``score``. Default: the first scorer, so with several scorers their order changes
+        ``correct``; name one to make it independent of the order. Raises ``ValueError`` if it
+        is not one of the scorers.
     **opts
         Extra keyword args passed to the model constructor (native) or to
         lm-eval's ``model_args`` (``engine="lmeval"``: ``base_url``, ``dtype``, …).
@@ -268,6 +274,7 @@ def evaluate(
         annotators=_to_annotators(annotators),
         extracted_by=extract_with,
         config=cfg,
+        primary=primary,
     )
 
     result = Runner().run(spec, verbose=verbose)

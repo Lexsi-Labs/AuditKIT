@@ -33,7 +33,7 @@ constraint on what the scorer measures.
 | `levenshtein` | `Levenshtein` | CODE | `target` | `1 - (edit distance / max(len(output), len(target)))` — a real Wagner–Fischer DP edit distance, not an approximation. |
 | `word_count` | `WordCount` | CODE | — | 1.0 iff `len(output.split())` falls within `[min_words, max_words]` (constructor args; either bound optional). |
 | `is_json` | `IsJson` | CODE | — | 1.0 iff `output` parses as JSON; optionally also requires specific top-level keys (`require_keys=`) to be present in a parsed dict. |
-| `f1_score` | `F1Score` | CODE | — | Token-level F1 between `output` and `sample.target`, computed via set intersection over whitespace-split tokens (order and duplicates ignored). |
+| `f1_score` | `F1Score` | CODE | — | Token-level F1 between `output` and `sample.target`, computed from the multiset (`Counter`) overlap of the tokens, as in the SQuAD script: order is ignored and a repeated token counts as often as it appears in both. Two strings with no tokens left after normalization score 1.0. |
 
 ## Structured output (`src/auditkit/metrics/structured.py`)
 
