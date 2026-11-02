@@ -119,6 +119,10 @@
   full-width stops) is now ignored, so `नमस्ते।` matches `नमस्ते`. **Scores change** for samples with
   repeated tokens, an empty side or such punctuation, and `identity()` gains `"overlap": "multiset"`, so
   cached `f1_score` results are not reused.
+- `token_overlap`: two empty sides scored 0.0 although identical; they now score 1.0, like `exact_match`,
+  `equals`, `rouge_l`, `word_error_rate` and `f1_score`.
+- `perplexity` on an empty output returned a NaN score. It now skips the sample, as other metrics do when
+  there is nothing to score.
 - `is_json` rejects `NaN`, `Infinity` and `-Infinity`, which JSON does not allow. Python's parser accepts them.
 - The six built-in benchmark scenarios load again. They used bare Hub ids (`mmlu`, `arc` and
   `truthfulqa` no longer exist; the others failed with `HfUriError`) and now use `cais/mmlu`,

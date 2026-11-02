@@ -102,7 +102,7 @@ class TokenOverlap(Metric):
         tokens_out = set(output.split())
         tokens_tgt = set((sample.target or "").split())
         if not tokens_out and not tokens_tgt:
-            return Score(name=self.name, value=0.0, kind=self.kind)
+            return Score(name=self.name, value=1.0, kind=self.kind)   # identical: both empty
         intersection = tokens_out & tokens_tgt
         union = tokens_out | tokens_tgt
         return Score(name=self.name, value=len(intersection) / len(union), kind=self.kind)
