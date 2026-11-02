@@ -105,6 +105,15 @@
 
 ### Fixed
 
+- **Indic and other combining-mark scripts keep their words apart.** `quasi_exact_match`,
+  `answer_overlap` and the lexical RAG metrics turned vowel signs, which are combining marks and
+  not `\w`, into spaces. `दिन` and `दान` both became `द न` and matched, and Tamil pairs matched too.
+  Punctuation is still removed in every script, and the zero-width joiners are dropped inside words.
+  **Scores change** for text in these scripts.
+- `f1_score` is 1.0 for identical text when a word repeats. It took the overlap from a set but
+  divided by the token list lengths, so `New York, New York` scored 0.5. Both sides now use sets, as
+  `docs/scorers_reference.md` says, so duplicates are ignored. **Scores change** where a word repeats.
+- `is_json` rejects `NaN`, `Infinity` and `-Infinity`, which JSON does not allow. Python's parser accepts them.
 - The six built-in benchmark scenarios load again. They used bare Hub ids (`mmlu`, `arc` and
   `truthfulqa` no longer exist; the others failed with `HfUriError`) and now use `cais/mmlu`,
   `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`, `truthfulqa/truthful_qa` and
