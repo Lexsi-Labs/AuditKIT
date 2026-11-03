@@ -21,19 +21,24 @@ class Experiment:
     def add(self, run: RunResult) -> None:
         self.runs.append(run)
 
-    def aggregate(self, metric: str | None = None) -> dict[str, float]:
+    def aggregate(self, metric: str | None = None) -> dict[str, float | None]:
+        """Mean of each headline metric over the runs that have it.
+
+        A run that did not measure a metric is left out of that mean, never counted as 0. With
+        ``metric`` and no run having it the value is ``None``: not measured.
+        """
         if not self.runs:
             return {}
         if metric:
-            vals = [r.headline.get(metric, 0.0) for r in self.runs if r.headline]
-            return {metric: sum(vals) / len(vals) if vals else 0.0}
+            vals = [r.headline[metric] for r in self.runs if r.headline and metric in r.headline]
+            return {metric: sum(vals) / len(vals) if vals else None}
         all_metrics = set()
         for r in self.runs:
             all_metrics.update(r.headline.keys())
-        result = {}
+        result: dict[str, float | None] = {}
         for m in sorted(all_metrics):
-            vals = [r.headline.get(m, 0.0) for r in self.runs if r.headline]
-            result[m] = sum(vals) / len(vals) if vals else 0.0
+            vals = [r.headline[m] for r in self.runs if r.headline and m in r.headline]
+            result[m] = sum(vals) / len(vals) if vals else None
         return result
 
     def leaderboard(self) -> list[dict[str, Any]]:

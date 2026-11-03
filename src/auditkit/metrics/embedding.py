@@ -98,6 +98,9 @@ class TokenOverlap(Metric):
     is_deterministic = True
     required_fields = frozenset({"target"})
 
+    def identity(self) -> dict:
+        return {"name": self.name, "empty_pair": 1.0}
+
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
         tokens_out = set(output.split())
         tokens_tgt = set((sample.target or "").split())
