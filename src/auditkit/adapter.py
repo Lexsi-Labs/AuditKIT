@@ -109,7 +109,7 @@ class MCQAdapter(Adapter):
             for i, choice in enumerate(sample.choices):
                 prompt += f"{i}. {choice}\n"
             prompt += "\nAnswer:"
-            return [Request(prompt=prompt, request_type="generate")]
+            return [Request(prompt=prompt, request_type="generate", params=_gen_params(config))]
         return [
             Request(prompt=sample.input, request_type="loglikelihood", params={"target": c})
             for c in sample.choices

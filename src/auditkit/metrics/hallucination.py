@@ -40,6 +40,9 @@ class FactualConsistency(Metric):
             value = 1.0
         elif "CONTRADICT" in label:
             value = 0.0
-        else:
+        elif "NEUTRAL" in label:
             value = 0.5
+        else:
+            return Score(name=self.name, value=0.0, kind=self.kind, reason=f"unrecognised label {label!r}",
+                         metadata={"unknown": True, "status": "not_measured"})
         return Score(name=self.name, value=value, kind=self.kind)
