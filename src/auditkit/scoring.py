@@ -76,6 +76,8 @@ class WeightedSum:
         only as a placeholder and ``metadata["unknown"]`` is True. A direct caller must check that flag
         before using ``.value``; the runner does.
         """
+        from auditkit.runner import unscored_status
+        scores = [s for s in scores if unscored_status(s) is None]   # placeholders are not averaged
         if not scores:
             return Score(name=self.name, value=0.0, reason="no scores to combine",
                          metadata={"unknown": True, "status": "not_measured"})

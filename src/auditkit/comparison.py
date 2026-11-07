@@ -35,6 +35,7 @@ from .diff import (
     relative_pct,
 )
 from .report import Prediction, RunResult
+from .score import _measured_value
 from .types import Direction
 
 logger = logging.getLogger(__name__)
@@ -175,9 +176,9 @@ class RunComparison:
         acc: dict[tuple[str, str], list[float]] = defaultdict(list)
         for p in run.predictions:
             for s in p.metadata.get("scores", []):
-                name, val = s.get("name"), s.get("value")
-                if name is not None and isinstance(val, (int, float)):
-                    acc[(p.task or "", name)].append(float(val))
+                name, val = s.get("name"), _measured_value(s)
+                if name is not None and val is not None:
+                    acc[(p.task or "", name)].append(val)
         for k, vals in acc.items():
             if vals and k not in stats:  # don't override benchmark stats
                 stats[k] = {
@@ -234,7 +235,7 @@ class RunComparison:
         """Worst grade across all tasks/metrics — the ship / no-ship headline."""
         self._warn_if_issues()
         grades = [td.grade for td in self.per_task_deltas()] or [md.grade for md in self.metric_deltas()]
-        return max(grades, key=lambda g: _GRADE_ORDER[g]) if grades else DeltaGrade.PASS
+        return max(grades, key=lambda g: _GRADE_ORDER[g]) if grades else DeltaGrade.NOT_COMPARABLE  # nothing compared is not a pass
 
     # -- retention ---------------------------------------------------------
     def retention(self, metric: Optional[str] = None):

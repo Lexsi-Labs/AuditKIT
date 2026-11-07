@@ -12,6 +12,7 @@ from .diff import best_model, direction_for, metric_directions
 from .model import AutoModel, Model
 from .report import RunResult
 from .runspec import RunConfig
+from .score import _measured_value
 from .sample import Sample
 from .scenario import Scenario
 
@@ -220,9 +221,9 @@ class CompareResult:
             acc: dict[tuple[str, str], list[float]] = {}
             for p in run.predictions:
                 for s in p.metadata.get("scores", []):
-                    mname, val = s.get("name"), s.get("value")
-                    if mname is not None and isinstance(val, (int, float)):
-                        acc.setdefault((p.task or "", mname), []).append(float(val))
+                    mname, val = s.get("name"), _measured_value(s)
+                    if mname is not None and val is not None:
+                        acc.setdefault((p.task or "", mname), []).append(val)
             for (task, metric), vals in acc.items():
                 if vals and name not in table.get((task, metric), {}):
                     table.setdefault((task, metric), {})[name] = {
@@ -381,10 +382,10 @@ class CompareResult:
         for m in metrics:
             row = f"{m.metric:<25}"
             for name in model_names:
-                val = m.scores.get(name, 0)
+                val = m.scores.get(name)   # None: this model has no score for the metric
                 n = table[m.metric].get(f"{name}_n", 0)
                 marker = " <-" if m.winner == name else ""
-                cell = f"{val:.4f} (n={n}){marker}"
+                cell = "n/a" if val is None else f"{val:.4f} (n={n}){marker}"
                 row += f"{cell:<26}"
             lines.append(row)
 

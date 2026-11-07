@@ -15,6 +15,7 @@ import random
 from typing import Any, Optional
 
 from .report import RunResult
+from .score import _measured_value
 
 
 def score_pairs(
@@ -35,8 +36,9 @@ def score_pairs(
                     out[p.sample_id] = float(p.score)
             else:
                 for s in p.metadata.get("scores", []):
-                    if s.get("name") == metric and s.get("value") is not None:
-                        out[p.sample_id] = float(s["value"])
+                    # a flagged placeholder is not a pair to compare
+                    if s.get("name") == metric and _measured_value(s) is not None:
+                        out[p.sample_id] = _measured_value(s)
                         break
         return out
 

@@ -51,7 +51,8 @@ class Experiment:
             row.update(r.headline)
             rows.append(row)
         if first_metric:
-            rows.sort(key=lambda x: x.get(first_metric, 0), reverse=True)
+            # a run without the metric sorts last, not as a score of 0
+            rows.sort(key=lambda x: (first_metric in x, x.get(first_metric, 0)), reverse=True)
         return rows
 
     def pairwise_diff(self, run_a_index: int = 0, run_b_index: int = -1) -> RunDiff:
