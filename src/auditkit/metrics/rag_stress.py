@@ -44,6 +44,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import date
 from typing import Any, Optional
 
+from auditkit._text import fold_apostrophes
 from auditkit.metric import Metric
 from auditkit.metrics.retrieval import ranking_scores, retrieved_contexts
 from auditkit.registry import METRICS
@@ -583,7 +584,7 @@ def _looks_like_refusal(text: str, markers: Any = _REFUSAL_MARKERS,
                         short_reply_max_words: int = _SHORT_REPLY_MAX_WORDS) -> bool:
     """Keyword fallback: only the reply's FIRST sentence is read, so a real answer that
     mentions a refusal phrase later (or in passing) is not taken for an abstention."""
-    words = text.lower().split()
+    words = fold_apostrophes(text).lower().split()
     low = " ".join(words)
     first = re.split(r"(?<=[.!?])\s+", low, maxsplit=1)[0]
     if any(m in first for m in markers):
