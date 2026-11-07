@@ -132,6 +132,10 @@
   `evaluate(..., [exact_match, f1_score])` the call with `[f1_score, exact_match]` returned the first run's
   `correct` (`False`) where a fresh run gives `True`. The scorers' order is now part of the cache key. A run with
   its scorers in a different order is a cache miss and is scored again; the same order still hits the cache.
+- **The `transformers` extra is capped below 5.22.** transformers 5.22.0 to 5.22.2 make `pipeline()` pass
+  `code_revision=None` to the model class, which classes that are not auto classes reject, so loading the Aya vision
+  model through `hf:` fails with `got an unexpected keyword argument 'code_revision'`. 5.21.1 and older load it. The
+  cap comes off when a transformers release fixes this.
 - `paired_bootstrap` raises `ValueError` for `n_resamples` below 1. With none the p-value was undefined, and a
   negative count returned a negative p-value reported as significant.
 - `EndsWith(ignore_case=True)` has its own name and identity, `Levenshtein` skips a sample with no target instead of

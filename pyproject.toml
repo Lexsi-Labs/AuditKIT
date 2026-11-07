@@ -31,8 +31,10 @@ anthropic   = ["anthropic"]
 # needed for North Micro Vision (cohere_compass); vLLM 0.30 is the first release
 # on transformers 5.x that also registers CohereCompass, so the two extras
 # co-resolve. torch is a floor only (no upper cap) so users can bring their own
-# CUDA build.
-transformers = ["torch>=2.4", "transformers>=5.15,<6", "peft"]   # peft: hf:<adapter dir>
+# CUDA build. transformers is capped below 5.22: 5.22.0 to 5.22.2 make pipeline() pass
+# code_revision=None to the model class, which non-auto classes (the Aya vision model) reject;
+# 5.21.1 and older load it. vLLM already requires an older transformers than this cap.
+transformers = ["torch>=2.4", "transformers>=5.15,<5.22", "peft"]   # peft: hf:<adapter dir>
 lmeval      = ["lm-eval", "accelerate>=1.0"]   # accelerate: lm-eval's hf backend; transformers 5 refuses device_map below 1.x
 vision      = ["pillow", "torchvision", "torchmetrics"]   # torchvision: transformers 5.x image processors need it
 interop     = ["datasets", "mlcroissant", "GitPython"]   # GitPython: mlcroissant needs it for git-based repo downloads but doesn't declare it itself
