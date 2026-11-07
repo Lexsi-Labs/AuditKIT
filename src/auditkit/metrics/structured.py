@@ -71,19 +71,33 @@ _REF_KEYWORDS = ("$ref", "$dynamicRef", "$recursiveRef")
 _DATA_KEYWORDS = ("const", "enum", "default", "examples")
 
 
-def _remote_refs(schema: Any, found: Optional[list] = None) -> list[str]:
+def _remote_refs(schema: Any, found: Optional[list] = None, at_schema: bool = True) -> list[str]:
     """References in ``schema`` that are not local (``#...``). A schema can come with the dataset, and following a
-    remote reference would make the evaluator send a request to whatever host the schema names."""
+    remote reference would make the evaluator send a request to whatever host the schema names.
+
+    The values of ``const``, ``enum``, ``default`` and ``examples`` are data and are left alone, but only where the
+    keyword really is a keyword of a schema: a property that is merely *named* ``const`` is a subschema and is read.
+    Anywhere the position is unclear everything is read, so a valid schema may be refused but none is let through."""
     found = [] if found is None else found
     if isinstance(schema, dict):
         for k, v in schema.items():
             if k in _REF_KEYWORDS and isinstance(v, str) and not v.startswith("#"):
                 found.append(v)
-            elif k not in _DATA_KEYWORDS:   # values that are only data: a "$ref" string inside them is not followed
-                _remote_refs(v, found)
+            elif at_schema and k in _DATA_KEYWORDS:
+                continue
+            elif at_schema and k in _MAP_KEYWORDS and isinstance(v, dict):
+                for sub in v.values():
+                    _remote_refs(sub, found, True)
+            elif at_schema and k in _SCHEMA_KEYWORDS:
+                _remote_refs(v, found, True)
+            elif at_schema and k in _LIST_KEYWORDS and isinstance(v, list):
+                for sub in v:
+                    _remote_refs(sub, found, True)
+            else:
+                _remote_refs(v, found, False)
     elif isinstance(schema, list):
         for v in schema:
-            _remote_refs(v, found)
+            _remote_refs(v, found, at_schema)
     return found
 
 

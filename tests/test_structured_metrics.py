@@ -386,3 +386,12 @@ class TestRemoteReferencesAreNotFollowed:
         monkeypatch.setitem(sys.modules, "referencing", None)   # as with jsonschema before 4.18
         with pytest.raises(ExtraNotInstalled, match="jsonschema>=4.18"):
             JsonSchemaValid({"type": "integer"}, backend="jsonschema")
+
+    @pytest.mark.parametrize("name", ["const", "enum", "default", "examples"])
+    @pytest.mark.parametrize("backend", ["minimal", "jsonschema"])
+    def test_a_property_named_like_a_data_keyword_is_still_checked(self, name, backend):
+        if backend == "jsonschema":
+            pytest.importorskip("jsonschema")
+        schema = {"type": "object", "properties": {name: {"$ref": "https://example.invalid/x"}}}
+        with pytest.raises(ValueError, match="only local references"):
+            JsonSchemaValid(schema, backend=backend)
