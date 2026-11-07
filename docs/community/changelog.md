@@ -119,6 +119,14 @@
   full-width stops) is now ignored, so `नमस्ते।` matches `नमस्ते`. **Scores change** for samples with
   repeated tokens, an empty side or such punctuation, and `identity()` gains `"overlap": "multiset"`, so
   cached `f1_score` results are not reused.
+- **Red-team detectors mixed up refusals and attacks.** `KeywordDetector` no longer matches "as an ai" or "system
+  prompt", `InjectionSuccessDetector` no longer matches a bare "hacked", `RefusalDetector` is word-bounded and reads
+  only the opening sentence ("the API cannot..." is not a refusal), and `SystemPromptLeakDetector` fires on a
+  disclosure ("my system prompt is...", "I was instructed to...") in a non-refusal, not on generic phrases. The
+  natural-word markers "bypassed" and "ignore all previous" are gone.
+- **`LLMJudge` number parsing.** `SCORE: 8/10` on the default 0-1 scale is 0.8 (it was read as 8 and clamped to
+  1.0), and with no `SCORE:` marker the last number on the final line is the verdict, not the first ("... so overall
+  I rate it 0.1" read 3). A number outside the scale is unknown instead of being clamped to the top or bottom score.
 - **A `TypeError` raised inside a context scorer was retried without `context`.** `FunctionScorer` now checks whether
   `fn(sample, output, context=...)` binds to the scorer's own signature. If it does, a `TypeError` came from inside the
   scorer and is raised once, for scorers that name `context`, take `**kwargs`, or sit behind a `functools.wraps` forwarder
