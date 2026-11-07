@@ -102,6 +102,10 @@
 - `check_compat()`: warns for sglang on Python 3.13, and for accelerate < 1.0 with
   transformers 5; with `check_cuda=True`, errors on a torchaudio that won't load
   against torch's CUDA.
+- `LLMJudge` warns (`FutureWarning`) about an option label that carries a `{placeholder}`, a line break or other
+  control character, or is longer than 64 characters, because such a label can put text into the judge's
+  instructions that the caller did not mean to put there. The judge is still built. A later release will refuse
+  these labels with a `ValueError`. `option_label_problems()` lists what is wrong with a set of labels.
 
 ### Fixed
 
