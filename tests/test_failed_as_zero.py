@@ -255,3 +255,43 @@ def test_a_crashing_metric_is_zero_filled_on_precomputed_outputs_too():
     r = ak.evaluate(samples_, model="precomputed", scorers=[CrashOn({"0", "1"})],
                     config=ak.RunConfig(failed_as_zero=True))
     assert r.stats["crashy"].count == 10 and r.headline["crashy"] == pytest.approx(0.8)
+
+
+def _named(model, name):
+    model.name = name   # a distinct model identity, so the two runs do not share a cache entry
+    return model
+
+
+def test_comparison_warning_says_failed_samples_were_counted_as_zero_when_they_were():
+    base = run(_named(Flaky(set()), "flaky-a"), [ak.Contains("ok")], failed_as_zero=True)
+    cand = run(_named(Flaky({0, 1, 5, 6}), "flaky-b"), [ak.Contains("ok")], failed_as_zero=True)
+    comp = ak.RunComparison(base, cand)
+    assert comp.failure_summary()["candidate_failed"] == 4
+    text = comp.summary()
+    assert "counts them as 0.0" in text and "EXCLUDED" not in text
+
+
+def test_comparison_warning_still_says_excluded_without_failed_as_zero():
+    base = run(_named(Flaky(set()), "flaky-c"), [ak.Contains("ok")])
+    cand = run(_named(Flaky({0, 1, 5, 6}), "flaky-d"), [ak.Contains("ok")])
+    assert "EXCLUDED from the means" in ak.RunComparison(base, cand).summary()
+
+
+class NeedsExtra(Metric):
+    """Raises the error for a missing optional dependency on every sample."""
+
+    name = "needs_extra"
+    direction = Direction.MAXIMIZE
+
+    def identity(self) -> dict:
+        return {"name": self.name}
+
+    def score(self, sample, output, context=None):
+        from auditkit.errors import ExtraNotInstalled
+        raise ExtraNotInstalled("nothing", "pip install auditkit[nothing]")
+
+
+def test_a_missing_extra_is_not_turned_into_a_zero_score():
+    r = ak.evaluate(samples(), model=lambda ps: ["ok"] * len(ps), scorers=[NeedsExtra()],
+                    config=ak.RunConfig(failed_as_zero=True))
+    assert r.headline == {}       # as without failed_as_zero: a setup problem, not a measured 0.0

@@ -206,6 +206,10 @@
   cannot be given the best value for.
   A model call that failed is no longer filled for a metric that does not apply to that sample, and a metric that
   crashed on a sample with a precomputed `actual_output` is now filled too (it was missed on that path).
+  A sample that failed because an optional dependency is missing (`ExtraNotInstalled`) is no longer turned into a
+  0.0 score, since that is a setup problem. `RunComparison.summary()` no longer says failed samples were left out of
+  the means when a run used `failed_as_zero`; it says they were counted as 0.0 and that `per_task_deltas()` and
+  `significance()` leave them out.
 - `JsonSchemaValid` with the built-in validator gave wrong verdicts, or crashed in the middle of a run, on schema
   values it cannot check: a draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum` passed a value the real validator
   rejects, and the array form of `items`, an unknown `type` or a non-list `required` raised `AttributeError` or

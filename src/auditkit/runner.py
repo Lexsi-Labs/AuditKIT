@@ -726,7 +726,9 @@ class Runner:
                 except Exception as e:
                     logger.error("Sample %s failed: %s", sample.id, e)
                     failed_count += 1
-                    failures.append(([], [m.name for m in spec.metrics if m.applicable(sample)]))
+                    # a missing extra is a setup problem, not the model's answer: not filled with 0.0
+                    failures.append(([], [] if isinstance(e, ExtraNotInstalled)
+                                     else [m.name for m in spec.metrics if m.applicable(sample)]))
                     predictions.append(Prediction(
                         run_id=run_id,
                         task=getattr(sample, 'task', '') or '',
@@ -804,7 +806,9 @@ class Runner:
                 except Exception as e:
                     logger.error("Sample %s failed: %s", sample.id, e)
                     failed_count += 1
-                    failures.append(([], [m.name for m in spec.metrics if m.applicable(sample)]))
+                    # a missing extra is a setup problem, not the model's answer: not filled with 0.0
+                    failures.append(([], [] if isinstance(e, ExtraNotInstalled)
+                                     else [m.name for m in spec.metrics if m.applicable(sample)]))
                     predictions.append(Prediction(
                         run_id=run_id,
                         task=getattr(sample, 'task', '') or '',
