@@ -382,6 +382,7 @@ class Runner:
         errors: list | None = None,
         prompt: Optional[str] = None,
         extracted_by: str | None = None,
+        names_by_metric: dict[str, set[str]] | None = None,
     ) -> tuple[list[Score], Prediction]:
         # extracted_by names an annotator whose context["extracted"] value
         # should be scored instead of the raw output (e.g. RegexAnnotator
@@ -428,6 +429,8 @@ class Runner:
                 failed_metrics.append(metric.name)
                 continue
             produced_list = produced if isinstance(produced, list) else [produced]
+            if names_by_metric is not None:  # which score names each metric produced, for failed_as_zero
+                names_by_metric.setdefault(metric.name, set()).update(s.name for s in produced_list)
             for s in produced_list:
                 # A Score flagged metadata["unknown"] is not a measurement (its value
                 # is a placeholder). "unknown" -- the metric could not decide, e.g. an
@@ -504,19 +507,31 @@ class Runner:
 
     @staticmethod
     def failed_zeros(
-        metrics: list[Metric], failures: list[tuple[list[Score], Optional[list[str]]]], scores: list[Score]
+        metrics: list[Metric], failures: list[tuple[list[Score], Optional[list[str]]]], scores: list[Score],
+        names_by_metric: Optional[dict[str, set[str]]] = None,
     ) -> list[Score]:
         """The 0.0 Scores ``RunConfig.failed_as_zero`` adds for what failed samples never produced.
 
         Only higher-is-better names get one: a lower-is-better metric has no worst value to
         invent. A name the failed sample did score (e.g. an opted-in ``unknown_score``) is kept.
+
+        ``names_by_metric`` maps a metric's name to the score names it produced in this run. A metric whose
+        scores carry other names (``retrieval`` giving ``recall@k``, ...) is filled by those names, and
+        its own name is used only when it produced nothing at all.
         """
+        names_by_metric = names_by_metric or {}
         direction = {s.name: s.direction for s in scores}
-        direction.update({m.name: m.direction for m in metrics})
+        direction.update({m.name: m.direction for m in metrics if m.name not in names_by_metric})
+        known = set().union(*names_by_metric.values()) | {m.name for m in metrics if m.name not in names_by_metric}
         zeros = []
         for got, names in failures:
             counted = {s.name for s in got if unscored_status(s) is None}
-            for name in direction if names is None else names:
+            if names is None:
+                targets = [n for n in direction if n in known]
+            else:
+                targets = list(dict.fromkeys(
+                    n for metric_name in names for n in sorted(names_by_metric.get(metric_name, {metric_name}))))
+            for name in targets:
                 if direction.get(name, Direction.MAXIMIZE) == Direction.MAXIMIZE and name not in counted:
                     zeros.append(Score(name=name, value=0.0, direction=Direction.MAXIMIZE,
                                        metadata={"failed": True}))
@@ -576,6 +591,7 @@ class Runner:
         failed_count: int = 0
         # per failure: (scores the sample did get, metric names it failed on, None for all)
         failures: list[tuple[list[Score], Optional[list[str]]]] = []
+        names_by_metric: dict[str, set[str]] = {}
         latency = LatencyStats()
         throughput = Throughput()
         # Real, provider-reported token counts -- only ever non-zero when a
@@ -675,6 +691,7 @@ class Runner:
                     # scoring is structurally disabled here.
                     scores, prediction = self.score_one(
                         spec.metrics, sample, output, context, run_id, errors, prompt=prompt,
+                        names_by_metric=names_by_metric,
                     )
                     all_scores.extend(scores)
                     predictions.append(prediction)
@@ -752,7 +769,7 @@ class Runner:
                     prompt = _prompt_text(reqs[0].prompt) if reqs else None
                     scores, prediction = self.score_one(
                         spec.metrics, sample, output, context, run_id, errors, prompt=prompt,
-                        extracted_by=spec.extracted_by,
+                        extracted_by=spec.extracted_by, names_by_metric=names_by_metric,
                     )
                     all_scores.extend(scores)
                     predictions.append(prediction)
@@ -791,7 +808,7 @@ class Runner:
                     if str(doc.get("name", "")).startswith(_PARALLEL_SCORES):
                         doc["metadata"] = {**doc.get("metadata", {}), "cap_unverified": True}
         if config.failed_as_zero:
-            all_scores.extend(self.failed_zeros(spec.metrics, failures, all_scores))
+            all_scores.extend(self.failed_zeros(spec.metrics, failures, all_scores, names_by_metric))
         stats = self.aggregate(all_scores)
         unscored = self.unscored_counts(all_scores)
         for name, n in Counter(e["metric"] for e in errors if "metric" in e).items():

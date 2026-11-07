@@ -58,6 +58,44 @@ _SCHEMA_KEYWORDS = ("additionalProperties", "items", "not")
 _LIST_KEYWORDS = ("anyOf", "oneOf", "allOf")
 
 
+def _as_key(value: Any) -> Any:
+    """``value`` as a dictionary key: a normalizer hook may return a list or dict, which is not hashable."""
+    try:
+        hash(value)
+        return value
+    except TypeError:
+        return json.dumps(value, sort_keys=True, default=str)
+
+
+def _bad_shapes(schema: Any, found: Optional[list] = None) -> list[str]:
+    """Keyword values in ``schema`` (at schema positions only) the built-in validator would misread or crash on."""
+    found = [] if found is None else found
+    if not isinstance(schema, dict):
+        return found
+    if "type" in schema:
+        names = [schema["type"]] if isinstance(schema["type"], str) else schema["type"]
+        if not isinstance(names, list) or not all(isinstance(n, str) and n in _TYPES for n in names):
+            found.append(f"type {schema['type']!r} is not a known type name or list of them")
+    if "required" in schema and not (isinstance(schema["required"], list)
+                                     and all(isinstance(k, str) for k in schema["required"])):
+        found.append("required must be a list of property names")
+    if "items" in schema and not isinstance(schema["items"], (dict, bool)):
+        found.append("items must be a schema (the array form of items is not supported)")
+    for kw in ("exclusiveMinimum", "exclusiveMaximum"):
+        if kw in schema and (isinstance(schema[kw], bool) or not isinstance(schema[kw], (int, float))):
+            found.append(f"{kw} must be a number (the draft-04 boolean form is not supported)")
+    for k in _MAP_KEYWORDS:
+        mapped = schema.get(k)
+        for sub in (mapped.values() if isinstance(mapped, dict) else ()):
+            _bad_shapes(sub, found)
+    for k in _SCHEMA_KEYWORDS:
+        _bad_shapes(schema.get(k), found)
+    for k in _LIST_KEYWORDS:
+        for sub in (schema.get(k) if isinstance(schema.get(k), list) else ()):
+            _bad_shapes(sub, found)
+    return found
+
+
 def _unsupported(schema: Any, found: Optional[set] = None) -> set[str]:
     """Keywords in ``schema`` (recursively, at schema positions only) the built-in validator cannot check."""
     found = set() if found is None else found
@@ -285,6 +323,10 @@ class JsonSchemaValid(Metric):
                 if missing:
                     raise ValueError(f"the minimal JSON Schema validator cannot check {sorted(missing)}; "
                                      f"pip install auditkit[jsonschema] and use backend='jsonschema'")
+                shapes = _bad_shapes(schema)
+                if shapes:
+                    raise ValueError("the schema holds values the minimal JSON Schema validator cannot check: "
+                                     + "; ".join(shapes) + "; pip install auditkit[jsonschema] and use backend='jsonschema'")
 
                 def run(inst: Any) -> Optional[str]:
                     errs = _errors(inst, schema, schema, "$")
@@ -341,7 +383,9 @@ class FieldF1(Metric):
     ``field_f1`` (the headline), ``field_precision`` and ``field_recall``; the f1 score's ``reason`` lists up to
     five wrong or missing paths. Output that is not JSON scores 0 on all three; a target that is not JSON raises.
 
-    Lists are aligned before comparing, never by position alone: lists of scalars as multisets; lists of objects
+    Lists are aligned before comparing, never by position alone: lists of scalars as multisets (each predicted value
+    takes the first unused target it equals, within ``number_tol`` for numbers, so a tolerance can pair values
+    first-come rather than best-match); lists of objects
     by a key field when ``list_keys`` names one (``"id"``, or ``{"items": "sku"}`` mapping a path pattern such as
     ``"orders[].lines"`` to its key field), otherwise greedily, pairing the item pairs with the most matching leaves
     first. A predicted object whose key is absent from the target stays unmatched.
@@ -441,10 +485,10 @@ class FieldF1(Metric):
             queues: dict[Any, list[int]] = defaultdict(list)
             for j, t in enumerate(truth):
                 if isinstance(t, dict) and key in t and _leaf(t[key]):
-                    queues[self._norm(f"{item_path}.{key}", t[key])].append(j)
+                    queues[_as_key(self._norm(f"{item_path}.{key}", t[key]))].append(j)
             for i, p in enumerate(pred):
                 if isinstance(p, dict) and key in p and _leaf(p[key]):
-                    q = queues.get(self._norm(f"{item_path}.{key}", p[key]))
+                    q = queues.get(_as_key(self._norm(f"{item_path}.{key}", p[key])))
                     if q:
                         j = q.pop(0)
                         pairs.append((i, j))
