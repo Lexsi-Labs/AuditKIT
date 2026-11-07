@@ -102,9 +102,10 @@ def test_numeric_scale_normalizes():
     assert s.metadata["raw_score"] == 4.0
 
 
-def test_numeric_clamps_out_of_range():
+def test_numeric_out_of_range_is_unknown_not_clamped():
     j = LLMJudge(judge_model=FakeJudge("SCORE: 9"), scale=(1.0, 5.0), prompt="{output}")
-    assert j.score(Sample(input="q", target="a"), "x").value == 1.0
+    s = j.score(Sample(input="q", target="a"), "x")
+    assert s.metadata.get("unknown")
 
 
 # --- template + config validation ----------------------------------------
