@@ -11,6 +11,7 @@ arrive as later techniques but wear this same interface.
 from __future__ import annotations
 
 import re
+import unicodedata
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Union
 
@@ -91,10 +92,28 @@ _ARTICLE_RE = re.compile(r"\b(a|an|the)\b", re.IGNORECASE)
 _PUNCT_RE = re.compile(r"[^\w\s]")
 
 
+def _strip_punct(text: str, repl: str) -> str:
+    """Replace each character that is not a word character, whitespace or a
+    combining mark with *repl*, after NFC.
+
+    Combining marks (Indic vowel signs and viramas, decomposed accents) are not
+    ``\\w``, so a plain ``[^\\w\\s]`` would turn the Hindi words ``दिन`` and ``दान``
+    into the same ``द न``. The zero-width non-joiner and joiner (U+200C, U+200D) are
+    removed, not replaced: they sit inside words (Persian ``می‌خواهم``, Devanagari
+    ``क्‍ष``) and change only how the word is drawn. ASCII text has no marks and takes
+    that regex unchanged.
+    """
+    if text.isascii():
+        return _PUNCT_RE.sub(repl, text)
+    text = unicodedata.normalize("NFC", text).replace("\u200c", "").replace("\u200d", "")
+    return "".join(repl if _PUNCT_RE.match(c) and not unicodedata.category(c).startswith("M") else c
+                   for c in text)
+
+
 def _normalize(text: str) -> str:
     """Lowercase, drop punctuation and articles, collapse whitespace."""
     text = text.lower()
-    text = _PUNCT_RE.sub(" ", text)
+    text = _strip_punct(text, " ")
     text = _ARTICLE_RE.sub(" ", text)
     return " ".join(text.split())
 

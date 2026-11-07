@@ -12,24 +12,21 @@ A sample with no retrieved context at all is skipped (no score), not scored 0.
 
 from __future__ import annotations
 
-import re
 from typing import Any, Union
 
-from auditkit.metric import Metric
+from auditkit.metric import Metric, _strip_punct
 from auditkit.metrics.retrieval import retrieved_contexts
 from auditkit.registry import METRICS
 from auditkit.sample import Sample
 from auditkit.score import Score
 from auditkit.types import Direction, ScoreKind
 
-_PUNCT_RE = re.compile(r"[^\w\s]")
-
 
 def _tokens(text: str) -> list[str]:
     """Normalized word tokens shared by every lexical RAG metric: lowercased and
     punctuation-stripped, so ``"Paris."``, ``"paris"`` and ``"Paris"`` all
     tokenize to ``"paris"`` (finding 14)."""
-    return _PUNCT_RE.sub(" ", text.lower()).split()
+    return _strip_punct(text.lower(), " ").split()
 
 
 def _covered(token: str, vocabulary: set[str]) -> bool:
