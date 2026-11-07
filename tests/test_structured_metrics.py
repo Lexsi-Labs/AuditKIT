@@ -5,6 +5,8 @@ from __future__ import annotations
 import importlib.util
 import json
 
+import sys
+
 import pytest
 
 import auditkit as ak
@@ -377,3 +379,10 @@ class TestRemoteReferencesAreNotFollowed:
         schema = {"definitions": {"n": {"type": "integer"}}, "properties": {"a": {"$ref": "#/definitions/n"}}}
         m = JsonSchemaValid(schema, backend=backend)
         assert valid(m, {"a": 1}) == 1.0 and valid(m, {"a": "x"}) == 0.0
+
+    def test_without_the_referencing_package_the_jsonschema_backend_refuses_to_run(self, monkeypatch):
+        pytest.importorskip("jsonschema")
+        from auditkit.errors import ExtraNotInstalled
+        monkeypatch.setitem(sys.modules, "referencing", None)   # as with jsonschema before 4.18
+        with pytest.raises(ExtraNotInstalled, match="jsonschema>=4.18"):
+            JsonSchemaValid({"type": "integer"}, backend="jsonschema")

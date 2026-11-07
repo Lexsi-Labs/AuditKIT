@@ -245,7 +245,7 @@
   per-sample `metadata["schema"]`), and a `$ref` to a URL made the evaluator send a request to that host, which could be an
   internal address. Only local references (`#...`) are followed now, on both backends: a schema with any other `$ref`,
   `$dynamicRef` or `$recursiveRef` raises a `ValueError` (when the metric is built, or when a per-sample schema is scored),
-  and `jsonschema` is given a registry that retrieves nothing.
+  and `jsonschema` is given a registry that retrieves nothing. The `jsonschema` extra now needs `jsonschema>=4.18` (older versions fetch remote references and cannot be given such a registry); with an older one the backend raises `ExtraNotInstalled`.
 
 ### Changed
 

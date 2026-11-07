@@ -340,11 +340,12 @@ class JsonSchemaValid(Metric):
 
                 cls = jsonschema.validators.validator_for(schema)
                 cls.check_schema(schema)
-                try:   # jsonschema 4.18+: a registry that retrieves nothing (the default one fetches remote references)
+                try:   # a registry that retrieves nothing: jsonschema's default one fetches remote references
                     from referencing import Registry
-                    v = cls(schema, registry=Registry())
-                except ImportError:
-                    v = cls(schema)
+                except ImportError:   # jsonschema before 4.18 would fetch them; refuse rather than run unprotected
+                    from auditkit.errors import ExtraNotInstalled
+                    raise ExtraNotInstalled("jsonschema", "pip install 'jsonschema>=4.18'") from None
+                v = cls(schema, registry=Registry())
 
                 def run(inst: Any) -> Optional[str]:
                     err = next(iter(v.iter_errors(inst)), None)
