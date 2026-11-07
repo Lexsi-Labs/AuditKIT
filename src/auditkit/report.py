@@ -175,6 +175,8 @@ class RunResult:
             lines.append(
                 f"  {row['name']}: {row['mean']:.4f} ± {row['stderr']:.4f}  (n={row['n']})"
             )
+        if self.failed_count:
+            lines.append(f"  {self.failed_count} failed sample(s) left out of the means above; see .errors")
         perf_line = self._perf_line()
         if perf_line:
             lines.append(f"  {perf_line}")

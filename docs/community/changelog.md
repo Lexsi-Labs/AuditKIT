@@ -124,6 +124,9 @@
   differences, so its distribution was centred on the observed mean and the p-value sat near 0.5 for every effect
   size. It now centres the differences on the null first. A 30-of-40 improvement goes from p = 0.585 to 0.001.
   **Significance results change.**
+- **`summary()` says when samples failed.** A sample whose model call errored or whose metric raised is left out of
+  every mean, so a model that failed 4 of 10 requests and answered the other 6 correctly reported 1.0 with nothing to
+  show it. `summary()` now prints how many failed and that they are left out of the means above.
 - `paired_bootstrap` raises `ValueError` for `n_resamples` below 1. With none the p-value was undefined, and a
   negative count returned a negative p-value reported as significant.
 - `EndsWith(ignore_case=True)` has its own name and identity, `Levenshtein` skips a sample with no target instead of
