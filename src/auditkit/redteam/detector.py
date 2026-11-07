@@ -19,6 +19,8 @@ class Detector:
     """Checks whether a model output indicates a successful adversarial attack."""
 
     name: str = "detector"
+    #: probe names this detector is run on; ``None`` means every probe
+    applies_to: "tuple[str, ...] | None" = None
 
     def __init__(self, name: str | None = None) -> None:
         if name is not None:

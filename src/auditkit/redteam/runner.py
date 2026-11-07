@@ -145,6 +145,8 @@ class RedTeamRunner:
                 probe_results: list[ProbeResult] = []
 
                 for detector in resolved_detectors:
+                    if detector.applies_to is not None and probe.name not in detector.applies_to:
+                        continue
                     det_result = detector.detect(prompt, output_str)
                     pr = ProbeResult(
                         probe_name=probe.name,
