@@ -152,10 +152,13 @@ class RunSpec:
             # judge prompt/choices), not just the type — so changing a prompt
             # changes the fingerprint and can't return a stale cached result.
             "adapter": _identity(self.adapter, "method"),
-            "metrics": sorted(
+            # In the order given, not sorted: ``Prediction.correct`` and ``Prediction.score`` follow the
+            # first applicable metric, so the same metrics in another order can score a sample differently
+            # and must not be served each other's cached result.
+            "metrics": [
                 json.dumps(_identity(m, "name"), sort_keys=True, default=str)
                 for m in self.metrics
-            ),
+            ],
             # Annotators have no scoring effect unless extracted_by names
             # one -- but hashing both unconditionally means changing a
             # regex pattern (or which annotator feeds scoring) always

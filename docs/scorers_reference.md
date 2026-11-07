@@ -8,6 +8,10 @@ in constructor arguments, `required_fields` (which fields the runner checks
 before it runs a scorer against a sample — see `Metric.applicable()`), and
 what `context` keys (if any) they read.
 
+When several scorers are passed, `Prediction.correct` and `Prediction.score` follow the **first** applicable one,
+and every scorer's score is still recorded. The order is therefore part of the run's identity: the same scorers in
+another order are a different run and are not served each other's cached result.
+
 **Kind** is the `ScoreKind` the scorer reports (`BENCHMARK`, `JUDGE`, `CODE`,
 `SECURITY`, `RAG`, `AGENT`) — used for grouping/filtering results, not a hard
 constraint on what the scorer measures.

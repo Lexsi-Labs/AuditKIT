@@ -127,6 +127,11 @@
 - **`summary()` says when samples failed.** A sample whose model call errored or whose metric raised is left out of
   every mean, so a model that failed 4 of 10 requests and answered the other 6 correctly reported 1.0 with nothing to
   show it. `summary()` now prints how many failed and that they are left out of the means above.
+- **The same scorers in another order were served each other's cached result.** `Prediction.correct` and
+  `Prediction.score` follow the first applicable scorer, but the run's cache key sorted the scorers, so after
+  `evaluate(..., [exact_match, f1_score])` the call with `[f1_score, exact_match]` returned the first run's
+  `correct` (`False`) where a fresh run gives `True`. The scorers' order is now part of the cache key. A run with
+  its scorers in a different order is a cache miss and is scored again; the same order still hits the cache.
 - `paired_bootstrap` raises `ValueError` for `n_resamples` below 1. With none the p-value was undefined, and a
   negative count returned a negative p-value reported as significant.
 - `EndsWith(ignore_case=True)` has its own name and identity, `Levenshtein` skips a sample with no target instead of
