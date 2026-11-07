@@ -8,6 +8,10 @@ in constructor arguments, `required_fields` (which fields the runner checks
 before it runs a scorer against a sample — see `Metric.applicable()`), and
 what `context` keys (if any) they read.
 
+When several scorers are passed, `Prediction.correct` and `Prediction.score` follow the **first** applicable one,
+and every scorer's score is still recorded. The order is therefore part of the run's identity: the same scorers in
+another order are a different run and are not served each other's cached result.
+
 **Kind** is the `ScoreKind` the scorer reports (`BENCHMARK`, `JUDGE`, `CODE`,
 `SECURITY`, `RAG`, `AGENT`) — used for grouping/filtering results, not a hard
 constraint on what the scorer measures.
@@ -30,10 +34,10 @@ constraint on what the scorer measures.
 | `starts_with` | `StartsWith` | CODE | — | 1.0 iff `output` starts with a given `prefix` (constructor arg). |
 | `ends_with` | `EndsWith` | CODE | — | 1.0 iff `output` ends with a given `suffix` (constructor arg). |
 | `regex` | `Regex` | CODE | — | 1.0 iff a given regex `pattern` (constructor arg) matches anywhere in `output`. |
-| `levenshtein` | `Levenshtein` | CODE | — | `1 - (edit distance / max(len(output), len(target)))` — a real Wagner–Fischer DP edit distance, not an approximation. |
+| `levenshtein` | `Levenshtein` | CODE | `target` | `1 - (edit distance / max(len(output), len(target)))` — a real Wagner–Fischer DP edit distance, not an approximation. |
 | `word_count` | `WordCount` | CODE | — | 1.0 iff `len(output.split())` falls within `[min_words, max_words]` (constructor args; either bound optional). |
 | `is_json` | `IsJson` | CODE | — | 1.0 iff `output` parses as JSON; optionally also requires specific top-level keys (`require_keys=`) to be present in a parsed dict. |
-| `f1_score` | `F1Score` | CODE | — | Token-level F1 between `output` and `sample.target`, computed via set intersection over whitespace-split tokens (order and duplicates ignored). |
+| `f1_score` | `F1Score` | CODE | — | Token-level F1 between `output` and `sample.target`, computed from the multiset (`Counter`) overlap of the tokens, as in the SQuAD script: order is ignored and a repeated token counts as often as it appears in both. Two strings with no tokens left after normalization score 1.0. |
 
 ## Generation quality (`src/auditkit/metrics/generation.py`)
 

@@ -134,6 +134,23 @@ def test_identity_folds_in_model_and_profile():
     assert ident["assess"] == "response"
 
 
+def test_identity_tracks_judge_model_args():
+    # api_base selects the server, as in LLMJudge; api_key stays out of the fingerprint.
+    a = GuardJudge(judge_model="api:m", judge_model_args={"api_base": "http://a/v1", "api_key": "SECRET"})
+    b = GuardJudge(judge_model="api:m", judge_model_args={"api_base": "http://b/v1"})
+    assert a.identity() != b.identity()
+    assert "SECRET" not in str(a.identity())
+
+
+def test_identity_tracks_model_objects():
+    # APIModel.name is "api" for every model and server, so it can't identify one.
+    from auditkit.model.api_gen import APIModel
+
+    a = GuardJudge(judge_model=APIModel("m", api_base="http://a/v1", api_key="x"))
+    b = GuardJudge(judge_model=APIModel("m", api_base="http://b/v1", api_key="x"))
+    assert a.identity() != b.identity()
+
+
 # --- other guard profiles: WildGuard (raw-prompt, 3-field) ----------------
 
 from auditkit.metrics.guard import _parse_wildguard, _parse_harmbench

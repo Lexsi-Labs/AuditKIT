@@ -264,6 +264,19 @@ def test_tradeoff_quality_per_mb_is_direction_aware_for_minimize_metrics():
     assert t["quality_per_mb"] != 0.20 / 100.0
 
 
+def test_tradeoff_metric_scored_on_one_side_only():
+    # "bleu" is only on the baseline: retention is None, so there is no
+    # quality_per_mb to report -- tradeoff() must not divide None by size.
+    sizes = {"is_local": True, "model_name": "m", "size_mb": 100.0}
+    base = _mk_run("b", [("s1", "t", "acc", 1.0, "maximize"), ("s1", "t", "bleu", 0.5, "maximize")],
+                   model_size=sizes)
+    cand = _mk_run("c", [("s1", "t", "acc", 1.0, "maximize")], model_size=sizes)
+    t = RunComparison(base, cand).tradeoff(metric="bleu")
+    assert t["retention"] is None
+    assert "quality_per_mb" not in t
+    assert t["size_ratio"] == 1.0
+
+
 # --- direction-aware grading (MINIMIZE, hand-built runs) ------------------
 
 def _mk_run(run_id, rows, model_size=None):

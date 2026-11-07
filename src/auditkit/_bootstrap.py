@@ -52,7 +52,11 @@ def paired_bootstrap(
     Returns ``{n, mean_baseline, mean_candidate, delta, p_value, significant}``
     where ``delta = mean_candidate - mean_baseline`` (positive ⇒ candidate scored
     higher). Fewer than 2 pairs can't be resampled meaningfully → ``{"error": ...}``.
+    ``n_resamples`` below 1 raises ``ValueError``: with none the p-value is not defined, and a negative
+    count gave a negative p-value.
     """
+    if n_resamples < 1:
+        raise ValueError(f"n_resamples must be at least 1, got {n_resamples}")
     n = len(pairs)
     if n < 2:
         return {"error": "need at least 2 aligned sample pairs", "n": n}
@@ -61,9 +65,12 @@ def paired_bootstrap(
     mean_candidate = sum(c for _, c in pairs) / n
     observed = sum(diffs) / n
     rng = random.Random(seed)
+    # Null hypothesis: no difference. Centre the differences on zero before resampling; resampling the raw
+    # differences centres the resampled means on `observed`, which puts p near 0.5 whatever the effect.
+    centred = [d - observed for d in diffs]
     count = 0
     for _ in range(n_resamples):
-        resample = [rng.choice(diffs) for _ in range(n)]
+        resample = [rng.choice(centred) for _ in range(n)]
         if abs(sum(resample) / n) >= abs(observed):
             count += 1
     p = (count + 1) / (n_resamples + 1)

@@ -133,6 +133,11 @@ class TestEndsWith:
 
     def test_name(self):
         assert EndsWith("x").name == "endswith(x)"
+        assert EndsWith("x", ignore_case=True).name == "endswith_ci(x)"
+
+    def test_identity_depends_on_ignore_case(self):
+        # Base identity() is {"name": self.name}, and it feeds the run fingerprint.
+        assert EndsWith("x").identity() != EndsWith("x", ignore_case=True).identity()
 
 
 # ============================================================================
@@ -187,6 +192,11 @@ class TestLevenshtein:
         assert 0.0 < score.value < 1.0
         assert isinstance(score, Score)
 
+    def test_requires_target(self):
+        m = Levenshtein()
+        assert "target" in m.required_fields
+        assert m.applicable(Sample(input="q")) is False
+
     def test_name(self):
         assert Levenshtein().name == "levenshtein"
 
@@ -233,6 +243,16 @@ class TestWordCount:
 # ============================================================================
 
 class TestIsJson:
+    def test_non_finite_numbers_are_not_json(self):
+        m = IsJson()
+        for text in ('{"a": NaN}', "[Infinity]", "-Infinity", '{"a": -Infinity}'):
+            assert m.score(Sample(input="q"), text).value == 0.0, text
+
+    def test_finite_values_still_pass(self):
+        m = IsJson(require_keys=["a"])
+        for text in ('{"a": 1.5}', '{"a": null, "b": [1, 2]}'):
+            assert m.score(Sample(input="q"), text).value == 1.0, text
+
     def test_valid_json_object(self):
         m = IsJson()
         s = Sample(input="q")
@@ -266,6 +286,51 @@ class TestIsJson:
 # ============================================================================
 
 class TestF1Score:
+    def test_identical_text_with_repeated_words_is_1(self):
+        m = F1Score()
+        for text in ("New York, New York", "to be or not to be", "paris paris paris", "दिन दिन"):
+            assert m.score(Sample(input="q", target=text), text).value == 1.0, text
+
+    def test_padding_with_a_repeated_token_is_not_full_credit(self):
+        m = F1Score()
+        assert abs(m.score(Sample(input="q", target="paris"), "paris paris paris").value - 0.5) < 1e-9
+        assert abs(m.score(Sample(input="q", target="paris paris paris"), "paris").value - 0.5) < 1e-9
+
+    def test_partial_overlap_value(self):
+        m = F1Score()
+        s = Sample(input="q", target="a b b c")  # "a" is an article and is dropped: b b c
+        assert abs(m.score(s, "b c c").value - 2 * (2 / 3) * (2 / 3) / (4 / 3)) < 1e-9
+
+    def test_both_sides_empty_after_normalisation_is_a_match(self):
+        m = F1Score()
+        assert m.score(Sample(input="q", target="a a a"), "a a a").value == 1.0
+        assert m.score(Sample(input="q", target="the"), "an").value == 1.0
+        assert m.score(Sample(input="q", target=""), "").value == 1.0
+
+    def test_one_side_empty_is_zero(self):
+        m = F1Score()
+        assert m.score(Sample(input="q", target="paris"), "").value == 0.0
+        assert m.score(Sample(input="q", target=""), "paris").value == 0.0
+        assert m.score(Sample(input="q", target="paris"), "the").value == 0.0
+
+    def test_unnormalised_keeps_articles_and_case(self):
+        m = F1Score(normalize=False)
+        assert m.score(Sample(input="q", target="the cat"), "the cat").value == 1.0
+        assert m.score(Sample(input="q", target="Cat"), "cat").value == 0.0
+
+    def test_symmetric(self):
+        m = F1Score()
+        a, b = "red red blue", "red blue blue green"
+        assert abs(m.score(Sample(input="q", target=a), b).value - m.score(Sample(input="q", target=b), a).value) < 1e-9
+
+    def test_non_ascii_punctuation_is_ignored(self):
+        m = F1Score()
+        for target, output in (("नमस्ते", "नमस्ते।"), ("باريس", "باريس،"), ("パリ", "パリ。")):
+            assert m.score(Sample(input="q", target=target), output).value == 1.0, output
+
+    def test_identity_marks_the_multiset_overlap(self):
+        assert F1Score().identity()["overlap"] == "multiset"
+
     def test_exact_match_is_1(self):
         m = F1Score()
         s = Sample(input="q", target="the cat sat")

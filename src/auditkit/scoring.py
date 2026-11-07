@@ -70,10 +70,18 @@ class WeightedSum:
         self.name = name
 
     def compute(self, scores: list[Score]) -> Score:
+        """The weight-averaged value of ``scores``.
+
+        With no scores, or weights that sum to zero, the result is not a measurement: its ``value`` is 0.0
+        only as a placeholder and ``metadata["unknown"]`` is True. A direct caller must check that flag
+        before using ``.value``; the runner does.
+        """
         if not scores:
-            return Score(name=self.name, value=0.0)
+            return Score(name=self.name, value=0.0, reason="no scores to combine",
+                         metadata={"unknown": True, "status": "not_measured"})
         total_weight = sum(s.weight for s in scores)
         if total_weight == 0.0:
-            return Score(name=self.name, value=0.0)
+            return Score(name=self.name, value=0.0, reason="the weights sum to zero",
+                         metadata={"unknown": True, "status": "not_measured"})
         weighted_value = sum(s.value * s.weight for s in scores) / total_weight
         return Score(name=self.name, value=weighted_value)

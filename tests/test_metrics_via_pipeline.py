@@ -177,9 +177,10 @@ class TestPairwiseMetricsViaEvaluate:
 
     def test_win_rate_elo_preference_accuracy(self):
         r = ak.evaluate(BASIC, model=real_model, scorers=[WinRate(), EloScore(), PreferenceAccuracy()])
-        assert "win_rate" in r.headline
+        # BASIC carries no candidates and no preference data: those two are not measured, so they
+        # are out of the headline (not 0 and not 0.5); elo_score has its overlap fallback.
         assert "elo_score" in r.headline
-        assert "preference_accuracy" in r.headline
+        assert "win_rate" not in r.headline and "preference_accuracy" not in r.headline
 
 
 class TestRagMetricsViaEvaluate:

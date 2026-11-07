@@ -85,8 +85,10 @@ def test_field_changes_fingerprint(name):
     (lambda: fp(metrics=[ak.ToolCallF1(arg_match=lambda n, p, r: True)]),
      lambda: fp(metrics=[ak.ToolCallF1(arg_match=lambda n, p, r: p == r)])),
     (lambda: fp(samples(id="a") + samples(id="b", input="x")), lambda: fp(samples(id="b", input="x") + samples(id="a"))),
+    # the first metric decides Prediction.correct and Prediction.score, so another order is another result
+    (lambda: fp(metrics=[ak.RetrievalMetrics(k=3), ak.ToolCallF1()]), lambda: fp(metrics=[ak.ToolCallF1(), ak.RetrievalMetrics(k=3)])),
 ], ids=["model server", "RAG judge server", "task_completion judge server", "judge model", "judge callable",
-        "arg_match fn", "sample order"])
+        "arg_match fn", "sample order", "metric order"])
 def test_pairs_that_must_differ(a, b):
     assert a() != b()
 
@@ -95,11 +97,10 @@ def test_pairs_that_must_differ(a, b):
     (lambda: fp(model=api()), lambda: fp(model=api(api_key="k2"))),
     (lambda: fp(metrics=faith(api_base="x", timeout=60, api_key="a")),
      lambda: fp(metrics=faith(api_base="x", timeout=600, api_key="b"))),
-    (lambda: fp(metrics=[ak.RetrievalMetrics(k=3), ak.ToolCallF1()]), lambda: fp()),
     (lambda: fp(samples(actual_trace={"retrieved_contexts": ["d1", "d2"], "tool_calls": [[W("Paris"), W("Rome")]]})),
      lambda: fp()),
     (lambda: fp(samples(id=None)), lambda: fp(samples(id="0"))),   # Runner's auto id is not identity
-], ids=["api_key", "judge timeout/api_key", "metric order", "dict key order", "auto id"])
+], ids=["api_key", "judge timeout/api_key", "dict key order", "auto id"])
 def test_pairs_that_must_match(a, b):
     assert a() == b()
 

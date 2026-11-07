@@ -323,9 +323,9 @@ class LLMJudge(JudgeMetric):
                              metadata={"choice": label, "raw": text[:2000]})
         else:
             value = self._match_number(text)
-            if value is not None:
-                lo, hi = self.scale  # type: ignore[misc]
-                value = max(lo, min(hi, value))
+            lo, hi = self.scale  # type: ignore[misc]
+            # a number outside the scale is a misread, not a top score: fall through to UNKNOWN
+            if value is not None and lo <= value <= hi:
                 norm = (value - lo) / (hi - lo) if hi > lo else float(value)
                 return Score(name=self.name, value=norm, kind=ScoreKind.JUDGE,
                              reason=reason, threshold=self.threshold,
@@ -390,14 +390,23 @@ class LLMJudge(JudgeMetric):
         return None
 
     def _match_number(self, text: str) -> Optional[float]:
+        """The verdict as a value on ``scale``; ``N/M`` is read as a fraction of the scale."""
+        num = r"(-?\d+(?:\.\d+)?)(?:\s*/\s*(\d+(?:\.\d+)?))?"
         marked = _last_marker(text, "SCORE")
-        candidates = re.findall(r"-?\d+(?:\.\d+)?", marked) if marked else []
-        if not candidates:
-            # Same reasoning as _match_choice's fallback: only the final line
-            # is where the verdict was asked for, not any number mentioned
-            # earlier in the reasoning.
-            candidates = re.findall(r"-?\d+(?:\.\d+)?", _last_line(text))
-        return float(candidates[0]) if candidates else None
+        found = re.findall(num, marked) if marked else []
+        # the number right after the marker; in the fallback the last one on the
+        # final line ("... so overall I rate it 0.1"), not one mentioned earlier
+        pick = found[:1]
+        if not pick:
+            pick = re.findall(num, _last_line(text))[-1:]
+        if not pick:
+            return None
+        n, m = pick[0]
+        value = float(n)
+        lo, hi = self.scale  # type: ignore[misc]
+        if m and float(m) > 0 and float(m) != hi:   # "8/10" on a 0-1 scale; "4/5" on 1-5 is already scale units
+            return lo + value / float(m) * (hi - lo)
+        return value
 
     # -- Metric API --------------------------------------------------------
     def judge(self, sample: Sample, output: str, context: Any = None) -> Score:
@@ -424,6 +433,8 @@ class LLMJudge(JudgeMetric):
             "gen_params": self._gen_params,
             # an opted-in unknown_score is averaged, so it changes results
             "unknown_score": self.unknown_score,
+            # written onto every Score; threshold also decides passed/correct
+            "threshold": self.threshold, "direction": self.direction,
         }
 
 
