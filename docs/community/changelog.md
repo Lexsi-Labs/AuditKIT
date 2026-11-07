@@ -124,6 +124,8 @@
   differences, so its distribution was centred on the observed mean and the p-value sat near 0.5 for every effect
   size. It now centres the differences on the null first. A 30-of-40 improvement goes from p = 0.585 to 0.001.
   **Significance results change.**
+- `paired_bootstrap` raises `ValueError` for `n_resamples` below 1. With none the p-value was undefined, and a
+  negative count returned a negative p-value reported as significant.
 - `EndsWith(ignore_case=True)` has its own name and identity, `Levenshtein` skips a sample with no target instead of
   scoring it, `LLMJudge` includes its threshold and direction in its identity, and `GuardJudge` identifies its judge
   model. Cached results for these metrics are not reused.
@@ -150,10 +152,15 @@
 - **`mcq_joint` dropped the run's generation settings.** The request built for index-labelled multiple choice had
   no parameters, so `max_tokens`, `temperature`, `seed` and `stop_sequences` never reached the model. They are now
   passed on. With no settings given, what a backend receives is unchanged (`temperature=0.0`).
-- **`hf:` device handling.** A `device_map`, at the top level or inside `model_kwargs`, and a quantized load are
-  never passed together with `device`, which `transformers.pipeline` rejects or tries to move. `device_map=None`
-  means no map. fp16 is no longer forced next to an explicit dtype or on a CPU-only map. An explicit `device` that is
-  ignored is logged.
+- **`hf:` loading options.** `quantization_config`, `max_memory`, `low_cpu_mem_usage`, `attn_implementation`,
+  `load_in_8bit` and `load_in_4bit` were passed to `transformers.pipeline()` as top-level keywords, which it forwards
+  to the pipeline instead of the model, so `generate()` later rejected them ("model_kwargs are not used by the
+  model"). They are now nested under `model_kwargs`, and `max_memory` is treated as a load-time option, not a
+  generation one. A `device_map`, at the top level or inside `model_kwargs`, and a quantized load are never passed
+  together with `device`, which `transformers.pipeline` rejects or tries to move; `device_map=None` means no map; fp16
+  is no longer forced next to an explicit dtype or on a CPU-only map; an explicit `device` that is ignored is logged.
+  When torch and transformers are installed but one fails to import, the real error is raised instead of a "pip
+  install" hint.
 - **`f1_score` and `token_overlap` identities** carry the new behaviour (`"punctuation": "unicode"`,
   `"empty_pair": 1.0`), so cached results from before are not reused.
 - `token_overlap`: two empty sides scored 0.0 although identical; they now score 1.0, like `exact_match`,

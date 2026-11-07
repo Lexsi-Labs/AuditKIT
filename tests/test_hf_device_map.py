@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -40,7 +43,7 @@ def calls(monkeypatch):
             transformers.__dict__.pop("pipeline", None)
 
 
-def load(**kw) -> HFGenModel:
+def load(**kw) -> dict:
     m = HFGenModel("m", **kw)
     m._ensure_pipeline()
     return m
@@ -79,6 +82,64 @@ def test_quantized_load_is_not_moved_with_device(calls, key):
     # a bitsandbytes model is placed by accelerate; pipeline(device=...) would try to move it
     load(device="cpu", **{key: object() if key == "quantization_config" else True})
     assert "device" not in calls[0]
+
+
+def test_nested_kwargs_are_not_top_level(calls):
+    load(device="cpu", quantization_config="q", max_memory={0: "10GiB"}, attn_implementation="sdpa",
+         low_cpu_mem_usage=True)
+    kw = calls[0]
+    for k in ("quantization_config", "max_memory", "attn_implementation", "low_cpu_mem_usage"):
+        assert k not in kw
+    assert kw["model_kwargs"] == {"quantization_config": "q", "max_memory": {0: "10GiB"},
+                                  "attn_implementation": "sdpa", "low_cpu_mem_usage": True}
+
+
+def test_top_level_params_stay_top_level(calls):
+    load(device="cpu", dtype="float32", trust_remote_code=True, revision="r", use_fast=False, device_map="auto")
+    kw = calls[0]
+    assert (kw["dtype"], kw["trust_remote_code"], kw["revision"], kw["use_fast"]) == ("float32", True, "r", False)
+    assert "model_kwargs" not in kw
+
+
+def test_no_model_kwargs_key_when_nothing_to_nest(calls):
+    load(device="cpu")
+    assert "model_kwargs" not in calls[0]
+
+
+def test_caller_model_kwargs_dict_is_not_mutated(calls):
+    mine = {"attn_implementation": "eager"}
+    load(device="cpu", model_kwargs=mine, max_memory={0: "1GiB"})
+    assert mine == {"attn_implementation": "eager"}
+
+
+def test_model_kwargs_none_is_ignored(calls):
+    load(device="cpu", model_kwargs=None)
+    assert "model_kwargs" not in calls[0]
+
+
+def test_conflicting_key_in_model_kwargs_and_top_level_is_deterministic():
+    """model_kwargs={'max_memory': A} plus max_memory=B must pick the same winner in every process."""
+    code = (
+        "import sys, types\n"
+        "from unittest import mock\n"
+        "import transformers, transformers.pipelines as p\n"
+        "seen = []\n"
+        "def pipeline(task, model=None, **kw):\n"
+        "    seen.append(kw)\n"
+        "    return types.SimpleNamespace(generation_config=None, model=types.SimpleNamespace(generation_config=None))\n"
+        "transformers.pipeline = pipeline; p.pipeline = pipeline\n"
+        "from auditkit.model.hf_gen import HFGenModel\n"
+        "m = HFGenModel('m', device='cpu', model_kwargs={'max_memory': 'A'}, max_memory='B')\n"
+        "m._ensure_pipeline()\n"
+        "print(seen[0]['model_kwargs']['max_memory'])\n"
+    )
+    import auditkit
+    src = os.path.dirname(os.path.dirname(auditkit.__file__))      # the source this process imported
+    env = {**os.environ, "PYTHONPATH": src}
+    runs = [subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                           env={**env, "PYTHONHASHSEED": str(s)}) for s in range(8)]
+    assert all(r.returncode == 0 for r in runs), [r.stderr[-300:] for r in runs if r.returncode]
+    assert {r.stdout.strip() for r in runs} == {"B"}
 
 
 def test_fp16_is_not_forced_on_a_cpu_device_map(calls, monkeypatch):

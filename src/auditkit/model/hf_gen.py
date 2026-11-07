@@ -41,7 +41,18 @@ logger = logging.getLogger(__name__)
 _LOAD_TIME_KWARGS = frozenset({
     "torch_dtype", "dtype", "device_map", "trust_remote_code", "revision",
     "low_cpu_mem_usage", "quantization_config", "model_kwargs", "use_fast",
-    "attn_implementation", "load_in_8bit", "load_in_4bit",
+    "attn_implementation", "load_in_8bit", "load_in_4bit", "max_memory",
+})
+
+# transformers.pipeline() only recognizes a handful of loading kwargs as named
+# top-level parameters (see its signature); passing any other _LOAD_TIME_KWARGS
+# key directly as a top-level kwarg instead falls into pipeline()'s own **kwargs
+# catch-all, which it forwards to the Pipeline object as a GENERATE-time forward
+# param rather than a model-loading one -- causing generate() to reject it later
+# ("following model_kwargs are not used by the model"). These must be nested
+# inside pipeline()'s own model_kwargs={} dict instead.
+_PIPELINE_TOP_LEVEL_LOAD_KWARGS = frozenset({
+    "torch_dtype", "dtype", "device_map", "trust_remote_code", "revision", "use_fast",
 })
 
 
@@ -205,8 +216,13 @@ class HFGenModel(Model):
         try:
             import torch  # noqa: F401 -- forces a clear ExtraNotInstalled if torch is missing
             from transformers import pipeline
-        except ImportError:
-            raise ExtraNotInstalled("transformers", "pip install auditkit[transformers]")
+        except ImportError as e:
+            import importlib.util
+            if importlib.util.find_spec("torch") is None or importlib.util.find_spec("transformers") is None:
+                raise ExtraNotInstalled("transformers", "pip install auditkit[transformers]") from e
+            # Both are installed but one failed to import (e.g. an old Pillow, a torch/torchvision
+            # mismatch): surface the real error instead of a misleading "pip install" hint.
+            raise ImportError(f"torch/transformers are installed but failed to import: {e}") from e
         if os.path.isfile(os.path.join(str(self._model_name), "adapter_config.json")):
             # Without peft, transformers reads the folder as a full checkpoint
             # and fails on the missing config.json.
@@ -219,26 +235,33 @@ class HFGenModel(Model):
         pipe_kwargs: dict[str, Any] = {}
         if self._token:
             pipe_kwargs["token"] = self._token
-        for k in _LOAD_TIME_KWARGS:
-            if k in self._extra_kwargs:
+        # A caller-supplied model_kwargs dict is the base; the named keys are applied after it, in a
+        # fixed order, so a key given both ways has the same winner in every process.
+        nested_model_kwargs: dict[str, Any] = dict(self._extra_kwargs.get("model_kwargs") or {})
+        for k in sorted(_LOAD_TIME_KWARGS - {"model_kwargs"}):
+            if k not in self._extra_kwargs:
+                continue
+            if k in _PIPELINE_TOP_LEVEL_LOAD_KWARGS:
                 pipe_kwargs[k] = self._extra_kwargs[k]
+            else:
+                nested_model_kwargs[k] = self._extra_kwargs[k]
         if pipe_kwargs.get("device_map") is None:
             pipe_kwargs.pop("device_map", None)       # device_map=None means "no map"
-        model_kwargs = pipe_kwargs.get("model_kwargs") or {}
-        device_map = pipe_kwargs.get("device_map") or model_kwargs.get("device_map")
+        if nested_model_kwargs:
+            pipe_kwargs["model_kwargs"] = nested_model_kwargs
+        device_map = pipe_kwargs.get("device_map") or nested_model_kwargs.get("device_map")
         device = self._resolve_device()
         if isinstance(device_map, dict):
             cpu_only_map = not any(isinstance(v, int) or str(v).startswith("cuda") for v in device_map.values())
         else:
             cpu_only_map = device_map in ("cpu", "disk", "mps")
-        has_dtype = any(k in d for d in (pipe_kwargs, model_kwargs) for k in ("dtype", "torch_dtype"))
+        has_dtype = any(k in d for d in (pipe_kwargs, nested_model_kwargs) for k in ("dtype", "torch_dtype"))
         if not has_dtype and not cpu_only_map and self._needs_fp16(device):
             pipe_kwargs["dtype"] = torch.float16
         # device and device_map are mutually exclusive in transformers.pipeline(): a device_map
         # (top level or inside model_kwargs) always wins, and a quantized model is placed by
         # accelerate, not moved. In both cases device must be omitted rather than passed alongside.
-        quantized = any(k in d for d in (pipe_kwargs, model_kwargs)
-                        for k in ("quantization_config", "load_in_8bit", "load_in_4bit"))
+        quantized = any(k in nested_model_kwargs for k in ("quantization_config", "load_in_8bit", "load_in_4bit"))
         if device_map is None and not quantized:
             pipe_kwargs["device"] = device
         elif self._device not in (None, "auto"):
