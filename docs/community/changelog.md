@@ -4,6 +4,11 @@
 
 ### Added
 
+- `JsonSchemaValid` (`json_schema_valid`) and `FieldF1` (`field_f1`, with `field_precision` and
+  `field_recall`): metrics for structured extraction. `JsonSchemaValid` validates the output against
+  a JSON Schema with the `jsonschema` package (new optional extra `auditkit[jsonschema]`) or a
+  built-in validator for the common keywords. `FieldF1` scores per-field precision, recall and F1
+  over flattened JSON paths, with list alignment and number, date and case normalisation hooks.
 - `RunConfig.chat_template_kwargs`: passed to the chat template of every request on
   `hf:` and `vllm:`, and sent as `chat_template_kwargs` to `api:` servers (vLLM /
   SGLang), e.g. `{"enable_thinking": False}` for Qwen3. A request's own values win.

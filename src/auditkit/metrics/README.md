@@ -3,6 +3,7 @@
 Built-in metric families for evaluating model outputs:
 
 - **code** — Contains, Equals, F1Score, IsJson, Levenshtein, Regex, StartsWith, EndsWith, WordCount
+- **structured** - JsonSchemaValid, FieldF1
 - **embedding** — CosineSimilarity, TokenOverlap, BM25Similarity
 - **generation** — Bleu, RogueL, ChrF, BertScore, Perplexity, WordErrorRate
 - **hallucination** — FactualConsistency

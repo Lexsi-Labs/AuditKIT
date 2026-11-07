@@ -36,6 +36,7 @@ from .scenario import CallableScenario, ListScenario, Scenario
 from .metrics.code import (
     Contains, EndsWith, Equals, F1Score, IsJson, Levenshtein, Regex, StartsWith, WordCount,
 )
+from .metrics.structured import FieldF1, JsonSchemaValid
 from .metrics.embedding import BM25Similarity, CosineSimilarity, TokenOverlap
 from .metrics.generation import (
     BertScore, Bleu, ChrF, Perplexity, RogueL, WordErrorRate,
@@ -170,6 +171,8 @@ __all__ = [
     "Levenshtein",
     "WordCount",
     "IsJson",
+    "JsonSchemaValid",
+    "FieldF1",
     "RogueL",
     "WordErrorRate",
     "F1Score",
