@@ -199,6 +199,23 @@
   Claude model ids instead of retired Claude 3 ones; "source-available", not "open-source"; no
   internal wording, links to a private repository or private issue numbers in public pages;
   GUIDE's table of contents, catalog heading and version line match its sections and 1.1.2.
+- `RunConfig(failed_as_zero=True)` filled a metric that returns several scores (`retrieval` giving `recall@k`, ...)
+  under the metric's own name, which is not a score, and left the real scores short. A sample whose metric crashed,
+  or whose model call failed, is now zero-filled under the score names the metric produced in the run, except a
+  name it left out on some samples (nothing to measure there) and a lower-is-better name, which a failed sample
+  cannot be given the best value for.
+  A model call that failed is no longer filled for a metric that does not apply to that sample, and a metric that
+  crashed on a sample with a precomputed `actual_output` is now filled too (it was missed on that path).
+  A sample that failed because an optional dependency is missing (`ExtraNotInstalled`) is no longer turned into a
+  0.0 score, since that is a setup problem. `RunComparison.summary()` no longer says failed samples were left out of
+  the means when a run used `failed_as_zero`; it says they were counted as 0.0 and that `per_task_deltas()` and
+  `significance()` leave them out.
+- `JsonSchemaValid` with the built-in validator gave wrong verdicts, or crashed in the middle of a run, on schema
+  values it cannot check: a draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum` passed a value the real validator
+  rejects, and the array form of `items`, an unknown `type` or a non-list `required` raised `AttributeError` or
+  `KeyError` on a sample. These now raise a `ValueError` when the metric is built, naming the value and pointing at
+  `backend='jsonschema'`.
+- `FieldF1` no longer crashes on a key field whose normalizer returns a list or dict.
 
 ### Changed
 

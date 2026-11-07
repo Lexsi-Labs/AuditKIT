@@ -429,6 +429,10 @@ class RunComparison:
         ``has_failures``) before trusting a grade; ``regressed()`` is the one
         view that *does* catch a failure correctly (via ``Prediction.correct``,
         which is ``False`` on the fallback), everything else needs this check.
+
+        With ``RunConfig(failed_as_zero=True)`` a run's headline counts those samples as 0.0, so
+        ``metric_deltas()`` and ``tradeoff()`` include them; the per-sample views (``per_task_deltas()``,
+        ``significance()``) still leave them out. ``summary()`` says so when either run did that.
         """
         return {
             "baseline_failed": self.baseline.failed_count,
@@ -478,11 +482,19 @@ class RunComparison:
         lines = []
         if self.has_failures:
             fs = self.failure_summary()
-            lines.append(
-                f"  WARNING: baseline had {fs['baseline_failed']} failed sample(s), "
-                f"candidate had {fs['candidate_failed']} -- EXCLUDED from the means "
-                f"below, not counted as wrong. See .failure_summary()."
-            )
+            if any(getattr(r.config, "failed_as_zero", False) for r in (self.baseline, self.candidate)):
+                lines.append(
+                    f"  WARNING: baseline had {fs['baseline_failed']} failed sample(s), "
+                    f"candidate had {fs['candidate_failed']}. A run with failed_as_zero counts them as 0.0 in its "
+                    f"means; per_task_deltas() and significance() leave them out, so those can disagree with the "
+                    f"means below. See .failure_summary()."
+                )
+            else:
+                lines.append(
+                    f"  WARNING: baseline had {fs['baseline_failed']} failed sample(s), "
+                    f"candidate had {fs['candidate_failed']} -- EXCLUDED from the means "
+                    f"below, not counted as wrong. See .failure_summary()."
+                )
         cw = self.coverage_warnings()
         if cw:
             lines.append(
