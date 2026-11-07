@@ -67,6 +67,25 @@ def _as_key(value: Any) -> Any:
         return json.dumps(value, sort_keys=True, default=str)
 
 
+_REF_KEYWORDS = ("$ref", "$dynamicRef", "$recursiveRef")
+
+
+def _remote_refs(schema: Any, found: Optional[list] = None) -> list[str]:
+    """References in ``schema`` that are not local (``#...``). A schema can come with the dataset, and following a
+    remote reference would make the evaluator send a request to whatever host the schema names."""
+    found = [] if found is None else found
+    if isinstance(schema, dict):
+        for k, v in schema.items():
+            if k in _REF_KEYWORDS and isinstance(v, str) and not v.startswith("#"):
+                found.append(v)
+            else:
+                _remote_refs(v, found)
+    elif isinstance(schema, list):
+        for v in schema:
+            _remote_refs(v, found)
+    return found
+
+
 def _bad_shapes(schema: Any, found: Optional[list] = None) -> list[str]:
     """Keyword values in ``schema`` (at schema positions only) that the built-in validator is known to misread or crash on.
 
@@ -312,12 +331,20 @@ class JsonSchemaValid(Metric):
         """A function returning None for a valid instance, else the first error message."""
         key = json.dumps(schema, sort_keys=True)
         if key not in self._validators:
+            remote = _remote_refs(schema)
+            if remote:
+                raise ValueError(f"the schema refers to {remote[0]!r}; only local references ('#...') are followed, "
+                                 f"so a schema that comes with a dataset cannot make the evaluator fetch a URL")
             if self._backend == "jsonschema":
                 import jsonschema
 
                 cls = jsonschema.validators.validator_for(schema)
                 cls.check_schema(schema)
-                v = cls(schema)
+                try:   # jsonschema 4.18+: a registry that retrieves nothing (the default one fetches remote references)
+                    from referencing import Registry
+                    v = cls(schema, registry=Registry())
+                except ImportError:
+                    v = cls(schema)
 
                 def run(inst: Any) -> Optional[str]:
                     err = next(iter(v.iter_errors(inst)), None)

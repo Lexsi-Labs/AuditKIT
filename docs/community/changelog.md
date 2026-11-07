@@ -241,6 +241,11 @@
 - `LLMJudge` option labels in Devanagari and other scripts with combining marks no longer collapse into one another when the
   judge's reply is matched: `दान` and `दिन` both became `द न`, so a reply of `CHOICE: दान` could be read as `दिन`. The reply
   and the labels now go through the same mark-preserving normalisation as the code metrics.
+- **`JsonSchemaValid` with the `jsonschema` backend followed remote `$ref`s.** A schema can come with the dataset (a
+  per-sample `metadata["schema"]`), and a `$ref` to a URL made the evaluator send a request to that host, which could be an
+  internal address. Only local references (`#...`) are followed now, on both backends: a schema with any other `$ref`,
+  `$dynamicRef` or `$recursiveRef` raises a `ValueError` (when the metric is built, or when a per-sample schema is scored),
+  and `jsonschema` is given a registry that retrieves nothing.
 
 ### Changed
 

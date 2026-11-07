@@ -103,9 +103,8 @@ def test_minimal_backend_refuses_schemas_it_cannot_check():
 
 
 def test_minimal_backend_rejects_remote_ref():
-    m = JsonSchemaValid({"$ref": "http://example.com/s.json"}, backend="minimal")
     with pytest.raises(ValueError, match="local"):
-        m.score(S, "1")
+        JsonSchemaValid({"$ref": "http://example.com/s.json"}, backend="minimal")
 
 
 def test_bad_schema_fails_at_construction_and_bad_backend_name():
@@ -323,3 +322,58 @@ class TestFieldF1Edges:
         truth = {"items": [{"id": "a", "v": 1}]}
         v, _ = f1(pred, truth, list_keys={"items": "id"}, normalizers={"items[].id": lambda s: [s]})
         assert v["field_f1"] == 1.0
+
+
+class TestRemoteReferencesAreNotFollowed:
+    """A schema can come with the dataset, so a remote $ref must not make the evaluator fetch a URL."""
+
+    @staticmethod
+    def _server():
+        import http.server, json, threading
+        hits = []
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                hits.append(self.path)
+                body = json.dumps({"type": "integer"}).encode()
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *a):
+                pass
+
+        srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        return srv, hits
+
+    @pytest.mark.parametrize("backend", ["minimal", "jsonschema"])
+    def test_a_remote_ref_in_a_per_sample_schema_makes_no_request(self, backend):
+        if backend == "jsonschema":
+            pytest.importorskip("jsonschema")
+        srv, hits = self._server()
+        try:
+            schema = {"$ref": f"http://127.0.0.1:{srv.server_address[1]}/internal"}
+            m = JsonSchemaValid(backend=backend)
+            sample = Sample(id="1", input="x", target=None, metadata={"schema": schema})
+            with pytest.raises(ValueError, match="only local references"):
+                m.score(sample, "5")
+            assert hits == []
+        finally:
+            srv.shutdown()
+
+    @pytest.mark.parametrize("backend", ["minimal", "jsonschema"])
+    def test_a_remote_ref_in_a_fixed_schema_is_refused_when_built(self, backend):
+        if backend == "jsonschema":
+            pytest.importorskip("jsonschema")
+        with pytest.raises(ValueError, match="only local references"):
+            JsonSchemaValid({"properties": {"a": {"$ref": "https://example.invalid/s.json"}}}, backend=backend)
+
+    @pytest.mark.parametrize("backend", ["minimal", "jsonschema"])
+    def test_local_refs_still_work(self, backend):
+        if backend == "jsonschema":
+            pytest.importorskip("jsonschema")
+        schema = {"definitions": {"n": {"type": "integer"}}, "properties": {"a": {"$ref": "#/definitions/n"}}}
+        m = JsonSchemaValid(schema, backend=backend)
+        assert valid(m, {"a": 1}) == 1.0 and valid(m, {"a": "x"}) == 0.0
