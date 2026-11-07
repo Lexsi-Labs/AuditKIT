@@ -119,6 +119,10 @@
   full-width stops) is now ignored, so `नमस्ते।` matches `नमस्ते`. **Scores change** for samples with
   repeated tokens, an empty side or such punctuation, and `identity()` gains `"overlap": "multiset"`, so
   cached `f1_score` results are not reused.
+- **A `TypeError` raised inside a context scorer was retried without `context`.** `FunctionScorer` now checks whether
+  `fn(sample, output, context=...)` binds to the scorer's own signature. If it does, a `TypeError` came from inside the
+  scorer and is raised once, for scorers that name `context`, take `**kwargs`, or sit behind a `functools.wraps` forwarder
+  of one. A two-argument scorer, including one behind a bare `*args, **kwargs` wrapper, is still called without `context`.
 - **A score that could not be measured counted as 0 or 0.5.** A weighted combination with no scores or weights
   summing to zero, a pairwise metric with no preference data or no candidates, and an unrecognised hallucination
   label now return a score flagged `unknown`, so they are left out of the aggregate. `Experiment.aggregate` leaves
