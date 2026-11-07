@@ -614,7 +614,7 @@ Target/output accept three encodings: choice text, 0-based index, or a single A�
 | `levenshtein` | `1 - editdist/maxlen` (continuous) | `target` | — |
 | `word_count` | word count within `[min,max]` | — | `min_words=0`, `max_words=None` |
 | `is_json` | parses as JSON (+ required keys) | — | `require_keys=None` |
-| `f1_score` | token-set F1 (continuous) | `target` | — |
+| `f1_score` | token-overlap F1, multiset (continuous) | `target` | — |
 
 ### Generation quality (`metrics/generation.py`)
 
