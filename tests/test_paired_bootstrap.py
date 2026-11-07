@@ -27,3 +27,13 @@ def test_identical_runs_have_p_one():
 
 def test_too_few_pairs_report_an_error():
     assert "error" in paired_bootstrap([(1.0, 0.0)])
+
+
+def test_fewer_than_one_resample_is_refused():
+    import pytest
+
+    pairs = [(0.0, 1.0)] * 5 + [(1.0, 1.0)] * 5
+    for bad in (0, -5):
+        with pytest.raises(ValueError, match="n_resamples"):
+            paired_bootstrap(pairs, n_resamples=bad)
+    assert 0.0 <= paired_bootstrap(pairs, n_resamples=1)["p_value"] <= 1.0

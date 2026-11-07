@@ -52,7 +52,11 @@ def paired_bootstrap(
     Returns ``{n, mean_baseline, mean_candidate, delta, p_value, significant}``
     where ``delta = mean_candidate - mean_baseline`` (positive ⇒ candidate scored
     higher). Fewer than 2 pairs can't be resampled meaningfully → ``{"error": ...}``.
+    ``n_resamples`` below 1 raises ``ValueError``: with none the p-value is not defined, and a negative
+    count gave a negative p-value.
     """
+    if n_resamples < 1:
+        raise ValueError(f"n_resamples must be at least 1, got {n_resamples}")
     n = len(pairs)
     if n < 2:
         return {"error": "need at least 2 aligned sample pairs", "n": n}
