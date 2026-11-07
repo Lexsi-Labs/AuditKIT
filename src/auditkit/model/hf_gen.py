@@ -262,7 +262,12 @@ class HFGenModel(Model):
         # (top level or inside model_kwargs) always wins, and a quantized model is placed by
         # accelerate, not moved. In both cases device must be omitted rather than passed alongside.
         quantized = any(k in nested_model_kwargs for k in ("quantization_config", "load_in_8bit", "load_in_4bit"))
-        if device_map is None and not quantized:
+        # A map that puts everything on the CPU does not spread the model over accelerators, so ``device``
+        # stays valid next to it. Leaving it out would let the pipeline pick the default accelerator and
+        # move a model the caller asked to keep on the CPU.
+        cpu_map = device_map == "cpu" or (isinstance(device_map, dict) and bool(device_map)
+                                          and all(str(v) == "cpu" for v in device_map.values()))
+        if (device_map is None or cpu_map) and not quantized:
             pipe_kwargs["device"] = device
         elif self._device not in (None, "auto"):
             logger.warning("hf: device=%r is ignored because %s places the model", self._device,

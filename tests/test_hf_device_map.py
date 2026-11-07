@@ -54,7 +54,7 @@ def test_device_alone_is_passed(calls):
     assert calls[0]["device"] == "cpu" and "device_map" not in calls[0]
 
 
-@pytest.mark.parametrize("dm", ["auto", "balanced", "sequential", {"": 0}, {"": "cpu"}])
+@pytest.mark.parametrize("dm", ["auto", "balanced", "sequential", {"": 0}, {"": "cuda:1"}])
 def test_device_map_never_travels_with_device(calls, dm):
     load(device_map=dm)
     assert calls[0]["device_map"] == dm and "device" not in calls[0]
@@ -180,3 +180,16 @@ def test_explicit_device_next_to_a_device_map_is_logged(calls, caplog):
     with caplog.at_level(logging.WARNING, logger="auditkit.model.hf_gen"):
         load(device="cuda:1", device_map="auto")
     assert "device" not in calls[0] and "ignored" in caplog.text
+
+
+@pytest.mark.parametrize("kw", [{"device_map": {"": "cpu"}}, {"device_map": "cpu"}, {"model_kwargs": {"device_map": {"": "cpu"}}}])
+def test_a_cpu_only_map_keeps_the_requested_device(calls, kw):
+    # Real hardware: omitting device here moved a model the caller asked to keep on the CPU onto the GPU
+    # (a T4, and Apple MPS). A map that spreads over accelerators still omits device.
+    load(device="cpu", **kw)
+    assert calls[0]["device"] == "cpu"
+
+
+def test_a_map_with_an_accelerator_in_it_still_omits_device(calls):
+    load(device="cpu", device_map={"model": "cpu", "lm_head": 0})
+    assert "device" not in calls[0]

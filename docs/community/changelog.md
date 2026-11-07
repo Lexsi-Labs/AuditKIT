@@ -156,8 +156,9 @@
   `load_in_8bit` and `load_in_4bit` were passed to `transformers.pipeline()` as top-level keywords, which it forwards
   to the pipeline instead of the model, so `generate()` later rejected them ("model_kwargs are not used by the
   model"). They are now nested under `model_kwargs`, and `max_memory` is treated as a load-time option, not a
-  generation one. A `device_map`, at the top level or inside `model_kwargs`, and a quantized load are never passed
-  together with `device`, which `transformers.pipeline` rejects or tries to move; `device_map=None` means no map; fp16
+  generation one. A `device_map` that spreads the model over accelerators, at the top level or inside `model_kwargs`, and a quantized
+  load are not passed together with `device`, which `transformers.pipeline` rejects or tries to move (a map that puts
+  everything on the CPU keeps `device`, so a model asked to stay on the CPU stays there); `device_map=None` means no map; fp16
   is no longer forced next to an explicit dtype or on a CPU-only map; an explicit `device` that is ignored is logged.
   When torch and transformers are installed but one fails to import, the real error is raised instead of a "pip
   install" hint.
