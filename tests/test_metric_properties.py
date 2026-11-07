@@ -132,6 +132,7 @@ def _identity_cases():
 # Arguments that only take a fixed set of values: another allowed value to build the changed metric with.
 CHOICES = {
     ("encoder_judge", "aggregation"): "argmax",
+    ("json_schema_valid", "backend"): "minimal",
     ("factuality_encoder_judge", "aggregation"): "argmax",
     ("sentiment_encoder_judge", "aggregation"): "argmax",
     ("guard_judge", "assess"): "prompt",
