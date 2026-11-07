@@ -173,3 +173,85 @@ def test_a_metric_that_never_produced_a_score_is_still_zero_filled_by_its_own_na
     r = ak.evaluate(samples(2), model=lambda ps: ["ok"] * len(ps), scorers=[CrashOn({"0", "1"})],
                     config=ak.RunConfig(failed_as_zero=True))
     assert r.headline["crashy"] == 0.0 and r.stats["crashy"].count == 2
+
+
+class Mixed(Metric):
+    """``mixed_main`` (higher is better) and ``mixed_rate`` (lower is better) on every sample; raises on the ids in *bad*."""
+
+    name = "mixed"
+    direction = Direction.MAXIMIZE
+
+    def __init__(self, bad: set[str]) -> None:
+        self.bad = bad
+
+    def identity(self) -> dict:
+        return {"name": self.name, "bad": sorted(self.bad)}
+
+    def score(self, sample, output, context=None):
+        if sample.id in self.bad:
+            raise ValueError("boom")
+        return [Score(name="mixed_main", value=1.0, direction=Direction.MAXIMIZE),
+                Score(name="mixed_rate", value=1.0, direction=Direction.MINIMIZE)]
+
+
+class Sometimes(Metric):
+    """``sometimes_all`` on every sample, ``sometimes_even`` only on even ids; raises on the ids in *bad*."""
+
+    name = "sometimes"
+    direction = Direction.MAXIMIZE
+
+    def __init__(self, bad: set[str]) -> None:
+        self.bad = bad
+
+    def identity(self) -> dict:
+        return {"name": self.name, "bad": sorted(self.bad)}
+
+    def score(self, sample, output, context=None):
+        if sample.id in self.bad:
+            raise ValueError("boom")
+        out = [Score(name="sometimes_all", value=1.0)]
+        if int(sample.id) % 2 == 0:
+            out.append(Score(name="sometimes_even", value=1.0))
+        return out
+
+
+def test_a_lower_is_better_score_of_a_crashing_metric_is_not_filled_with_the_best_value():
+    r = ak.evaluate(samples(), model=lambda ps: ["ok"] * len(ps), scorers=[Mixed({"2", "3"})],
+                    config=ak.RunConfig(failed_as_zero=True))
+    assert r.stats["mixed_main"].count == 10 and r.headline["mixed_main"] == pytest.approx(0.8)
+    assert r.stats["mixed_rate"].count == 8 and r.headline["mixed_rate"] == 1.0   # a 0.0 here would read as "no stale hits"
+
+
+def test_a_score_a_metric_leaves_out_on_some_samples_is_not_filled_for_a_failed_one():
+    r = ak.evaluate(samples(), model=lambda ps: ["ok"] * len(ps), scorers=[Sometimes({"3"})],
+                    config=ak.RunConfig(failed_as_zero=True))
+    assert r.stats["sometimes_all"].count == 10 and r.headline["sometimes_all"] == pytest.approx(0.9)
+    assert r.stats["sometimes_even"].count == 5 and r.headline["sometimes_even"] == 1.0   # sample 3 never had one
+
+
+class OnlyBig(Metric):
+    """``only_big`` applies to the samples whose id is 5 or more; 1.0 there."""
+
+    name = "only_big"
+    direction = Direction.MAXIMIZE
+
+    def identity(self) -> dict:
+        return {"name": self.name}
+
+    def applicable(self, sample) -> bool:
+        return int(sample.id) >= 5
+
+    def score(self, sample, output, context=None):
+        return Score(name="only_big", value=1.0, direction=self.direction)
+
+
+def test_a_failed_model_call_is_not_zero_filled_for_a_metric_that_does_not_apply_to_it():
+    r = run(Flaky({0, 1}), [OnlyBig()], failed_as_zero=True)
+    assert r.stats["only_big"].count == 5 and r.headline["only_big"] == 1.0   # samples 0 and 1 were never going to count
+
+
+def test_a_crashing_metric_is_zero_filled_on_precomputed_outputs_too():
+    samples_ = [ak.Sample(id=str(i), input=f"q{i}", target="ok", actual_output="ok") for i in range(10)]
+    r = ak.evaluate(samples_, model="precomputed", scorers=[CrashOn({"0", "1"})],
+                    config=ak.RunConfig(failed_as_zero=True))
+    assert r.stats["crashy"].count == 10 and r.headline["crashy"] == pytest.approx(0.8)

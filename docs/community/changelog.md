@@ -201,7 +201,11 @@
   GUIDE's table of contents, catalog heading and version line match its sections and 1.1.2.
 - `RunConfig(failed_as_zero=True)` filled a metric that returns several scores (`retrieval` giving `recall@k`, ...)
   under the metric's own name, which is not a score, and left the real scores short. A sample whose metric crashed,
-  or whose model call failed, is now zero-filled under the score names the metric produced in the run.
+  or whose model call failed, is now zero-filled under the score names the metric produced in the run, except a
+  name it left out on some samples (nothing to measure there) and a lower-is-better name, which a failed sample
+  cannot be given the best value for.
+  A model call that failed is no longer filled for a metric that does not apply to that sample, and a metric that
+  crashed on a sample with a precomputed `actual_output` is now filled too (it was missed on that path).
 - `JsonSchemaValid` with the built-in validator gave wrong verdicts, or crashed in the middle of a run, on schema
   values it cannot check: a draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum` passed a value the real validator
   rejects, and the array form of `items`, an unknown `type` or a non-list `required` raised `AttributeError` or

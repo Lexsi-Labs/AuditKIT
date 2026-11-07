@@ -68,7 +68,11 @@ def _as_key(value: Any) -> Any:
 
 
 def _bad_shapes(schema: Any, found: Optional[list] = None) -> list[str]:
-    """Keyword values in ``schema`` (at schema positions only) the built-in validator would misread or crash on."""
+    """Keyword values in ``schema`` (at schema positions only) that the built-in validator is known to misread or crash on.
+
+    Not every malformed value: an invalid ``pattern``, a ``$ref`` to nothing or ``multipleOf: 0`` still fail when a
+    sample is scored. ``backend='jsonschema'`` rejects them when the metric is built.
+    """
     found = [] if found is None else found
     if not isinstance(schema, dict):
         return found
