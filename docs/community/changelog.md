@@ -216,6 +216,9 @@
   `KeyError` on a sample. These now raise a `ValueError` when the metric is built, naming the value and pointing at
   `backend='jsonschema'`.
 - `FieldF1` no longer crashes on a key field whose normalizer returns a list or dict.
+- `LLMJudge` option labels in Devanagari and other scripts with combining marks no longer collapse into one another when the
+  judge's reply is matched: `दान` and `दिन` both became `द न`, so a reply of `CHOICE: दान` could be read as `दिन`. The reply
+  and the labels now go through the same mark-preserving normalisation as the code metrics.
 
 ### Changed
 
