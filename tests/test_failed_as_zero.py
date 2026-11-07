@@ -65,6 +65,25 @@ class Judge(Metric):
         return Score(name=self.name, value=0.5 if self.keep else 0.0, direction=self.direction, metadata=meta)
 
 
+class Multi(Metric):
+    """Two scores, ``multi_a`` and ``multi_b``, both 1.0; raises on the sample ids in *bad*. Its own name is not a score name."""
+
+    name = "multi"
+    direction = Direction.MAXIMIZE
+
+    def __init__(self, bad: set[str]) -> None:
+        self.bad = bad
+
+    def identity(self) -> dict:
+        return {"name": self.name, "bad": sorted(self.bad)}
+
+    def score(self, sample, output, context=None):
+        if sample.id in self.bad:
+            raise ValueError("boom")
+        return [Score(name="multi_a", value=1.0, direction=self.direction),
+                Score(name="multi_b", value=1.0, direction=self.direction)]
+
+
 class Rate(Metric):
     """A lower-is-better metric: always 0.2."""
 
@@ -134,3 +153,23 @@ def test_summary_reports_failed_samples_either_way():
 
 def test_summary_is_unchanged_when_nothing_failed():
     assert "failed" not in run(Flaky(set()), [ak.Contains("ok")]).summary()
+
+
+def test_a_crashing_multi_score_metric_is_zero_filled_by_its_score_names():
+    r = ak.evaluate(samples(), model=lambda ps: ["ok"] * len(ps), scorers=[Multi({"2", "3"})],
+                    config=ak.RunConfig(failed_as_zero=True))
+    assert r.headline["multi_a"] == pytest.approx(0.8) and r.stats["multi_a"].count == 10
+    assert r.headline["multi_b"] == pytest.approx(0.8) and r.stats["multi_b"].count == 10
+    assert "multi" not in r.headline                 # its own name is not a score
+
+
+def test_a_failed_model_call_does_not_add_a_row_named_after_a_multi_score_metric():
+    r = run(Flaky({0, 1}), [Multi(set())], failed_as_zero=True)
+    assert "multi" not in r.headline and "multi:" not in r.summary()
+    assert r.stats["multi_a"].count == 10 and r.headline["multi_a"] == pytest.approx(0.8)
+
+
+def test_a_metric_that_never_produced_a_score_is_still_zero_filled_by_its_own_name():
+    r = ak.evaluate(samples(2), model=lambda ps: ["ok"] * len(ps), scorers=[CrashOn({"0", "1"})],
+                    config=ak.RunConfig(failed_as_zero=True))
+    assert r.headline["crashy"] == 0.0 and r.stats["crashy"].count == 2

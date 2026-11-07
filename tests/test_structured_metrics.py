@@ -289,3 +289,37 @@ def test_metrics_in_evaluate_with_precomputed_outputs_and_registry():
 def test_by_name_scorer_strings_resolve():
     s = Sample(id="a", input="q", target="{}", actual_output="{}")
     assert ak.evaluate([s], model="precomputed", scorers="field_f1").headline["field_f1"] == 1.0
+
+
+# ============================================================================
+# Schemas the minimal backend cannot check fail at construction
+# ============================================================================
+
+class TestMinimalBackendRefusesWhatItCannotCheck:
+    @pytest.mark.parametrize("schema", [
+        {"$schema": "http://json-schema.org/draft-04/schema#", "type": "number", "minimum": 5, "exclusiveMinimum": True},
+        {"type": "number", "exclusiveMaximum": True},
+        {"type": "array", "items": [{"type": "integer"}]},                      # draft-07 tuple form
+        {"type": "object", "properties": {"x": {"type": "array", "items": [{"type": "string"}]}}},
+        {"type": "int"},
+        {"type": ["string", "nope"]},
+        {"required": "a"},
+        {"type": "object", "properties": {"x": {"required": "a"}}},
+    ])
+    def test_a_bad_schema_raises_when_the_metric_is_built(self, schema):
+        with pytest.raises(ValueError, match="minimal JSON Schema validator"):
+            JsonSchemaValid(schema, backend="minimal")
+
+    def test_valid_schemas_are_still_accepted(self):
+        schema = {"type": "object", "required": ["n"], "properties": {"n": {"type": ["number", "null"], "minimum": 0,
+                  "exclusiveMaximum": 10}, "tags": {"type": "array", "items": {"type": "string"}}}}
+        m = JsonSchemaValid(schema, backend="minimal")
+        assert valid(m, {"n": 3, "tags": ["a"]}) == 1.0 and valid(m, {"n": 10}) == 0.0
+
+
+class TestFieldF1Edges:
+    def test_a_normalizer_returning_a_list_on_a_key_field_does_not_crash(self):
+        pred = {"items": [{"id": "a", "v": 1}]}
+        truth = {"items": [{"id": "a", "v": 1}]}
+        v, _ = f1(pred, truth, list_keys={"items": "id"}, normalizers={"items[].id": lambda s: [s]})
+        assert v["field_f1"] == 1.0
