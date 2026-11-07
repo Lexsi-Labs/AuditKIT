@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from ..._text import fold_apostrophes
 from ..detector import Detector, DetectorResult
 
 
@@ -54,7 +55,7 @@ class RefusalDetector(Detector):
         ]
 
     def detect(self, prompt: str, output: str) -> DetectorResult:
-        opening = re.split(r"(?<=[.!?])\s|\n", output.strip(), maxsplit=1)[0]
+        opening = re.split(r"(?<=[.!?])\s|\n", fold_apostrophes(output).strip(), maxsplit=1)[0]
         for pattern in self._refusal_patterns:
             if re.search(pattern, opening):
                 return DetectorResult(

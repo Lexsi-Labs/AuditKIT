@@ -145,6 +145,12 @@
   only the opening sentence ("the API cannot..." is not a refusal), and `SystemPromptLeakDetector` fires on a
   disclosure ("my system prompt is...", "I was instructed to...") in a non-refusal, not on generic phrases. The
   natural-word markers "bypassed" and "ignore all previous" are gone.
+- **A curly apostrophe hid a refusal.** `RefusalDetector` and the keyword refusal check in `rag_stress` matched
+  "can't" and "I'm unable" but not "can’t" or "I’m unable", which models often write, so a refusal was read as
+  an answer. Curly apostrophes (U+2019, U+2018, U+02BC, U+2032) are straightened before matching.
+- **`LLMJudge` option labels are fixed text.** A label with a `{placeholder}`, a line break or other control
+  character, or more than 64 characters is refused when the judge is built, because it could carry sample text
+  into the judge's instructions.
 - **`LLMJudge` number parsing.** `SCORE: 8/10` on the default 0-1 scale is 0.8 (it was read as 8 and clamped to
   1.0), and with no `SCORE:` marker the last number on the final line is the verdict, not the first ("... so overall
   I rate it 0.1" read 3). A number outside the scale is unknown instead of being clamped to the top or bottom score.

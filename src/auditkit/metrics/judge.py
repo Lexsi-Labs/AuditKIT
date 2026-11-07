@@ -58,6 +58,28 @@ _CLAUSE_CONTINUATION = (
 )
 
 
+_LABEL_MAX_CHARS = 64
+
+
+def check_option_labels(labels: Any) -> None:
+    """Refuse option labels that could carry caller or sample text.
+
+    Labels are fixed when the judge is built, as short plain strings. A label with a
+    ``{placeholder}`` (filled from the sample at judging time), a line break, another
+    control character, or more than 64 characters is how a renamed option reaches the
+    judge's instructions; those are refused. ``ValueError`` names the label.
+    """
+    for label in labels:
+        if not isinstance(label, str) or not label.strip():
+            raise ValueError(f"option label {label!r} must be a non-empty string")
+        if len(label) > _LABEL_MAX_CHARS:
+            raise ValueError(f"option label {label[:20]!r}... is longer than {_LABEL_MAX_CHARS} characters")
+        if "{" in label or "}" in label:
+            raise ValueError(f"option label {label!r} contains a placeholder; labels are fixed text")
+        if any(ord(c) < 32 or ord(c) == 127 for c in label):
+            raise ValueError(f"option label {label!r} contains a control character or line break")
+
+
 def judge_resolve_args(spec: Any, args: dict[str, Any]) -> dict[str, Any]:
     """A copy of *args* for resolving a judge model, with the judge timeout default.
 
@@ -199,6 +221,8 @@ class LLMJudge(JudgeMetric):
             raise ValueError("LLMJudge: pass either choices or scale, not both")
         if choices is not None and not choices:
             raise ValueError("LLMJudge: choices must be non-empty")
+        if choices is not None:
+            check_option_labels(choices)
         self.name = name
         # Override only if your choices=/scale= convention is inverted (a
         # HIGHER judge score means a WORSE answer) -- every prebuilt judge in
