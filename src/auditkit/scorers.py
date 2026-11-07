@@ -8,12 +8,33 @@ A *scorer* is the user-facing way to define a custom metric: decorate a
 
 from __future__ import annotations
 
+import inspect
 from typing import Any, Callable, Optional, Union
 
 from .metric import Metric
 from .sample import Sample
 from .score import Score
 from .types import Direction, ScoreKind
+
+
+def _accepts_context(fn: Callable[..., Any]) -> bool:
+    """True when ``fn(sample, output, context=...)`` binds to ``fn``'s own signature.
+
+    A ``TypeError`` raised by such a call came from inside the scorer, so it must not be retried
+    without ``context``. A pure ``*args`` forwarder (``functools.wraps`` sets ``__wrapped__``) is judged
+    by the function it wraps; a forwarder with nothing behind it is treated as not accepting it, so a
+    two-argument scorer behind it still works. A callable with no readable signature is treated as not
+    accepting it.
+    """
+    try:
+        signature = inspect.signature(fn, follow_wrapped=False)
+        signature.bind(None, None, context=None)
+    except (TypeError, ValueError):  # does not bind, or some builtins expose no signature
+        return False
+    if any(p.kind is inspect.Parameter.VAR_POSITIONAL for p in signature.parameters.values()):
+        inner = getattr(fn, "__wrapped__", None)
+        return _accepts_context(inner) if inner is not None else False
+    return True
 
 
 class FunctionScorer:
@@ -45,7 +66,9 @@ class FunctionScorer:
         try:
             result = self.fn(sample, output, context=context)
         except TypeError:
-            result = self.fn(sample, output)
+            if _accepts_context(self.fn):     # the call bound, so the scorer raised this itself
+                raise
+            result = self.fn(sample, output)  # a two-argument scorer
         if isinstance(result, Score):
             result.direction = self.direction
             return result

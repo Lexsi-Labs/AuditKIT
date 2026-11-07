@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import re
+import warnings
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -56,6 +57,29 @@ _CLAUSE_CONTINUATION = (
     "longer|shorter|more|less|very|quite|rather|really|simply|merely|"
     "clearly|obviously|definitely|certainly"
 )
+
+
+_LABEL_MAX_CHARS = 64
+
+
+def option_label_problems(labels: Any) -> list[str]:
+    """What is wrong with the option labels, one message per label, or an empty list.
+
+    A label is fixed text chosen when the judge is built. One with a ``{placeholder}``, a line break or other
+    control character, or more than 64 characters can carry text into the judge's instructions that the caller
+    did not mean to put there, for instance when labels come from a shared template or a configuration file.
+    """
+    problems = []
+    for label in labels:
+        if not isinstance(label, str) or not label.strip():
+            problems.append(f"option label {label!r} is not a non-empty string")
+        elif len(label) > _LABEL_MAX_CHARS:
+            problems.append(f"option label {label[:20]!r}... is longer than {_LABEL_MAX_CHARS} characters")
+        elif "{" in label or "}" in label:
+            problems.append(f"option label {label!r} contains a placeholder")
+        elif any(ord(c) < 32 or ord(c) == 127 for c in label):
+            problems.append(f"option label {label!r} contains a control character or line break")
+    return problems
 
 
 def judge_resolve_args(spec: Any, args: dict[str, Any]) -> dict[str, Any]:
@@ -199,6 +223,9 @@ class LLMJudge(JudgeMetric):
             raise ValueError("LLMJudge: pass either choices or scale, not both")
         if choices is not None and not choices:
             raise ValueError("LLMJudge: choices must be non-empty")
+        if choices is not None:
+            for problem in option_label_problems(choices):
+                warnings.warn(f"LLMJudge: {problem}. A later release will refuse it.", FutureWarning, stacklevel=2)
         self.name = name
         # Override only if your choices=/scale= convention is inverted (a
         # HIGHER judge score means a WORSE answer) -- every prebuilt judge in
@@ -296,9 +323,9 @@ class LLMJudge(JudgeMetric):
                              metadata={"choice": label, "raw": text[:2000]})
         else:
             value = self._match_number(text)
-            if value is not None:
-                lo, hi = self.scale  # type: ignore[misc]
-                value = max(lo, min(hi, value))
+            lo, hi = self.scale  # type: ignore[misc]
+            # a number outside the scale is a misread, not a top score: fall through to UNKNOWN
+            if value is not None and lo <= value <= hi:
                 norm = (value - lo) / (hi - lo) if hi > lo else float(value)
                 return Score(name=self.name, value=norm, kind=ScoreKind.JUDGE,
                              reason=reason, threshold=self.threshold,
@@ -363,14 +390,23 @@ class LLMJudge(JudgeMetric):
         return None
 
     def _match_number(self, text: str) -> Optional[float]:
+        """The verdict as a value on ``scale``; ``N/M`` is read as a fraction of the scale."""
+        num = r"(-?\d+(?:\.\d+)?)(?:\s*/\s*(\d+(?:\.\d+)?))?"
         marked = _last_marker(text, "SCORE")
-        candidates = re.findall(r"-?\d+(?:\.\d+)?", marked) if marked else []
-        if not candidates:
-            # Same reasoning as _match_choice's fallback: only the final line
-            # is where the verdict was asked for, not any number mentioned
-            # earlier in the reasoning.
-            candidates = re.findall(r"-?\d+(?:\.\d+)?", _last_line(text))
-        return float(candidates[0]) if candidates else None
+        found = re.findall(num, marked) if marked else []
+        # the number right after the marker; in the fallback the last one on the
+        # final line ("... so overall I rate it 0.1"), not one mentioned earlier
+        pick = found[:1]
+        if not pick:
+            pick = re.findall(num, _last_line(text))[-1:]
+        if not pick:
+            return None
+        n, m = pick[0]
+        value = float(n)
+        lo, hi = self.scale  # type: ignore[misc]
+        if m and float(m) > 0 and float(m) != hi:   # "8/10" on a 0-1 scale; "4/5" on 1-5 is already scale units
+            return lo + value / float(m) * (hi - lo)
+        return value
 
     # -- Metric API --------------------------------------------------------
     def judge(self, sample: Sample, output: str, context: Any = None) -> Score:
@@ -397,6 +433,8 @@ class LLMJudge(JudgeMetric):
             "gen_params": self._gen_params,
             # an opted-in unknown_score is averaged, so it changes results
             "unknown_score": self.unknown_score,
+            # written onto every Score; threshold also decides passed/correct
+            "threshold": self.threshold, "direction": self.direction,
         }
 
 

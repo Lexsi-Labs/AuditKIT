@@ -4,6 +4,11 @@
 
 ### Added
 
+- `JsonSchemaValid` (`json_schema_valid`) and `FieldF1` (`field_f1`, with `field_precision` and
+  `field_recall`): metrics for structured extraction. `JsonSchemaValid` validates the output against
+  a JSON Schema with the `jsonschema` package (new optional extra `auditkit[jsonschema]`) or a
+  built-in validator for the common keywords. `FieldF1` scores per-field precision, recall and F1
+  over flattened JSON paths, with list alignment and number, date and case normalisation hooks.
 - `RunConfig.chat_template_kwargs`: passed to the chat template of every request on
   `hf:` and `vllm:`, and sent as `chat_template_kwargs` to `api:` servers (vLLM /
   SGLang), e.g. `{"enable_thinking": False}` for Qwen3. A request's own values win.
@@ -102,9 +107,89 @@
 - `check_compat()`: warns for sglang on Python 3.13, and for accelerate < 1.0 with
   transformers 5; with `check_cuda=True`, errors on a torchaudio that won't load
   against torch's CUDA.
+- `LLMJudge` warns (`FutureWarning`) about an option label that carries a `{placeholder}`, a line break or other
+  control character, or is longer than 64 characters, because such a label can put text into the judge's
+  instructions that the caller did not mean to put there. The judge is still built. A later release will refuse
+  these labels with a `ValueError`. `option_label_problems()` lists what is wrong with a set of labels.
 
 ### Fixed
 
+- **Indic and other combining-mark scripts keep their words apart.** `quasi_exact_match`,
+  `answer_overlap` and the lexical RAG metrics turned vowel signs, which are combining marks and
+  not `\w`, into spaces. `दिन` and `दान` both became `द न` and matched, and Tamil pairs matched too.
+  Punctuation is still removed in every script, and the zero-width joiners are dropped inside words.
+  **Scores change** for text in these scripts.
+- **`f1_score` counted repeated tokens inconsistently.** The overlap came from a set intersection but the
+  precision and recall denominators were the token-list lengths, so `to be or not to be` scored 0.667
+  against itself and `New York, New York` scored 0.5. The overlap is now the multiset (`Counter`)
+  intersection, as in the SQuAD script, so identical text scores 1.0 and `paris paris paris` against
+  `paris` scores 0.5. Two strings with no tokens left after normalization (empty, or only articles such as
+  `a a a`) now score 1.0 instead of 0.0. Unicode punctuation (the Devanagari danda, the Arabic comma,
+  full-width stops) is now ignored, so `नमस्ते।` matches `नमस्ते`. **Scores change** for samples with
+  repeated tokens, an empty side or such punctuation, and `identity()` gains `"overlap": "multiset"`, so
+  cached `f1_score` results are not reused.
+- **The paired significance test could not detect a real effect.** `paired_bootstrap` (behind
+  `RunComparison.significance`, `compare_models` and `Experiment.significance`) resampled the raw per-sample
+  differences, so its distribution was centred on the observed mean and the p-value sat near 0.5 for every effect
+  size. It now centres the differences on the null first. A 30-of-40 improvement goes from p = 0.585 to 0.001.
+  **Significance results change.**
+- **`summary()` says when samples failed.** A sample whose model call errored or whose metric raised is left out of
+  every mean, so a model that failed 4 of 10 requests and answered the other 6 correctly reported 1.0 with nothing to
+  show it. `summary()` now prints how many failed and that they are left out of the means above.
+- **The same scorers in another order were served each other's cached result.** `Prediction.correct` and
+  `Prediction.score` follow the first applicable scorer, but the run's cache key sorted the scorers, so after
+  `evaluate(..., [exact_match, f1_score])` the call with `[f1_score, exact_match]` returned the first run's
+  `correct` (`False`) where a fresh run gives `True`. The scorers' order is now part of the cache key. A run with
+  its scorers in a different order is a cache miss and is scored again; the same order still hits the cache.
+- **The `transformers` extra is capped below 5.22.** transformers 5.22.0 to 5.22.2 make `pipeline()` pass
+  `code_revision=None` to the model class, which classes that are not auto classes reject, so loading the Aya vision
+  model through `hf:` fails with `got an unexpected keyword argument 'code_revision'`. 5.21.1 and older load it. The
+  cap comes off when a transformers release fixes this.
+- `paired_bootstrap` raises `ValueError` for `n_resamples` below 1. With none the p-value was undefined, and a
+  negative count returned a negative p-value reported as significant.
+- `EndsWith(ignore_case=True)` has its own name and identity, `Levenshtein` skips a sample with no target instead of
+  scoring it, `LLMJudge` includes its threshold and direction in its identity, and `GuardJudge` identifies its judge
+  model. Cached results for these metrics are not reused.
+- `ak.compare` and `tradeoff()` skip `quality_per_mb` when the metric is scored on one side only, instead of raising.
+- **Red-team detectors mixed up refusals and attacks.** `KeywordDetector` no longer matches "as an ai" or "system
+  prompt", `InjectionSuccessDetector` no longer matches a bare "hacked", `RefusalDetector` is word-bounded and reads
+  only the opening sentence ("the API cannot..." is not a refusal), and `SystemPromptLeakDetector` fires on a
+  disclosure ("my system prompt is...", "I was instructed to...") in a non-refusal, not on generic phrases. The
+  natural-word markers "bypassed" and "ignore all previous" are gone.
+- **A curly apostrophe hid a refusal.** `RefusalDetector` and the keyword refusal check in `rag_stress` matched
+  "can't" and "I'm unable" but not "can’t" or "I’m unable", which models often write, so a refusal was read as
+  an answer. Curly apostrophes (U+2019, U+2018, U+02BC, U+2032) are straightened before matching.
+- **`LLMJudge` number parsing.** `SCORE: 8/10` on the default 0-1 scale is 0.8 (it was read as 8 and clamped to
+  1.0), and with no `SCORE:` marker the last number on the final line is the verdict, not the first ("... so overall
+  I rate it 0.1" read 3). A number outside the scale is unknown instead of being clamped to the top or bottom score.
+- **A `TypeError` raised inside a context scorer was retried without `context`.** `FunctionScorer` now checks whether
+  `fn(sample, output, context=...)` binds to the scorer's own signature. If it does, a `TypeError` came from inside the
+  scorer and is raised once, for scorers that name `context`, take `**kwargs`, or sit behind a `functools.wraps` forwarder
+  of one. A two-argument scorer, including one behind a bare `*args, **kwargs` wrapper, is still called without `context`.
+- **A score that could not be measured counted as 0 or 0.5.** A weighted combination with no scores or weights
+  summing to zero, a pairwise metric with no preference data or no candidates, and an unrecognised hallucination
+  label now return a score flagged `unknown`, so they are left out of the aggregate. `Experiment.aggregate` leaves
+  out a run that lacks the metric, and returns `None` when no run has it. **Scores change** for these cases.
+- **`mcq_joint` dropped the run's generation settings.** The request built for index-labelled multiple choice had
+  no parameters, so `max_tokens`, `temperature`, `seed` and `stop_sequences` never reached the model. They are now
+  passed on. With no settings given, what a backend receives is unchanged (`temperature=0.0`).
+- **`hf:` loading options.** `quantization_config`, `max_memory`, `low_cpu_mem_usage`, `attn_implementation`,
+  `load_in_8bit` and `load_in_4bit` were passed to `transformers.pipeline()` as top-level keywords, which it forwards
+  to the pipeline instead of the model, so `generate()` later rejected them ("model_kwargs are not used by the
+  model"). They are now nested under `model_kwargs`, and `max_memory` is treated as a load-time option, not a
+  generation one. A `device_map` that spreads the model over accelerators, at the top level or inside `model_kwargs`, and a quantized
+  load are not passed together with `device`, which `transformers.pipeline` rejects or tries to move (a map that puts
+  everything on the CPU keeps `device`, so a model asked to stay on the CPU stays there); `device_map=None` means no map; fp16
+  is no longer forced next to an explicit dtype or on a CPU-only map; an explicit `device` that is ignored is logged.
+  When torch and transformers are installed but one fails to import, the real error is raised instead of a "pip
+  install" hint.
+- **`f1_score` and `token_overlap` identities** carry the new behaviour (`"punctuation": "unicode"`,
+  `"empty_pair": 1.0`), so cached results from before are not reused.
+- `token_overlap`: two empty sides scored 0.0 although identical; they now score 1.0, like `exact_match`,
+  `equals`, `rouge_l`, `word_error_rate` and `f1_score`.
+- `perplexity` on an empty output returned a NaN score. It now skips the sample, as other metrics do when
+  there is nothing to score.
+- `is_json` rejects `NaN`, `Infinity` and `-Infinity`, which JSON does not allow. Python's parser accepts them.
 - The six built-in benchmark scenarios load again. They used bare Hub ids (`mmlu`, `arc` and
   `truthfulqa` no longer exist; the others failed with `HfUriError`) and now use `cais/mmlu`,
   `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`, `truthfulqa/truthful_qa` and

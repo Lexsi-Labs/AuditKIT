@@ -8,6 +8,8 @@ AutoModel.resolve, and the __init__ exports.
 from __future__ import annotations
 
 
+import functools
+
 import pytest
 
 import auditkit as ak
@@ -139,6 +141,45 @@ class TestScorerDecorator:
             return 42.0
         result = latency_scorer(Sample(input=""), "x")
         assert result.direction == Direction.MINIMIZE
+
+    def test_typeerror_inside_context_scorer_is_not_retried(self):
+        calls = []
+        @scorer(direction=Direction.MAXIMIZE)
+        def context_scorer(sample, output, context=None):
+            calls.append(context)
+            if context is None:
+                return 0.0
+            raise TypeError("boom")
+        with pytest.raises(TypeError, match="boom"):
+            context_scorer(Sample(input=""), "x", context={"k": 1})
+        assert calls == [{"k": 1}]
+
+    def test_context_reaches_scorer(self):
+        @scorer(direction=Direction.MAXIMIZE)
+        def named(sample, output, context=None):
+            return context["v"]
+        @scorer(direction=Direction.MAXIMIZE)
+        def var_kw(sample, output, **kwargs):
+            return kwargs["context"]["v"]
+        for fn in (named, var_kw):
+            assert fn(Sample(input=""), "x", context={"v": 1.0}).value == 1.0
+
+    def test_two_arg_scorer_behind_varargs_wrapper(self):
+        def two_arg(sample, output):
+            return 1.0
+        def wrapper(*args, **kwargs):
+            return two_arg(*args, **kwargs)
+        result = FunctionScorer(wrapper, Direction.MAXIMIZE)(Sample(input=""), "x", context={})
+        assert result.value == 1.0
+
+    def test_wraps_decorator_that_supplies_context(self):
+        def needs_context(sample, output, context):
+            return context["v"]
+        @functools.wraps(needs_context)
+        def wrapper(sample, output):
+            return needs_context(sample, output, {"v": 1.0})
+        result = FunctionScorer(wrapper, Direction.MAXIMIZE)(Sample(input=""), "x", context={})
+        assert result.value == 1.0
 
 
 # ============================================================================

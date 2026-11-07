@@ -35,8 +35,8 @@ class TestEloScore:
 
 class TestPreferenceAccuracy:
     def test_no_data(self):
-        v = PreferenceAccuracy().score(S, "answer").value
-        assert v == 0.5
+        sc = PreferenceAccuracy().score(S, "answer")
+        assert sc.metadata["unknown"] is True  # no data is not a chance-level 0.5
     def test_name(self):
         assert PreferenceAccuracy().name == "preference_accuracy"
 

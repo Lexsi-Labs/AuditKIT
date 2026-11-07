@@ -73,6 +73,12 @@ class RunConfig:
     # a template's reasoning switch, ... A request's own chat_template_kwargs win.
     chat_template_kwargs: Optional[dict[str, Any]] = None
     extra: dict[str, Any] = field(default_factory=dict)
+    # Off by default: a sample that fails (the model call errored, or a metric raised) is
+    # left out of every headline mean and only shows up in failed_count/errors, so a model
+    # that fails often can score higher than one that answers everything. True counts each
+    # failure as 0.0 on every higher-is-better metric it has no score for; lower-is-better
+    # metrics have no worst value to assign and still leave it out.
+    failed_as_zero: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {f.name: getattr(self, f.name) for f in self.__dataclass_fields__.values()}
@@ -152,10 +158,13 @@ class RunSpec:
             # judge prompt/choices), not just the type — so changing a prompt
             # changes the fingerprint and can't return a stale cached result.
             "adapter": _identity(self.adapter, "method"),
-            "metrics": sorted(
+            # In the order given, not sorted: ``Prediction.correct`` and ``Prediction.score`` follow the
+            # first applicable metric, so the same metrics in another order can score a sample differently
+            # and must not be served each other's cached result.
+            "metrics": [
                 json.dumps(_identity(m, "name"), sort_keys=True, default=str)
                 for m in self.metrics
-            ),
+            ],
             # Annotators have no scoring effect unless extracted_by names
             # one -- but hashing both unconditionally means changing a
             # regex pattern (or which annotator feeds scoring) always

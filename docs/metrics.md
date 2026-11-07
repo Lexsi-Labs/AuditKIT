@@ -1,6 +1,6 @@
 # Metrics
 
-AuditKIT has 68 registered metrics in 11 families. Most need no third-party
+AuditKIT has 70 registered metrics in 12 families. Most need no third-party
 packages; the ones that do say which extra, and the judge metrics need a judge model.
 
 For exact mechanics, constructor arguments, and caveats per metric,
@@ -24,6 +24,21 @@ these, see [Annotators](annotators.md).
 | `WordCount(min_words, max_words)` | Word count range | `WordCount(min_words=2, max_words=10).score(s, text)` |
 | `IsJson(require_keys)` | Valid JSON + optional keys | `IsJson(require_keys=["name"]).score(s, json_str)` |
 | `F1Score()` | Token-overlap F1 | `F1Score().score(s, "the cat sat")` |
+
+## Structured Output
+
+| Metric | Description | Example |
+|---|---|---|
+| `JsonSchemaValid(schema)` | 1.0 iff the output parses as JSON and validates against a JSON Schema (a dict, a file path, or per sample from `metadata["schema"]`); the reason names the first failing path. Uses `jsonschema` if installed (`[jsonschema]` extra), else a built-in validator for the common keywords that refuses a schema it cannot check | `JsonSchemaValid(schema).score(s, json_str)` |
+| `FieldF1(...)` | Per-field precision, recall and F1 (`field_f1`, `field_precision`, `field_recall`) of an extracted JSON object against the target object. Flattens nested paths, aligns lists (multiset, by key field, or greedy best match) and takes normalisation options for numbers, dates and case | `FieldF1(normalize_numbers=True, list_keys="id")` |
+
+```python
+import auditkit as ak
+
+samples = [ak.Sample(input=doc, target=gold_json, metadata={"schema": schema}) for doc, gold_json in rows]
+result = ak.evaluate(samples, model="api:my-model", api_base="http://localhost:30000/v1", api_key="EMPTY",
+                     scorers=[ak.JsonSchemaValid(), ak.FieldF1(normalize_numbers=True, list_keys="id")])
+```
 
 ## Generation
 

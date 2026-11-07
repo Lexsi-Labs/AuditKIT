@@ -261,6 +261,8 @@ class Perplexity(Metric):
         import torch
         encodings = self._tokenizer(output, return_tensors="pt")
         input_ids = encodings.input_ids
+        if input_ids.shape[-1] == 0:
+            return []        # empty text has no perplexity: skip the sample, never score nan
         # A causal-LM loss needs at least 2 tokens (one to predict from, one
         # to predict) -- a single-token `output` (a bare word/number/label,
         # exactly what an annotator's extraction commonly produces) has

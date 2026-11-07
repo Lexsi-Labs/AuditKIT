@@ -308,7 +308,7 @@ class RunComparison:
             out["baseline_size_mb"] = baseline_size_mb
             out["candidate_size_mb"] = candidate_size_mb
             out["size_ratio"] = candidate_size_mb / baseline_size_mb  # <1 = smaller
-            if metric in mds:
+            if out.get("retention") is not None:
                 # retention(), not the raw candidate value: for a MINIMIZE
                 # metric (latency, cost) a bigger raw number is WORSE, so
                 # dividing it by size and calling the result "quality" would
@@ -316,7 +316,7 @@ class RunComparison:
                 # (1.0 = parity, regardless of whether the metric counts up
                 # or down), so "quality per mb" means the same thing for
                 # every metric.
-                out["quality_per_mb"] = self.retention(metric) / candidate_size_mb
+                out["quality_per_mb"] = out["retention"] / candidate_size_mb
         elif base_size or cand_size:
             # No real size_mb on at least one side -- either it's a hosted
             # -API/callable model (never measurable at all) or a local

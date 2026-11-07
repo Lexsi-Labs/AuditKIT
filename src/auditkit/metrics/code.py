@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
+from collections import Counter
 from typing import Any
 
 from auditkit.metric import Metric
@@ -79,7 +81,8 @@ class EndsWith(Metric):
     def __init__(self, suffix: str, ignore_case: bool = False) -> None:
         self._suffix = suffix
         self._ignore_case = ignore_case
-        self.name = f"endswith({suffix})"
+        suffix_label = "endswith_ci" if ignore_case else "endswith"
+        self.name = f"{suffix_label}({suffix})"
         self.required_fields = frozenset()
 
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
@@ -112,7 +115,7 @@ class Levenshtein(Metric):
 
     def __init__(self) -> None:
         self.name = "levenshtein"
-        self.required_fields = frozenset()
+        self.required_fields = frozenset({"target"})
 
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
         ref = sample.target or ""
@@ -169,6 +172,11 @@ class WordCount(Metric):
         return Score(name=self.name, value=1.0 if hit else 0.0, kind=self.kind)
 
 
+def _refuse_constant(name: str) -> None:
+    """Python's parser accepts NaN, Infinity and -Infinity, which JSON does not allow."""
+    raise ValueError(f"{name} is not valid JSON")
+
+
 @METRICS.register("is_json")
 class IsJson(Metric):
     kind = ScoreKind.CODE
@@ -185,7 +193,7 @@ class IsJson(Metric):
 
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
         try:
-            parsed = json.loads(output)
+            parsed = json.loads(output, parse_constant=_refuse_constant)
         except (json.JSONDecodeError, ValueError):
             return Score(name=self.name, value=0.0, kind=self.kind)
         if self._require_keys is not None:
@@ -204,19 +212,27 @@ class F1Score(Metric):
     def __init__(self, normalize: bool = True) -> None:
         """Token-overlap F1. ``normalize`` (default) compares SQuAD-style: lowercase,
         punctuation and articles removed, so "Red" matches "red" and "Triangle."
-        matches "triangle". ``normalize=False`` keeps the old raw whitespace split."""
+        matches "triangle". ``normalize=False`` keeps the old raw whitespace split.
+
+        The overlap is a multiset (``Counter``) intersection, as in the SQuAD script, so a
+        token counts as often as it appears in both strings. When both sides have no
+        tokens left (empty, or only articles) they are identical and score 1.0."""
         self.name = "f1_score"
         self.normalize = normalize
         self.required_fields = frozenset({"target"})
 
     def identity(self) -> dict:
-        return {"name": self.name, "normalize": self.normalize}
+        return {"name": self.name, "normalize": self.normalize, "overlap": "multiset", "punctuation": "unicode"}
 
     @staticmethod
     def _tokens(text: str) -> list[str]:
         import re
         import string
-        text = "".join(ch for ch in text.lower() if ch not in string.punctuation)
+        # ASCII punctuation as in SQuAD, plus every Unicode punctuation mark (the Devanagari danda,
+        # Arabic comma and question mark, full-width stops), so "नमस्ते।" matches "नमस्ते". Unicode
+        # symbols (category S: "€", "£", "°") are kept; only the ASCII ones in string.punctuation go.
+        text = "".join(ch for ch in text.lower()
+                       if ch not in string.punctuation and not unicodedata.category(ch).startswith("P"))
         return re.sub(r"\b(a|an|the)\b", " ", text).split()
 
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
@@ -224,12 +240,10 @@ class F1Score(Metric):
         output_tokens = split(output)
         target_tokens = split(sample.target or "")
         if not output_tokens and not target_tokens:
-            return Score(name=self.name, value=0.0, kind=self.kind)
-        out_set = set(output_tokens)
-        tgt_set = set(target_tokens)
-        intersection = out_set & tgt_set
-        precision = len(intersection) / len(output_tokens) if output_tokens else 0.0
-        recall = len(intersection) / len(target_tokens) if target_tokens else 0.0
+            return Score(name=self.name, value=1.0, kind=self.kind)
+        overlap = sum((Counter(output_tokens) & Counter(target_tokens)).values())
+        precision = overlap / len(output_tokens) if output_tokens else 0.0
+        recall = overlap / len(target_tokens) if target_tokens else 0.0
         if precision == 0.0 and recall == 0.0:
             f1 = 0.0
         else:

@@ -41,6 +41,11 @@ def _lookup(context: Any, source: Optional[str], field: str) -> list:
     return value if isinstance(value, list) else []
 
 
+def _not_measured(name: str, kind: ScoreKind, why: str) -> Score:
+    """A score that is not a measurement: flagged ``unknown`` so it stays out of the aggregate."""
+    return Score(name=name, value=0.0, kind=kind, reason=why, metadata={"unknown": True, "status": "not_measured"})
+
+
 @METRICS.register("win_rate")
 class WinRate(Metric):
     name = "win_rate"
@@ -59,7 +64,7 @@ class WinRate(Metric):
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
         candidates = _lookup(context, self._source, "candidates")
         if not candidates:
-            return Score(name=self.name, value=0.0, kind=self.kind)
+            return _not_measured(self.name, self.kind, "no candidates to compare against")
 
         target = sample.target or ""
         wins = 0
@@ -138,7 +143,7 @@ class PreferenceAccuracy(Metric):
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
         preference_data = _lookup(context, self._source, "preference_data")
         if not preference_data:
-            return Score(name=self.name, value=0.5, kind=self.kind)
+            return _not_measured(self.name, self.kind, "no preference data")
 
         correct = 0
         for pair in preference_data:

@@ -98,11 +98,14 @@ class TokenOverlap(Metric):
     is_deterministic = True
     required_fields = frozenset({"target"})
 
+    def identity(self) -> dict:
+        return {"name": self.name, "empty_pair": 1.0}
+
     def score(self, sample: Sample, output: str, context: Any = None) -> Score:
         tokens_out = set(output.split())
         tokens_tgt = set((sample.target or "").split())
         if not tokens_out and not tokens_tgt:
-            return Score(name=self.name, value=0.0, kind=self.kind)
+            return Score(name=self.name, value=1.0, kind=self.kind)   # identical: both empty
         intersection = tokens_out & tokens_tgt
         union = tokens_out | tokens_tgt
         return Score(name=self.name, value=len(intersection) / len(union), kind=self.kind)

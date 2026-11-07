@@ -175,6 +175,12 @@ class RunResult:
             lines.append(
                 f"  {row['name']}: {row['mean']:.4f} ± {row['stderr']:.4f}  (n={row['n']})"
             )
+        if self.failed_count:
+            if getattr(self.config, "failed_as_zero", False):
+                fate = "counted as 0.0 (lower-is-better metrics still leave them out)"
+            else:
+                fate = "left out of the means above (RunConfig(failed_as_zero=True) counts them as 0.0)"
+            lines.append(f"  {self.failed_count} failed sample(s) {fate}; see .errors")
         perf_line = self._perf_line()
         if perf_line:
             lines.append(f"  {perf_line}")

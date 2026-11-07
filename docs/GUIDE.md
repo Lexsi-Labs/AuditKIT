@@ -404,6 +404,7 @@ Every knob, with its real default:
 | `retry_delay` | `float` | `1.0` | base backoff (seconds); `retry_delay * 2**attempt` |
 | `judge_model` | `str \| None` | `None` | |
 | `judge_prompt_version` | `str \| None` | `None` | |
+| `failed_as_zero` | `bool` | `False` | count a failed sample (model call errored, metric raised) as `0.0` on every higher-is-better metric instead of leaving it out of the mean; lower-is-better metrics still leave it out. `summary()` reports `failed_count` either way |
 | `track_performance` | `bool` | `True` | record latency, throughput, token usage and model size in `RunResult.perf` |
 | `chat_template_kwargs` | `dict \| None` | `None` | passed to the chat template on `hf:`/`vllm:` and sent to `api:` servers (e.g. `{"enable_thinking": False}`); a request's own values win |
 | `extra` | `dict` | `{}` | hashed into the fingerprint; no built-in component reads it |
@@ -611,10 +612,19 @@ Target/output accept three encodings: choice text, 0-based index, or a single A�
 | `starts_with` | prefix match | — | `prefix`, `ignore_case=False` |
 | `ends_with` | suffix match | — | `suffix`, `ignore_case=False` |
 | `regex` | `re.search(pattern, output)` | — | `pattern` (required) |
-| `levenshtein` | `1 - editdist/maxlen` (continuous) | — | — |
+| `levenshtein` | `1 - editdist/maxlen` (continuous) | `target` | — |
 | `word_count` | word count within `[min,max]` | — | `min_words=0`, `max_words=None` |
 | `is_json` | parses as JSON (+ required keys) | — | `require_keys=None` |
-| `f1_score` | token-set F1 (continuous) | `target` | — |
+| `f1_score` | token-overlap F1, multiset (continuous) | `target` | — |
+
+### Structured output (`metrics/structured.py`) - MAXIMIZE, deterministic
+
+| Name | Measures | Requires | Params | Extra |
+|---|---|---|---|---|
+| `json_schema_valid` | output parses as JSON and validates against a JSON Schema; reason = first failing path | schema via `schema=` or `metadata["schema"]` | `schema=None`, `backend="auto"\|"jsonschema"\|"minimal"`, `strip_fences=False`, `schema_key="schema"` | `jsonschema` (optional; a built-in subset validator is used without it) |
+| `field_f1` | micro precision / recall / F1 over the scalar leaves of the output JSON vs `target` JSON; emits `field_f1`, `field_precision`, `field_recall` | `target` | `normalize_numbers=False`, `number_tol=0.0`, `case_sensitive=True`, `strip=True`, `date_formats=None`, `normalizers=None`, `list_keys=None`, `ignore=()`, `strip_fences=False` | - |
+
+`field_f1` aligns lists before comparing: scalar lists as multisets, object lists by `list_keys` (a key field name, or `{path pattern: key field}`) and otherwise greedily by most matching leaves. Path patterns use `*` and write list indices as `[]` (`items[].price`).
 
 ### Generation quality (`metrics/generation.py`)
 
@@ -1033,7 +1043,7 @@ A single list of everything flagged inline above. None of these break the *corre
 | `src/auditkit/sample.py`, `score.py`, `report.py`, `types.py` | the data model |
 | `src/auditkit/adapter.py`, `router.py` | adapters + shape routing |
 | `src/auditkit/model/` | 10 backends + echo/callable/precomputed |
-| `src/auditkit/metric.py`, `metrics/` | built-ins + 11 metric families (68 registered metrics) |
+| `src/auditkit/metric.py`, `metrics/` | built-ins + 12 metric families (70 registered metrics) |
 | `src/auditkit/lmeval_engine.py` | the lm-eval bridge |
 | `src/auditkit/comparison.py`, `diff.py`, `model_compare.py`, `_bootstrap.py`, `experiment.py` | comparison + significance + tracking |
 | `src/auditkit/redteam/` | probes + detectors + `RedTeamRunner` |
