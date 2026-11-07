@@ -68,6 +68,7 @@ def _as_key(value: Any) -> Any:
 
 
 _REF_KEYWORDS = ("$ref", "$dynamicRef", "$recursiveRef")
+_DATA_KEYWORDS = ("const", "enum", "default", "examples")
 
 
 def _remote_refs(schema: Any, found: Optional[list] = None) -> list[str]:
@@ -78,7 +79,7 @@ def _remote_refs(schema: Any, found: Optional[list] = None) -> list[str]:
         for k, v in schema.items():
             if k in _REF_KEYWORDS and isinstance(v, str) and not v.startswith("#"):
                 found.append(v)
-            else:
+            elif k not in _DATA_KEYWORDS:   # values that are only data: a "$ref" string inside them is not followed
                 _remote_refs(v, found)
     elif isinstance(schema, list):
         for v in schema:

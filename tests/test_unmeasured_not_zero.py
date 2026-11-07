@@ -123,3 +123,69 @@ def test_weighted_sum_of_only_placeholders_is_not_measured():
 
 def test_two_empty_runs_do_not_grade_pass():
     assert RunComparison(_run("a"), _run("b")).grade() != DeltaGrade.PASS
+
+
+# review fixes ----------------------------------------------------------------
+
+import pytest
+
+
+class _Replies:
+    """A guard model that answers every request with one fixed reply."""
+
+    name = "r"
+
+    def __init__(self, reply):
+        self.reply = reply
+
+    def generate(self, requests):
+        return [Result_(completions=[Generated(text=self.reply)]) for _ in requests]
+
+
+def _guard_score(profile, reply):
+    return GuardJudge(profile, judge_model=_Replies(reply)).score(Sample(input="q"), "a")
+
+
+@pytest.mark.parametrize("profile", ["harmbench", "shield_gemma", "granite_guardian"])
+@pytest.mark.parametrize("reply", ["None", "Not sure, I cannot classify this.", "Notably, yes - this violates the policy.",
+                                   "nonsense", "Nope", "Yesterday"])
+def test_a_reply_that_only_starts_with_yes_or_no_letters_is_not_a_verdict(profile, reply):
+    assert _guard_score(profile, reply).metadata.get("unknown") is True
+
+
+@pytest.mark.parametrize("profile", ["harmbench", "shield_gemma", "granite_guardian"])
+@pytest.mark.parametrize("reply, value", [("Yes", 1.0), ("Yes.", 1.0), ("  yes\n", 1.0), ("No", 0.0), ("No, it is fine.", 0.0), ("NO", 0.0)])
+def test_real_yes_no_verdicts_still_parse(profile, reply, value):
+    s = _guard_score(profile, reply)
+    assert s.metadata.get("unknown") is None and s.value == value
+
+
+@pytest.mark.parametrize("reply", ["safely ignore this", "unsafety is a concept", "S1"])
+def test_llama_guard_needs_the_whole_word_safe_or_unsafe(reply):
+    assert _guard_score("llama_guard", reply).metadata.get("unknown") is True
+
+
+@pytest.mark.parametrize("reply, value", [("safe", 0.0), ("\n\nsafe", 0.0), ("unsafe\nS1", 1.0), ("Unsafe: S2", 1.0), ("unsafe,S1", 1.0)])
+def test_real_llama_guard_verdicts_still_parse(reply, value):
+    s = _guard_score("llama_guard", reply)
+    assert s.metadata.get("unknown") is None and s.value == value
+
+
+def test_a_run_where_the_guard_gave_no_verdict_is_not_significantly_safer():
+    samples = [Sample(id=str(i), input=f"q{i}") for i in range(8)]
+    seen = ak.evaluate(samples, model=lambda ps: ["a"] * len(ps), scorers=[GuardJudge(judge_model=_Replies("unsafe\nS1"))])
+    blank = ak.evaluate(samples, model=lambda ps: ["b"] * len(ps), scorers=[GuardJudge(judge_model=_Replies(""))])
+    assert all(p.score is None for p in blank.predictions)          # a placeholder is not a score
+    assert score_pairs(seen, blank, None) == []
+    assert RunComparison(seen, blank).significance().get("significant") is not True
+
+
+@pytest.mark.parametrize("keyword", ["const", "enum", "default", "examples"])
+@pytest.mark.parametrize("backend", ["minimal", "jsonschema"])
+def test_a_ref_string_inside_plain_data_is_not_a_reference(keyword, backend):
+    if backend == "jsonschema":
+        pytest.importorskip("jsonschema")
+    from auditkit.metrics.structured import JsonSchemaValid
+    data = {"$ref": "https://example.invalid/x"}
+    value = [data] if keyword in ("enum", "examples") else data
+    JsonSchemaValid({"type": "object", keyword: value}, backend=backend)   # builds: it is data, not a reference

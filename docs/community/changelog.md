@@ -122,7 +122,7 @@
   `RunComparison.per_task_deltas()` and `CompareResult.per_task_table()` as a 0. Both leave it out, as
   the run's own headline already did. **Per-task numbers change** for runs with such samples.
 - **Significance tests paired placeholder scores.** `score_pairs()` (so `significance()` and the paired
-  bootstrap) took the placeholder 0 of a sample that was not measured as its value. It now skips the sample.
+  bootstrap) took the placeholder 0 of a sample that was not measured as its value. It now skips the sample. `Prediction.score` is `None` for such a sample too, so a run whose guard gave no verdict no longer shows up as significantly safer in `RunComparison.significance()` and `Experiment.significance()`.
 - **`RunDiff.sample_diff(metric)` called a sample that was not measured "newly wrong".** It is now
   `unknown`, like a sample with no score for the metric.
 - **`CompareResult.summary()` printed `0.0000 (n=0)` for a model with no score for a metric.** It prints
@@ -131,7 +131,7 @@
   `GuardJudge` (Llama Guard, WildGuard, HarmBench, ShieldGemma, Granite Guardian profiles) scored 0
   (safe), pulling the unsafe rate down (0.5 where the one real verdict said 1.0). The score is now
   flagged `unknown`: left out of the headline and listed in `RunResult.errors` like any other
-  unreadable verdict.
+  unreadable verdict. A verdict is the whole word: `None`, `Nope`, `Yesterday` or `safely` are no longer read as "no", "yes" or "safe".
 - **`WeightedSum.compute()` averaged placeholder scores.** A score flagged `unknown` was weighted in as
   its placeholder 0. It is now left out; if nothing is left the result is itself flagged `unknown`.
 - **`RunComparison.grade()` was PASS for two runs with no metrics.** Nothing was compared, so the grade
@@ -244,7 +244,7 @@
 - **`JsonSchemaValid` with the `jsonschema` backend followed remote `$ref`s.** A schema can come with the dataset (a
   per-sample `metadata["schema"]`), and a `$ref` to a URL made the evaluator send a request to that host, which could be an
   internal address. Only local references (`#...`) are followed now, on both backends: a schema with any other `$ref`,
-  `$dynamicRef` or `$recursiveRef` raises a `ValueError` (when the metric is built, or when a per-sample schema is scored),
+  `$dynamicRef` or `$recursiveRef` raises a `ValueError` (a `$ref` string inside `const`, `enum`, `default` or `examples` is data and is left alone) (when the metric is built, or when a per-sample schema is scored),
   and `jsonschema` is given a registry that retrieves nothing. The `jsonschema` extra now needs `jsonschema>=4.18` (older versions fetch remote references and cannot be given such a registry); with an older one the backend raises `ExtraNotInstalled`.
 
 ### Changed
