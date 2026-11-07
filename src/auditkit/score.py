@@ -49,6 +49,19 @@ class Score:
         return self.value >= self.threshold
 
 
+def _measured_value(doc: dict[str, Any]) -> Optional[float]:
+    """Value of a stored per-score dict (``Prediction.metadata["scores"]``), or ``None``
+    when it is not a number or is flagged ``unknown`` (a placeholder, not a measurement;
+    same rule as ``Runner.aggregate``)."""
+    value = doc.get("value")
+    if not isinstance(value, (int, float)):
+        return None
+    meta = doc.get("metadata") or {}
+    if meta.get("unknown") and not meta.get("count_in_aggregate"):
+        return None
+    return float(value)
+
+
 class Stat:
     """A running summary of many values (mean, stderr, spread, percentiles).
 

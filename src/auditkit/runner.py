@@ -499,7 +499,7 @@ class Runner:
             parsed_answer=scoring_output,
             expected=sample.target,
             correct=correct,
-            score=primary.value if primary else None,
+            score=primary.value if primary and unscored_status(primary) is None else None,   # a placeholder is not a score
             context=context,
             metadata={"scores": [_score_doc(s) for s in scores],
                       **({"metric_errors": failed_metrics} if failed_metrics else {})},

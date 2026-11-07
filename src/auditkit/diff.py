@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Iterable, Optional
 
 from .report import RunResult, Prediction
+from .score import _measured_value
 from .types import Direction
 
 
@@ -158,6 +159,8 @@ class RunDiff:
             return pred.correct
         for score_doc in pred.metadata.get("scores", []):
             if score_doc.get("name") == metric_name:
+                if _measured_value(score_doc) is None:
+                    return None   # not measured on this sample: neither right nor wrong
                 # Use the metric's own gate (passed) when it has a threshold;
                 # bool(value) was wrong for any thresholded/continuous score
                 # (e.g. value=0.6, threshold=0.7, passed=False -- bool(0.6)

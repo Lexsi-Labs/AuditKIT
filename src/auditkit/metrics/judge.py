@@ -20,7 +20,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from auditkit.metric import Metric
+from auditkit.metric import Metric, _strip_punct
 from auditkit.model import Request, _SESSION_KWARGS
 from auditkit.registry import METRICS
 from auditkit.sample import Sample
@@ -140,7 +140,7 @@ def _last_marker(text: str, marker: str) -> Optional[str]:
 
 
 def _norm(s: str) -> str:
-    return re.sub(r"[^\w\s]", "", s).strip().lower()
+    return _strip_punct(s, "").strip().lower()
 
 
 def _last_line(text: str) -> str:

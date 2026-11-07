@@ -67,6 +67,40 @@ def _as_key(value: Any) -> Any:
         return json.dumps(value, sort_keys=True, default=str)
 
 
+_REF_KEYWORDS = ("$ref", "$dynamicRef", "$recursiveRef")
+_DATA_KEYWORDS = ("const", "enum", "default", "examples")
+
+
+def _remote_refs(schema: Any, found: Optional[list] = None, at_schema: bool = True) -> list[str]:
+    """References in ``schema`` that are not local (``#...``). A schema can come with the dataset, and following a
+    remote reference would make the evaluator send a request to whatever host the schema names.
+
+    The values of ``const``, ``enum``, ``default`` and ``examples`` are data and are left alone, but only where the
+    keyword really is a keyword of a schema: a property that is merely *named* ``const`` is a subschema and is read.
+    Anywhere the position is unclear everything is read, so a valid schema may be refused but none is let through."""
+    found = [] if found is None else found
+    if isinstance(schema, dict):
+        for k, v in schema.items():
+            if k in _REF_KEYWORDS and isinstance(v, str) and not v.startswith("#"):
+                found.append(v)
+            elif at_schema and k in _DATA_KEYWORDS:
+                continue
+            elif at_schema and k in _MAP_KEYWORDS and isinstance(v, dict):
+                for sub in v.values():
+                    _remote_refs(sub, found, True)
+            elif at_schema and k in _SCHEMA_KEYWORDS:
+                _remote_refs(v, found, True)
+            elif at_schema and k in _LIST_KEYWORDS and isinstance(v, list):
+                for sub in v:
+                    _remote_refs(sub, found, True)
+            else:
+                _remote_refs(v, found, False)
+    elif isinstance(schema, list):
+        for v in schema:
+            _remote_refs(v, found, at_schema)
+    return found
+
+
 def _bad_shapes(schema: Any, found: Optional[list] = None) -> list[str]:
     """Keyword values in ``schema`` (at schema positions only) that the built-in validator is known to misread or crash on.
 
@@ -312,12 +346,21 @@ class JsonSchemaValid(Metric):
         """A function returning None for a valid instance, else the first error message."""
         key = json.dumps(schema, sort_keys=True)
         if key not in self._validators:
+            remote = _remote_refs(schema)
+            if remote:
+                raise ValueError(f"the schema refers to {remote[0]!r}; only local references ('#...') are followed, "
+                                 f"so a schema that comes with a dataset cannot make the evaluator fetch a URL")
             if self._backend == "jsonschema":
                 import jsonschema
 
                 cls = jsonschema.validators.validator_for(schema)
                 cls.check_schema(schema)
-                v = cls(schema)
+                try:   # a registry that retrieves nothing: jsonschema's default one fetches remote references
+                    from referencing import Registry
+                except ImportError:   # jsonschema before 4.18 would fetch them; refuse rather than run unprotected
+                    from auditkit.errors import ExtraNotInstalled
+                    raise ExtraNotInstalled("jsonschema", "pip install 'jsonschema>=4.18'") from None
+                v = cls(schema, registry=Registry())
 
                 def run(inst: Any) -> Optional[str]:
                     err = next(iter(v.iter_errors(inst)), None)
