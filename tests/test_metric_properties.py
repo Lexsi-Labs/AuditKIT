@@ -136,6 +136,8 @@ CHOICES = {
     ("sentiment_encoder_judge", "aggregation"): "argmax",
     ("guard_judge", "assess"): "prompt",
     ("guard_judge", "profile"): "wildguard",
+    # "auto" resolves to the jsonschema package when it is installed, so "minimal" is a different backend.
+    ("json_schema_valid", "backend"): "minimal",
     ("parallel_tool_calls", "arg_mode"): "subset",
     ("tool_call_f1", "arg_mode"): "subset",
     ("trajectory_match", "arg_mode"): "subset",
