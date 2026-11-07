@@ -1,6 +1,7 @@
 """HuggingFace generation backend (optional extra: auditkit[transformers])."""
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
@@ -24,6 +25,8 @@ _KEY_MAP = {
     "max_tokens": "max_new_tokens",
     "stop_sequences": "stop_strings",
 }
+
+logger = logging.getLogger(__name__)
 
 # Model-LOADING kwargs `transformers.pipeline()` accepts at construction
 # time (forwarded internally to from_pretrained) -- these must reach
@@ -219,14 +222,32 @@ class HFGenModel(Model):
         for k in _LOAD_TIME_KWARGS:
             if k in self._extra_kwargs:
                 pipe_kwargs[k] = self._extra_kwargs[k]
+        if pipe_kwargs.get("device_map") is None:
+            pipe_kwargs.pop("device_map", None)       # device_map=None means "no map"
+        model_kwargs = pipe_kwargs.get("model_kwargs") or {}
+        device_map = pipe_kwargs.get("device_map") or model_kwargs.get("device_map")
         device = self._resolve_device()
-        if "dtype" not in pipe_kwargs and "torch_dtype" not in pipe_kwargs and self._needs_fp16(device):
+        if isinstance(device_map, dict):
+            cpu_only_map = not any(isinstance(v, int) or str(v).startswith("cuda") for v in device_map.values())
+        else:
+            cpu_only_map = device_map in ("cpu", "disk", "mps")
+        has_dtype = any(k in d for d in (pipe_kwargs, model_kwargs) for k in ("dtype", "torch_dtype"))
+        if not has_dtype and not cpu_only_map and self._needs_fp16(device):
             pipe_kwargs["dtype"] = torch.float16
+        # device and device_map are mutually exclusive in transformers.pipeline(): a device_map
+        # (top level or inside model_kwargs) always wins, and a quantized model is placed by
+        # accelerate, not moved. In both cases device must be omitted rather than passed alongside.
+        quantized = any(k in d for d in (pipe_kwargs, model_kwargs)
+                        for k in ("quantization_config", "load_in_8bit", "load_in_4bit"))
+        if device_map is None and not quantized:
+            pipe_kwargs["device"] = device
+        elif self._device not in (None, "auto"):
+            logger.warning("hf: device=%r is ignored because %s places the model", self._device,
+                           "device_map" if device_map is not None else "the quantization config")
         try:
             self._pipeline = pipeline(
                 "text-generation",
                 model=self._model_name,
-                device=device,
                 **pipe_kwargs,
             )
         except ValueError as e:

@@ -129,15 +129,38 @@ def _identity_cases():
     return out
 
 
+# Arguments that only take a fixed set of values: another allowed value to build the changed metric with.
+CHOICES = {
+    ("encoder_judge", "aggregation"): "argmax",
+    ("factuality_encoder_judge", "aggregation"): "argmax",
+    ("sentiment_encoder_judge", "aggregation"): "argmax",
+    ("guard_judge", "assess"): "prompt",
+    ("guard_judge", "profile"): "wildguard",
+    ("parallel_tool_calls", "arg_mode"): "subset",
+    ("tool_call_f1", "arg_mode"): "subset",
+    ("trajectory_match", "arg_mode"): "subset",
+}
+# Arguments the default profile rejects: extra keyword arguments to build the changed metric with.
+EXTRA: dict = {}
+
+
 @pytest.mark.parametrize("name,param,new", _identity_cases())
 def test_every_constructor_argument_is_in_the_identity(name, param, new):
     if (name, param) in KNOWN_GAPS:
         pytest.skip("a known gap, fixed by an open PR")
-    cls, kw = METRICS.get(name), REQUIRED_ARGS.get(name, {})
+    cls = METRICS.get(name)
+    kw = {**REQUIRED_ARGS.get(name, {}), **EXTRA.get((name, param), {})}
     try:
-        base, changed = cls(**kw), cls(**{**kw, param: new})
+        base = cls(**kw)
     except Exception:
         pytest.skip("needs a model or network to construct")
+    try:
+        changed = cls(**{**kw, param: new})
+    except Exception:
+        # The mutated value was rejected: try another allowed choice, and fail if there is none.
+        alt = CHOICES.get((name, param))
+        assert alt is not None, f"{name}({param}={new!r}) is rejected; add an allowed value to CHOICES"
+        changed = cls(**{**kw, param: alt})
     assert _key(base) != _key(changed), f"{name}({param}=...) does not change the name or identity()"
 
 

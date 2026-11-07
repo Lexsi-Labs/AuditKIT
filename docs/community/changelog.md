@@ -119,6 +119,19 @@
   full-width stops) is now ignored, so `नमस्ते।` matches `नमस्ते`. **Scores change** for samples with
   repeated tokens, an empty side or such punctuation, and `identity()` gains `"overlap": "multiset"`, so
   cached `f1_score` results are not reused.
+- **A score that could not be measured counted as 0 or 0.5.** A weighted combination with no scores or weights
+  summing to zero, a pairwise metric with no preference data or no candidates, and an unrecognised hallucination
+  label now return a score flagged `unknown`, so they are left out of the aggregate. `Experiment.aggregate` leaves
+  out a run that lacks the metric, and returns `None` when no run has it. **Scores change** for these cases.
+- **`mcq_joint` dropped the run's generation settings.** The request built for index-labelled multiple choice had
+  no parameters, so `max_tokens`, `temperature`, `seed` and `stop_sequences` never reached the model. They are now
+  passed on. With no settings given, what a backend receives is unchanged (`temperature=0.0`).
+- **`hf:` device handling.** A `device_map`, at the top level or inside `model_kwargs`, and a quantized load are
+  never passed together with `device`, which `transformers.pipeline` rejects or tries to move. `device_map=None`
+  means no map. fp16 is no longer forced next to an explicit dtype or on a CPU-only map. An explicit `device` that is
+  ignored is logged.
+- **`f1_score` and `token_overlap` identities** carry the new behaviour (`"punctuation": "unicode"`,
+  `"empty_pair": 1.0`), so cached results from before are not reused.
 - `token_overlap`: two empty sides scored 0.0 although identical; they now score 1.0, like `exact_match`,
   `equals`, `rouge_l`, `word_error_rate` and `f1_score`.
 - `perplexity` on an empty output returned a NaN score. It now skips the sample, as other metrics do when

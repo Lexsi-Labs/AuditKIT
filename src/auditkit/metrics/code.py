@@ -222,14 +222,15 @@ class F1Score(Metric):
         self.required_fields = frozenset({"target"})
 
     def identity(self) -> dict:
-        return {"name": self.name, "normalize": self.normalize, "overlap": "multiset"}
+        return {"name": self.name, "normalize": self.normalize, "overlap": "multiset", "punctuation": "unicode"}
 
     @staticmethod
     def _tokens(text: str) -> list[str]:
         import re
         import string
         # ASCII punctuation as in SQuAD, plus every Unicode punctuation mark (the Devanagari danda,
-        # Arabic comma and question mark, full-width stops), so "नमस्ते।" matches "नमस्ते".
+        # Arabic comma and question mark, full-width stops), so "नमस्ते।" matches "नमस्ते". Unicode
+        # symbols (category S: "€", "£", "°") are kept; only the ASCII ones in string.punctuation go.
         text = "".join(ch for ch in text.lower()
                        if ch not in string.punctuation and not unicodedata.category(ch).startswith("P"))
         return re.sub(r"\b(a|an|the)\b", " ", text).split()
