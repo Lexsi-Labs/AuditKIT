@@ -404,6 +404,7 @@ Every knob, with its real default:
 | `retry_delay` | `float` | `1.0` | base backoff (seconds); `retry_delay * 2**attempt` |
 | `judge_model` | `str \| None` | `None` | |
 | `judge_prompt_version` | `str \| None` | `None` | |
+| `failed_as_zero` | `bool` | `False` | count a failed sample (model call errored, metric raised) as `0.0` on every higher-is-better metric instead of leaving it out of the mean; lower-is-better metrics still leave it out. `summary()` reports `failed_count` either way |
 | `track_performance` | `bool` | `True` | record latency, throughput, token usage and model size in `RunResult.perf` |
 | `chat_template_kwargs` | `dict \| None` | `None` | passed to the chat template on `hf:`/`vllm:` and sent to `api:` servers (e.g. `{"enable_thinking": False}`); a request's own values win |
 | `extra` | `dict` | `{}` | hashed into the fingerprint; no built-in component reads it |

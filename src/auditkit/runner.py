@@ -32,7 +32,7 @@ from .report import Prediction, RunResult
 from .runspec import RunConfig, RunSpec
 from .sample import Sample
 from .scenario import Scenario
-from .score import Score, Stat
+from .score import Direction, Score, Stat
 from .types import Capability
 
 logger = logging.getLogger(__name__)
@@ -503,6 +503,26 @@ class Runner:
         return stats
 
     @staticmethod
+    def failed_zeros(
+        metrics: list[Metric], failures: list[tuple[list[Score], Optional[list[str]]]], scores: list[Score]
+    ) -> list[Score]:
+        """The 0.0 Scores ``RunConfig.failed_as_zero`` adds for what failed samples never produced.
+
+        Only higher-is-better names get one: a lower-is-better metric has no worst value to
+        invent. A name the failed sample did score (e.g. an opted-in ``unknown_score``) is kept.
+        """
+        direction = {s.name: s.direction for s in scores}
+        direction.update({m.name: m.direction for m in metrics})
+        zeros = []
+        for got, names in failures:
+            counted = {s.name for s in got if unscored_status(s) is None}
+            for name in direction if names is None else names:
+                if direction.get(name, Direction.MAXIMIZE) == Direction.MAXIMIZE and name not in counted:
+                    zeros.append(Score(name=name, value=0.0, direction=Direction.MAXIMIZE,
+                                       metadata={"failed": True}))
+        return zeros
+
+    @staticmethod
     def unscored_counts(scores: list[Score]) -> dict[str, dict[str, int]]:
         """``{metric: {"unknown": n, "not_tested": m}}`` for results left out of the aggregate."""
         out: dict[str, dict[str, int]] = {}
@@ -554,6 +574,8 @@ class Runner:
         predictions: list[Prediction] = []
         errors: list[dict] = []
         failed_count: int = 0
+        # per failure: (scores the sample did get, metric names it failed on, None for all)
+        failures: list[tuple[list[Score], Optional[list[str]]]] = []
         latency = LatencyStats()
         throughput = Throughput()
         # Real, provider-reported token counts -- only ever non-zero when a
@@ -656,9 +678,12 @@ class Runner:
                     )
                     all_scores.extend(scores)
                     predictions.append(prediction)
+                    if prediction.metadata.get("metric_errors"):
+                        failures.append((scores, prediction.metadata["metric_errors"]))
                 except Exception as e:
                     logger.error("Sample %s failed: %s", sample.id, e)
                     failed_count += 1
+                    failures.append(([], None))
                     predictions.append(Prediction(
                         run_id=run_id,
                         task=getattr(sample, 'task', '') or '',
@@ -731,9 +756,12 @@ class Runner:
                     )
                     all_scores.extend(scores)
                     predictions.append(prediction)
+                    if prediction.metadata.get("metric_errors"):
+                        failures.append((scores, prediction.metadata["metric_errors"]))
                 except Exception as e:
                     logger.error("Sample %s failed: %s", sample.id, e)
                     failed_count += 1
+                    failures.append(([], None))
                     predictions.append(Prediction(
                         run_id=run_id,
                         task=getattr(sample, 'task', '') or '',
@@ -762,6 +790,8 @@ class Runner:
                 for doc in (p.metadata or {}).get("scores", []):
                     if str(doc.get("name", "")).startswith(_PARALLEL_SCORES):
                         doc["metadata"] = {**doc.get("metadata", {}), "cap_unverified": True}
+        if config.failed_as_zero:
+            all_scores.extend(self.failed_zeros(spec.metrics, failures, all_scores))
         stats = self.aggregate(all_scores)
         unscored = self.unscored_counts(all_scores)
         for name, n in Counter(e["metric"] for e in errors if "metric" in e).items():
