@@ -119,6 +119,15 @@
   full-width stops) is now ignored, so `नमस्ते।` matches `नमस्ते`. **Scores change** for samples with
   repeated tokens, an empty side or such punctuation, and `identity()` gains `"overlap": "multiset"`, so
   cached `f1_score` results are not reused.
+- **The paired significance test could not detect a real effect.** `paired_bootstrap` (behind
+  `RunComparison.significance`, `compare_models` and `Experiment.significance`) resampled the raw per-sample
+  differences, so its distribution was centred on the observed mean and the p-value sat near 0.5 for every effect
+  size. It now centres the differences on the null first. A 30-of-40 improvement goes from p = 0.585 to 0.001.
+  **Significance results change.**
+- `EndsWith(ignore_case=True)` has its own name and identity, `Levenshtein` skips a sample with no target instead of
+  scoring it, `LLMJudge` includes its threshold and direction in its identity, and `GuardJudge` identifies its judge
+  model. Cached results for these metrics are not reused.
+- `ak.compare` and `tradeoff()` skip `quality_per_mb` when the metric is scored on one side only, instead of raising.
 - **Red-team detectors mixed up refusals and attacks.** `KeywordDetector` no longer matches "as an ai" or "system
   prompt", `InjectionSuccessDetector` no longer matches a bare "hacked", `RefusalDetector` is word-bounded and reads
   only the opening sentence ("the API cannot..." is not a refusal), and `SystemPromptLeakDetector` fires on a
