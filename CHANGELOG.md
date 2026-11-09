@@ -110,6 +110,7 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- `hf:` `loglikelihood` takes its softmax in float32. On a bf16 or fp16 model the log-probabilities were rounded by several hundredths, enough to flip near ties in multiple-choice scoring.
 - Broken relative link in `examples/applications/README.md`: `../examples/` resolved to
   `examples/examples/`; it now points at `../`.
 - `auditkit eval --config FILE` accepts `model:` from the config file. `--model` was
