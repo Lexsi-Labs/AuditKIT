@@ -190,6 +190,7 @@ def evaluate(
     tags: list[str] | None = None,
     dataset_config: str | None = None,
     dataset_split: str | None = None,
+    cache: bool = True,
     **opts: Any,
 ) -> RunResult:
     """Evaluate a model on a dataset and return a :class:`RunResult`.
@@ -240,11 +241,17 @@ def evaluate(
         For a folder or Hub id *dataset*: the config name (HF
         ``load_dataset(path, name)``) and split (default: the first of test /
         validation / train present).
+    cache
+        ``False`` runs without the disk cache: no earlier result is replayed and
+        none is stored (native engine). Use it when the model depends on state the
+        fingerprint cannot see, such as a function over weights edited in place.
     **opts
         Extra keyword args passed to the model constructor (native) or to
         lm-eval's ``model_args`` (``engine="lmeval"``: ``base_url``, ``dtype``, …).
     """
     if engine == "lmeval":
+        if not cache:
+            raise ValueError("cache=False is supported by the native engine only")
         from .lmeval_engine import run_benchmark
 
         result = run_benchmark(
@@ -270,7 +277,7 @@ def evaluate(
         config=cfg,
     )
 
-    result = Runner().run(spec, verbose=verbose)
+    result = Runner().run(spec, verbose=verbose, cache=cache)
     return _record_experiment(result, experiment_name, tags)
 
 
@@ -334,6 +341,7 @@ def generate(
     adapter: Union[Adapter, str, None] = None,
     config: Optional[RunConfig] = None,
     verbose: bool = False,
+    cache: bool = True,
     **opts: Any,
 ) -> list[Sample]:
     """Generate answers for a dataset and return samples with ``actual_output`` set.
@@ -358,7 +366,7 @@ def generate(
         metrics=[],
         config=config or RunConfig(),
     )
-    result = Runner().run(spec, verbose=verbose)
+    result = Runner().run(spec, verbose=verbose, cache=cache)   # cache: as in evaluate()
     # Persist the structured trace too (native tool_calls/messages/retrieved
     # contexts an api:/agent: backend produced) into actual_trace, so a later
     # precomputed evaluate() scores the run's tool calls / contexts instead of
