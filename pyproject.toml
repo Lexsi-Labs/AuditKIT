@@ -59,7 +59,8 @@ bert-score  = ["bert-score", "torch>=2.4"]
 relay       = ["flask", "werkzeug", "requests"]   # LexsiCompletionsRelay (lexsi_relay.py)
 lexsi-sdk   = ["lexsi-sdk"]   # lexsi_login()/run_benchmark(lexsi_org=...) (lexsi_login.py) -- the only place it's imported
 # pyyaml: tests/test_cli_yaml_model.py exercises `eval --config`, which needs it.
-dev         = ["pytest", "pytest-asyncio", "pytest-mock", "pyyaml", "jsonschema>=4.18"]
+# requests: the api:/groq:/lexsi: and SGLang-server tests drive real HTTP backends.
+dev         = ["pytest", "pytest-asyncio", "pytest-mock", "pyyaml", "jsonschema>=4.18", "requests"]
 all         = [
     "auditkit[openai,anthropic,transformers,lmeval,vision,interop,mlflow,requests,jsonschema,vllm,litellm,bert-score,relay,lexsi-sdk,dev]",
 ]

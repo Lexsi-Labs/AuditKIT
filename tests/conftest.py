@@ -46,6 +46,7 @@ def fake_upstream():
     real loopback HTTP instead of mocking requests.post."""
     pytest.importorskip("flask", reason="the relay tests need the [relay] extra (flask)")
     pytest.importorskip("werkzeug", reason="the relay tests need the [relay] extra (werkzeug)")
+    pytest.importorskip("requests", reason="the relay tests need the [relay] extra (requests)")
     from flask import Flask, jsonify
     from flask import request as flask_request
     from werkzeug.serving import make_server
