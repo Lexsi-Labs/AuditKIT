@@ -6,7 +6,7 @@ Usage::
     from auditkit.redteam import RedTeamRunner, Probe, Detector
 
     runner = RedTeamRunner(model="groq:llama-3.3-70b-versatile")
-    result = runner.run(probes=[Probe("jailbreak_dan")])
+    result = runner.run(probes=["jailbreak", "prompt_injection"])
     print(result.summary())
 """
 

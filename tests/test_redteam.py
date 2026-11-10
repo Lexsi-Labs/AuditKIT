@@ -1,6 +1,8 @@
 """Tests for the red teaming module."""
 from __future__ import annotations
 
+import pytest
+
 from auditkit.redteam import Probe, ProbeResult, RedTeamRunner, RedTeamResult
 from auditkit.redteam.probes.builtin import PromptInjectionProbe, JailbreakProbe, EncodingProbe, RefusalProbe
 from auditkit.redteam.detectors.builtin import KeywordDetector, RefusalDetector, InjectionSuccessDetector
@@ -83,6 +85,13 @@ class TestRedTeamRunner:
         result = runner.run(probes=["refusal"], detectors=["refusal"])
         for r in result.results:
             assert r.detector_name == "refusal"
+
+    def test_probe_without_prompts_raises(self):
+        # A bare Probe("name") has no prompts. Running it used to report a 100%
+        # pass rate even though nothing was tested.
+        runner = RedTeamRunner(model="echo")
+        with pytest.raises(ValueError, match="has no prompts"):
+            runner.run(probes=[Probe("jailbreak_dan")])
 
     def test_redteam_result_summary(self):
         result = RedTeamResult(
