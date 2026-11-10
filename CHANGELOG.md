@@ -110,6 +110,14 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- **Results change for multi-probe red-team runs.** When no detectors are given, each probe is checked only with
+  its own default detectors. The runner used to gather the defaults of every probe and apply all of them to every
+  probe, so a model that correctly refused a jailbreak prompt was failed by `RefusalDetector` when the `refusal`
+  probe also ran (39 checks, 13 failed, against 21 checks and none failed for the two probes run alone). Detectors
+  passed explicitly still apply to every probe. `detectors_used` keeps a stable order; it came from a `set`.
+- `RedTeamRunner.run` raises a `ValueError` when a probe has no prompts, naming the probe and the built-in probe
+  names. A bare `Probe("name")` sent nothing to the model and the summary still reported a 100% pass rate. The
+  example in the `auditkit.redteam` docstring used such a probe and now uses built-in ones.
 - `evaluate()` and `generate()` take `cache=False` (native engine), which runs without the disk cache.
   `CallableModel` warns when a function model reads state the run fingerprint cannot see, such as a model
   object whose weights are edited in place, because such a model is otherwise served an earlier run's result.
