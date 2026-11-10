@@ -73,6 +73,19 @@ def _run_notes(model: Any) -> dict[str, Any]:
         return {}
 
 
+def _model_label(model: Any) -> str:
+    """The model as a plain string for ``RunResult.model_spec``: its name (``"hf:gpt2"``,
+    ``"precomputed"``), with the checkpoint added when the name does not carry it (``HFGenModel(model=
+    "gpt2")`` is named ``"hf"``). Never ``str(model)``, which is an object repr with a memory address."""
+    name = getattr(model, "name", None)
+    if not isinstance(name, str) or not name:
+        return type(model).__name__
+    checkpoint = getattr(model, "_model_name", None)
+    if isinstance(checkpoint, str) and checkpoint and checkpoint not in name:
+        return f"{name}:{checkpoint}"
+    return name
+
+
 def _token_count(value: Any) -> int:
     """A backend-reported token count as an int; a string ("5") is parsed and
     anything non-numeric or non-finite (NaN/Infinity) counts as 0, so neither
@@ -899,7 +912,7 @@ class Runner:
             predictions=predictions,
             headline=headline,
             config=spec.config,
-            model_spec=str(spec.model) if spec.model else None,
+            model_spec=_model_label(spec.model) if spec.model else None,
             errors=errors,
             unscored=unscored,
             # a sample whose metric crashed is a failed sample, not a silent skip
