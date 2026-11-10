@@ -146,6 +146,12 @@ class RedTeamRunner:
 
         for probe in resolved_probes:
             prompts = probe.generate()
+            if not prompts:
+                raise ValueError(
+                    f"Probe '{probe.name}' has no prompts, so nothing would be tested. "
+                    f"Use a built-in probe name ({', '.join(_PROBE_REGISTRY)}) "
+                    "or a Probe subclass that returns prompts."
+                )
             requests = [Request(prompt=p) for p in prompts]
             results_list = self._model.generate(requests)
 
