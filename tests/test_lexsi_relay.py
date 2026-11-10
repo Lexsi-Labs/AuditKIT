@@ -17,7 +17,11 @@ from __future__ import annotations
 import sys
 
 import pytest
-import requests as requests_lib
+
+try:   # [relay]/[requests] extra; tests that need it take fake_upstream, which skips without it
+    import requests as requests_lib
+except ImportError:
+    requests_lib = None
 
 from auditkit.errors import ExtraNotInstalled
 from auditkit.lexsi_relay import LexsiCompletionsRelay, run_lmeval_via_relay

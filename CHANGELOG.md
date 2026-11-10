@@ -110,6 +110,18 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- `evaluate()` and `generate()` take `cache=False` (native engine), which runs without the disk cache.
+  `CallableModel` warns when a function model reads state the run fingerprint cannot see, such as a model
+  object whose weights are edited in place, because such a model is otherwise served an earlier run's result.
+- `RunResult.model_spec` is the model's name, not an object repr.
+- `Prediction.correct` honours a lower-is-better metric's direction. For an ungated 0/1 score it was
+  `value == 1.0` whatever the direction, so every harmful answer on a `harmful` or `error` flag counted
+  as correct and `RunComparison.regressed()`, `improved()` and `RunDiff` returned each other's samples.
+- A `FunctionScorer`'s identity covers its code and the values it closes over, not only its name. Editing
+  the function body under the same name no longer returns the previous run's cached scores.
+- `paired_bootstrap` no longer lets float rounding decide ties between resampled and observed means on
+  discrete scores, and sums with `math.fsum`, so the p-value is the same on every Python version.
+- `hf:` `loglikelihood` takes its softmax in float32. On a bf16 or fp16 model the log-probabilities were rounded by several hundredths, enough to flip near ties in multiple-choice scoring.
 - Broken relative link in `examples/applications/README.md`: `../examples/` resolved to
   `examples/examples/`; it now points at `../`.
 - `auditkit eval --config FILE` accepts `model:` from the config file. `--model` was

@@ -32,7 +32,7 @@ from .report import Prediction, RunResult
 from .runspec import RunConfig, RunSpec
 from .sample import Sample
 from .scenario import Scenario
-from .score import Direction, Score, Stat
+from .score import Direction, Score, Stat, correct_value
 from .types import Capability
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,19 @@ def _run_notes(model: Any) -> dict[str, Any]:
     except Exception as e:  # noqa: BLE001
         logger.warning("run_notes() failed for %s: %s", getattr(model, "name", model), e)
         return {}
+
+
+def _model_label(model: Any) -> str:
+    """The model as a plain string for ``RunResult.model_spec``: its name (``"hf:gpt2"``,
+    ``"precomputed"``), with the checkpoint added when the name does not carry it (``HFGenModel(model=
+    "gpt2")`` is named ``"hf"``). Never ``str(model)``, which is an object repr with a memory address."""
+    name = getattr(model, "name", None)
+    if not isinstance(name, str) or not name:
+        return type(model).__name__
+    checkpoint = getattr(model, "_model_name", None)
+    if isinstance(checkpoint, str) and checkpoint and checkpoint not in name:
+        return f"{name}:{checkpoint}"
+    return name
 
 
 def _token_count(value: Any) -> int:
@@ -484,7 +497,7 @@ class Runner:
         elif primary.passed is not None:
             correct = primary.passed
         else:
-            correct = primary.value == 1.0
+            correct = primary.value == correct_value(primary.direction)   # a lower-is-better flag is correct at 0
 
         prediction = Prediction(
             run_id=run_id,
@@ -572,7 +585,8 @@ class Runner:
                 bucket[status] += 1
         return out
 
-    def run(self, spec: RunSpec, *, verbose: bool = False) -> RunResult:
+    def run(self, spec: RunSpec, *, verbose: bool = False, cache: bool = True) -> RunResult:
+        """Run *spec*. ``cache=False`` neither reads nor writes the disk cache."""
         fingerprint = spec.fingerprint()
         config = spec.config
 
@@ -583,8 +597,9 @@ class Runner:
         if isinstance(model_ref, str):
             inputs.append(input_ref("model", model_ref))
 
+        use_cache = cache
         cache = DiskCache()
-        cached = cache.get(fingerprint)
+        cached = cache.get(fingerprint) if use_cache else None
         if cached is not None:
             cached.metadata = {**cached.metadata, "inputs": inputs}  # lineage of THIS call
             return cached
@@ -899,7 +914,7 @@ class Runner:
             predictions=predictions,
             headline=headline,
             config=spec.config,
-            model_spec=str(spec.model) if spec.model else None,
+            model_spec=_model_label(spec.model) if spec.model else None,
             errors=errors,
             unscored=unscored,
             # a sample whose metric crashed is a failed sample, not a silent skip
@@ -910,5 +925,6 @@ class Runner:
             perf=perf,
             metadata={"inputs": inputs, **notes},
         )
-        cache.set(fingerprint, result)
+        if use_cache:
+            cache.set(fingerprint, result)
         return result

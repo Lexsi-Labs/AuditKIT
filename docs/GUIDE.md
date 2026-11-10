@@ -220,7 +220,7 @@ Every run returns a **`RunResult`**:
 | `stats` | `{metric_name: Stat}` — full distribution |
 | `predictions` | `list[Prediction]` — the per-sample answer browser |
 | `config` | the `RunConfig` used |
-| `model_spec` | the model (see serialization caveat below) |
+| `model_spec` | the model as a string: its spec (`"hf:gpt2"`), or name plus checkpoint for a directly built backend |
 | `errors` / `failed_count` | per-sample/metric errors (never abort the run) |
 | `unscored` | per metric, results left out of the aggregate because they aren't measurements (`unknown` / `not_tested` counts) |
 | `experiment_name` / `tags` | optional tracking metadata |
@@ -235,8 +235,6 @@ Useful `RunResult` methods:
 - `summary()` → a printable multi-line digest (metrics ± stderr, perf line, model-size line, token line).
 - `cost(pricing)` → dollar cost; `pricing = {"input_per_1m": ..., "output_per_1m": ...}`. Returns `None` if no token usage; **raises `KeyError`** if a pricing key is missing (only reachable when there *is* usage). No bundled price table by design.
 - `save(path, fmt="json"|"csv")` / `RunResult.load(path)` / `to_dict()` / `from_dict()`.
-
-> **`model_spec` doesn't serialize cleanly.** `to_dict()` stores the live `Model` object, so `save()`/cache writes render it as an unusable repr string like `"<auditkit.model.groq_gen.GroqModel object at 0x…>"`. Everything else (`config`, `headline`, `predictions`, `perf`, `token_usage`) round-trips fine. This also affects cached runs.
 
 `ak.Result` is a public alias of `RunResult`.
 
@@ -1007,7 +1005,6 @@ The six registries: `SCENARIOS`, `ADAPTERS`, `MODELS`, `METRICS`, `ANNOTATORS`, 
 A single list of everything flagged inline above. None of these break the *correctness of a score* unless noted. Most are about coverage, ergonomics, or reporting.
 
 **Confirmed bugs / rough edges**
-- **`model_spec` doesn't serialize**: `save()`/cache store an unusable object-repr string for the model; everything else round-trips.
 - **String scorers only work zero-config**: parameterized metrics (`contains`, `regex`, `keyword_detector`, `g_eval`, …) must be passed as instances.
 - **Native built-in scenarios** have no few-shot prompting or code execution (HumanEval can't be scored for pass@k); `ak.run_lmeval()` covers both.
 - **Latency is call-level**: at `concurrency=1`, latency percentiles are a single sample (n=1). Per-request latency from `groq:`/`api:` is computed but unused.

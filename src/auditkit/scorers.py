@@ -99,6 +99,16 @@ class ScorerMetric(Metric):
     def applicable(self, sample: Sample) -> bool:
         return True
 
+    def identity(self) -> dict:
+        """Name, direction and a fingerprint of the scorer's code and captured values.
+
+        The name alone is not enough: editing the function body (or a value it closes
+        over) under the same name must not be served the old run's cached scores.
+        """
+        from .model import _default_callable_name
+        return {"name": self.name, "direction": self.direction.value,
+                "scorer": _default_callable_name(self._scorer.fn)}
+
 
 ScorerType = Union[FunctionScorer, Callable[[Sample, str], Union[float, Score]]]
 

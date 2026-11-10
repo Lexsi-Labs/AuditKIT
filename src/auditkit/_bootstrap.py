@@ -11,6 +11,7 @@ here align **by sample_id** via :func:`score_pairs`.
 
 from __future__ import annotations
 
+import math
 import random
 from typing import Any, Optional
 
@@ -63,17 +64,22 @@ def paired_bootstrap(
     if n < 2:
         return {"error": "need at least 2 aligned sample pairs", "n": n}
     diffs = [c - b for b, c in pairs]
-    mean_baseline = sum(b for b, _ in pairs) / n
-    mean_candidate = sum(c for _, c in pairs) / n
-    observed = sum(diffs) / n
+    # math.fsum is correctly rounded on every Python; the built-in float sum() changed in 3.12.
+    mean_baseline = math.fsum(b for b, _ in pairs) / n
+    mean_candidate = math.fsum(c for _, c in pairs) / n
+    observed = math.fsum(diffs) / n
     rng = random.Random(seed)
     # Null hypothesis: no difference. Centre the differences on zero before resampling; resampling the raw
     # differences centres the resampled means on `observed`, which puts p near 0.5 whatever the effect.
     centred = [d - observed for d in diffs]
+    # Discrete scores (0/1 flags, exact match) make resampled means that tie the observed one
+    # exactly; centring leaves rounding error in each value, so an exact >= would decide those ties
+    # by float noise. A tie counts as "at least as extreme", as in exact arithmetic.
+    threshold = abs(observed) - 1e-9 * max(1.0, abs(observed))
     count = 0
     for _ in range(n_resamples):
         resample = [rng.choice(centred) for _ in range(n)]
-        if abs(sum(resample) / n) >= abs(observed):
+        if abs(math.fsum(resample) / n) >= threshold:
             count += 1
     p = (count + 1) / (n_resamples + 1)
     return {

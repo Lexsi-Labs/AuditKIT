@@ -537,7 +537,9 @@ class HFGenModel(Model):
                 logits = model(input_ids=input_ids).logits[0]  # [seq_len, vocab]
                 # log_probs[j] is the model's distribution for the token at
                 # position j+1, predicted from positions [0..j].
-                log_probs = torch.log_softmax(logits[:-1], dim=-1)
+                # float32: a bf16/fp16 softmax over a large vocabulary rounds the
+                # log-probabilities by several hundredths and can flip near ties.
+                log_probs = torch.log_softmax(logits[:-1].float(), dim=-1)
                 target_ids = torch.tensor(full_ids[1:], device=device)
                 token_log_probs = log_probs.gather(1, target_ids.unsqueeze(-1)).squeeze(-1)
 
