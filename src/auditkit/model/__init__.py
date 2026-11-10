@@ -12,8 +12,10 @@ greys out for chat-only APIs.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import importlib
+import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
@@ -443,9 +445,11 @@ def _stable_capture_repr(value: Any) -> Optional[str]:
     objects are either irrelevant runtime state a closure happens to capture (a
     call-log accumulator, an HTTP client, a logger) or carry an address-based
     repr, and folding those in would make the fingerprint change between two
-    logically-identical runs and defeat the disk cache. Skipping can only cause a
-    cache *miss* (when a model is identified solely by such a value), never a
-    wrong cache *hit*.
+    logically-identical runs and defeat the disk cache. The cost: a change in
+    skipped state is invisible to the fingerprint, so two runs that differ only
+    there are served the same cached result (a wrong *hit*, e.g. a model object
+    whose weights were edited in place). :class:`CallableModel` warns when a
+    function depends on such state; ``evaluate(..., cache=False)`` opts out.
     """
     if value is None or isinstance(value, (str, bytes, bool, int, float, complex)):
         return repr(value)
@@ -506,6 +510,77 @@ def _default_callable_name(fn: Callable[..., Any]) -> str:
     return f"callable:{qualname}:{code_hash}"
 
 
+_HIDDEN_STATE_WARNED: set[str] = set()
+
+
+def _hidden_state(fn: Callable[..., Any]) -> list[str]:
+    """What *fn* reads that its default name (and so the run fingerprint) cannot see.
+
+    Objects a function closes over, the object a bound method belongs to, and module-level
+    objects its code names. Modules, functions, classes and immutable scalars are visible or
+    stable and are not listed. Best effort: state reached through a called function is not followed.
+    """
+    import inspect
+    import types
+
+    import collections.abc
+    import logging
+    import threading
+
+    # Plain containers are mostly call logs and canned replies; loggers, locks and iterators are
+    # plumbing. The case worth a warning is an object that computes the answer (a model, a
+    # pipeline, a client) and can change behind the function's back.
+    plumbing = (types.ModuleType, types.FunctionType, types.BuiltinFunctionType, types.MethodType,
+                type, functools.partial, list, dict, set, frozenset, tuple, bytearray,
+                collections.abc.Iterator, logging.Logger, type(threading.Lock()), type(threading.RLock()))
+
+    def opaque(value: Any) -> bool:
+        if _stable_capture_repr(value) is not None:
+            return False
+        return not isinstance(value, plumbing)
+
+    found: list[str] = []
+    owner = getattr(fn, "__self__", None)
+    if owner is not None and not isinstance(owner, types.ModuleType):
+        found.append(f"bound object {type(owner).__name__}")
+    target = getattr(fn, "__func__", fn)
+    if not inspect.isfunction(target):
+        return found + ([f"callable object {type(fn).__name__}"] if not found else [])
+    code = target.__code__
+    for name, cell in zip(code.co_freevars, target.__closure__ or ()):
+        try:
+            if opaque(cell.cell_contents):
+                found.append(f"captured {name!r}")
+        except ValueError:   # empty cell
+            continue
+    # Globals named by the function and by code nested in it: comprehensions (a nested code
+    # object before Python 3.12), generator expressions and inner lambdas.
+    names, stack = [], [code]
+    while stack:
+        c = stack.pop()
+        names += [n for n in c.co_names if n not in names]
+        stack += [k for k in c.co_consts if isinstance(k, types.CodeType)]
+    g = target.__globals__
+    for name in names:
+        if name in g and opaque(g[name]):
+            found.append(f"global {name!r}")
+    return found
+
+
+def _warn_hidden_state(fn: Callable[..., Any]) -> None:
+    hidden = _hidden_state(fn)
+    key = getattr(fn, "__qualname__", None) or type(fn).__qualname__
+    if not hidden or key in _HIDDEN_STATE_WARNED:
+        return
+    _HIDDEN_STATE_WARNED.add(key)
+    warnings.warn(
+        f"model function {key!r} reads state the run fingerprint cannot see ({', '.join(hidden[:3])}). "
+        f"If that state changes between runs (for example weights edited in place), evaluate() and "
+        f"generate() return the earlier run's cached result. Name the state with "
+        f"CallableModel(fn, name=...), or pass cache=False.",
+        UserWarning, stacklevel=4)
+
+
 class CallableModel(Model):
     """Wrap any ``list[str] -> list[str]`` function as a model.
 
@@ -518,6 +593,8 @@ class CallableModel(Model):
     def __init__(self, fn: Callable[[list[str]], list[str]], name: Optional[str] = None) -> None:
         self._fn = fn
         self.name = name if name is not None else _default_callable_name(fn)
+        if name is None:
+            _warn_hidden_state(fn)
 
     def generate(self, requests: list[Request]) -> list[Result_]:
         outputs = self._fn([_prompt_text(r.prompt) for r in requests])

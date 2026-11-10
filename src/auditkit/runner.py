@@ -572,7 +572,8 @@ class Runner:
                 bucket[status] += 1
         return out
 
-    def run(self, spec: RunSpec, *, verbose: bool = False) -> RunResult:
+    def run(self, spec: RunSpec, *, verbose: bool = False, cache: bool = True) -> RunResult:
+        """Run *spec*. ``cache=False`` neither reads nor writes the disk cache."""
         fingerprint = spec.fingerprint()
         config = spec.config
 
@@ -583,8 +584,9 @@ class Runner:
         if isinstance(model_ref, str):
             inputs.append(input_ref("model", model_ref))
 
+        use_cache = cache
         cache = DiskCache()
-        cached = cache.get(fingerprint)
+        cached = cache.get(fingerprint) if use_cache else None
         if cached is not None:
             cached.metadata = {**cached.metadata, "inputs": inputs}  # lineage of THIS call
             return cached
@@ -910,5 +912,6 @@ class Runner:
             perf=perf,
             metadata={"inputs": inputs, **notes},
         )
-        cache.set(fingerprint, result)
+        if use_cache:
+            cache.set(fingerprint, result)
         return result
