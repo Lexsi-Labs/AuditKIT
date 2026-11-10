@@ -32,7 +32,7 @@ from .report import Prediction, RunResult
 from .runspec import RunConfig, RunSpec
 from .sample import Sample
 from .scenario import Scenario
-from .score import Direction, Score, Stat
+from .score import Direction, Score, Stat, correct_value
 from .types import Capability
 
 logger = logging.getLogger(__name__)
@@ -484,7 +484,7 @@ class Runner:
         elif primary.passed is not None:
             correct = primary.passed
         else:
-            correct = primary.value == 1.0
+            correct = primary.value == correct_value(primary.direction)   # a lower-is-better flag is correct at 0
 
         prediction = Prediction(
             run_id=run_id,

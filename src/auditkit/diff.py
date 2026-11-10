@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Iterable, Optional
 
 from .report import RunResult, Prediction
-from .score import _measured_value
+from .score import _measured_value, correct_value
 from .types import Direction
 
 
@@ -165,12 +165,13 @@ class RunDiff:
                 # bool(value) was wrong for any thresholded/continuous score
                 # (e.g. value=0.6, threshold=0.7, passed=False -- bool(0.6)
                 # is truthy, silently reporting a failing sample as correct).
-                # Falls back to the same value==1.0 convention Runner.score_one()
-                # itself uses for Prediction.correct when there's no threshold.
+                # Falls back to the same convention Runner.score_one()
+                # itself uses for Prediction.correct when there's no threshold
+                # (1.0 is correct, or 0.0 for a lower-is-better metric).
                 passed = score_doc.get("passed")
                 if passed is not None:
                     return bool(passed)
-                return score_doc.get("value") == 1.0
+                return score_doc.get("value") == correct_value(score_doc.get("direction"))
         return None
 
     def sample_diff(self, metric_name: str = "") -> list[dict]:
