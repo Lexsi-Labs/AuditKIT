@@ -110,6 +110,10 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- `evaluate()` and `generate()` take `cache=False` (native engine), which runs without the disk cache.
+  `CallableModel` warns when a function model reads state the run fingerprint cannot see, such as a model
+  object whose weights are edited in place, because such a model is otherwise served an earlier run's result.
+- `RunResult.model_spec` is the model's name, not an object repr.
 - `Prediction.correct` honours a lower-is-better metric's direction. For an ungated 0/1 score it was
   `value == 1.0` whatever the direction, so every harmful answer on a `harmful` or `error` flag counted
   as correct and `RunComparison.regressed()`, `improved()` and `RunDiff` returned each other's samples.
