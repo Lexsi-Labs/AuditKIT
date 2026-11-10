@@ -110,6 +110,13 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- `Prediction.correct` honours a lower-is-better metric's direction. For an ungated 0/1 score it was
+  `value == 1.0` whatever the direction, so every harmful answer on a `harmful` or `error` flag counted
+  as correct and `RunComparison.regressed()`, `improved()` and `RunDiff` returned each other's samples.
+- A `FunctionScorer`'s identity covers its code and the values it closes over, not only its name. Editing
+  the function body under the same name no longer returns the previous run's cached scores.
+- `paired_bootstrap` no longer lets float rounding decide ties between resampled and observed means on
+  discrete scores, and sums with `math.fsum`, so the p-value is the same on every Python version.
 - `hf:` `loglikelihood` takes its softmax in float32. On a bf16 or fp16 model the log-probabilities were rounded by several hundredths, enough to flip near ties in multiple-choice scoring.
 - Broken relative link in `examples/applications/README.md`: `../examples/` resolved to
   `examples/examples/`; it now points at `../`.
