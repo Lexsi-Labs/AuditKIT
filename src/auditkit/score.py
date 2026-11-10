@@ -49,6 +49,13 @@ class Score:
         return self.value >= self.threshold
 
 
+def correct_value(direction: Any) -> float:
+    """The value that counts as a correct answer for an ungated 0/1 score: ``1.0``, or ``0.0``
+    when lower is better (a ``harmful`` or ``error`` flag scores 1.0 on the wrong answers)."""
+    minimize = direction == Direction.MINIMIZE or direction == Direction.MINIMIZE.value
+    return 0.0 if minimize else 1.0
+
+
 def _measured_value(doc: dict[str, Any]) -> Optional[float]:
     """Value of a stored per-score dict (``Prediction.metadata["scores"]``), or ``None``
     when it is not a number or is flagged ``unknown`` (a placeholder, not a measurement;
