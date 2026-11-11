@@ -264,7 +264,7 @@ def evaluate(
     scenario = _to_scenario(dataset, dataset_config, dataset_split)
     resolved_model = AutoModel.resolve(model, **opts)
     samples = list(scenario.samples())
-    metrics = _to_metrics(scorers, samples)
+    metrics = _to_metrics(scorers if scorers is not None else scenario.default_scorers, samples)
     cfg = config or RunConfig()
 
     spec = RunSpec(

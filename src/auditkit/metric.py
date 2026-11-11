@@ -88,6 +88,44 @@ class ExactMatch(Metric):
         return Score(name=self.name, value=1.0 if hit else 0.0, kind=self.kind)
 
 
+_NUMBER_RE = re.compile(r"-?\d[\d,]*(?:\.\d+)?")
+
+
+def _last_number(text: Any) -> Optional[float]:
+    """The answer number in a reply: the first one after the last ``####``
+    (GSM8K's answer marker) if present, else the last number in the text. Commas and ``$`` are
+    ignored. None when the text has no number."""
+    text = str(text).replace("$", "")
+    marked = "####" in text
+    found = _NUMBER_RE.findall(text.rsplit("####", 1)[1] if marked else text)
+    if not found:
+        return None
+    try:
+        return float(found[0 if marked else -1].replace(",", ""))
+    except ValueError:
+        return None
+
+
+@METRICS.register("numeric_match")
+class NumericMatch(Metric):
+    """1.0 iff the last number in the output equals the numeric target.
+
+    For math word problems (GSM8K), like lm-eval's flexible extract: the
+    reply may show its working, only the final number counts. A reply with no
+    number scores 0 and is marked ``metadata["no_number"] = True``.
+    """
+
+    name = "numeric_match"
+    direction = Direction.MAXIMIZE
+    required_fields = frozenset({"target"})
+
+    def score(self, sample: Sample, output: str, context: Any = None) -> Score:
+        want, got = _last_number(sample.target), _last_number(output)
+        hit = want is not None and got is not None and abs(want - got) < 1e-9
+        return Score(name=self.name, value=1.0 if hit else 0.0, kind=self.kind,
+                     metadata={"no_number": got is None, "extracted": got})
+
+
 _ARTICLE_RE = re.compile(r"\b(a|an|the)\b", re.IGNORECASE)
 _PUNCT_RE = re.compile(r"[^\w\s]")
 

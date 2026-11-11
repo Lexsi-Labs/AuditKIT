@@ -110,6 +110,13 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- The built-in `gsm8k` scenario scored almost every answer 0: its target was the whole worked
+  solution and the default scorer was exact match, so "The answer is 72." scored 0. The target is now
+  the final number (the worked solution stays in `Sample.metadata["solution"]`), and `gsm8k` scores with
+  the new `numeric_match` metric (the number after `####`, else the last number in the reply; commas and
+  `$` ignored; `metadata["no_number"]` marks replies with no number). Scenarios can now name their own
+  default scorers (`Scenario.default_scorers`). **gsm8k results change**: earlier native gsm8k scores
+  are not comparable.
 - **Results change for multi-probe red-team runs.** When no detectors are given, each probe is checked only with
   its own default detectors. The runner used to gather the defaults of every probe and apply all of them to every
   probe, so a model that correctly refused a jailbreak prompt was failed by `RefusalDetector` when the `refusal`

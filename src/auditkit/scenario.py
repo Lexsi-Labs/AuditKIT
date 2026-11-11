@@ -41,6 +41,8 @@ class Scenario(ABC):
     """A task plus its data, as an iterable of samples."""
 
     name: str = "scenario"
+    # Scorers evaluate() uses when the caller passes none (None: the usual auto-select).
+    default_scorers: Any = None
 
     def __init__(self, name: str = "scenario", metadata: dict[str, Any] | None = None) -> None:
         self.name = name
