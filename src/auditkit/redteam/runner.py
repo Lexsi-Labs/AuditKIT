@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from ..model import AutoModel, Model, Request
+from ..trace import strip_thinking
 from .detector import Detector
 from .detectors.builtin import InjectionSuccessDetector, KeywordDetector, RefusalDetector, SystemPromptLeakDetector
 from .probe import Probe, ProbeResult
@@ -33,6 +34,19 @@ _PROBE_DETECTOR_MAP: dict[str, list[str]] = {
 }
 
 
+_LENGTH_FINISH = frozenset({"length", "max_tokens", "MAX_TOKENS"})
+
+
+def _answer(text: str, finish_reason: str | None) -> str:
+    """The reply without its ``<think>`` reasoning. A block that was opened and never closed is
+    unfinished reasoning (no answer) when the reply was cut at the token limit; otherwise the
+    text after the opening tag is the answer."""
+    if "<think>" in text and "</think>" not in text.rsplit("<think>", 1)[1]:
+        head, rest = text.rsplit("<think>", 1)
+        text = head if finish_reason in _LENGTH_FINISH else head + rest
+    return strip_thinking(text).strip()
+
+
 @dataclass
 class RedTeamResult:
     """Results from a red team evaluation run."""
@@ -51,14 +65,23 @@ class RedTeamResult:
         return sum(1 for r in self.results if r.passed)
 
     @property
-    def failed_probes(self) -> int:
-        return self.total_probes - self.passed_probes
+    def invalid_probes(self) -> int:
+        """Replies that could not be judged: empty, reasoning only, or a generation error."""
+        return sum(1 for r in self.results if r.invalid)
 
     @property
-    def pass_rate(self) -> float:
+    def failed_probes(self) -> int:
+        return self.total_probes - self.passed_probes - self.invalid_probes
+
+    @property
+    def pass_rate(self) -> float | None:
+        """Passed over judged checks. None when every reply was invalid (not measured)."""
+        judged = self.total_probes - self.invalid_probes
         if self.total_probes == 0:
             return 1.0
-        return self.passed_probes / self.total_probes
+        if judged == 0:
+            return None
+        return self.passed_probes / judged
 
     def summary(self) -> str:
         lines = [
@@ -66,12 +89,13 @@ class RedTeamResult:
             f"  Total probes: {self.total_probes}",
             f"  Passed:       {self.passed_probes}",
             f"  Failed:       {self.failed_probes}",
-            f"  Pass rate:    {self.pass_rate:.1%}",
+            f"  Invalid:      {self.invalid_probes} (empty, reasoning only or error; not in the pass rate)",
+            f"  Pass rate:    {'not measured' if self.pass_rate is None else f'{self.pass_rate:.1%}'}",
             "",
             "Failed probes:",
         ]
         for r in self.results:
-            if not r.passed:
+            if not r.passed and not r.invalid:
                 lines.append(f"  [{r.probe_name}/{r.detector_name}] {r.prompt[:60]}")
         if self.failed_probes == 0:
             lines.append("  (none)")
@@ -93,6 +117,7 @@ class RedTeamResult:
                 "prompt": r.prompt,
                 "output": r.output,
                 "passed": r.passed,
+                "invalid": r.invalid,
             }
             for r in self.results
         ]
@@ -159,8 +184,27 @@ class RedTeamRunner:
                 output_str = result.text
                 probe_results: list[ProbeResult] = []
 
+                # Detectors read the answer, not the reasoning: a refusal or a harmful plan
+                # inside <think> is not what the user sees. An empty answer, reasoning cut at
+                # the token limit, or a failed call is invalid: no detector can judge it.
+                gen = result.completions[0] if result.completions else None
+                finish = getattr(gen, "finish_reason", None)
+                error = getattr(gen, "error", None)
+                answer = _answer(output_str, finish)
+                reason = None
+                if finish == "error" or error:
+                    reason = f"generation error: {error or 'finish_reason=error'}"
+                elif not answer:
+                    reason = "reasoning only, no answer" if "think>" in output_str else "empty reply"
+                if reason is not None:
+                    results.append(ProbeResult(
+                        probe_name=probe.name, prompt=prompt, output=output_str, passed=False,
+                        detector_name="-", metadata={"invalid_reason": reason}, invalid=True,
+                    ))
+                    continue
+
                 for detector in detectors_by_probe[id(probe)]:
-                    det_result = detector.detect(prompt, output_str)
+                    det_result = detector.detect(prompt, answer)
                     pr = ProbeResult(
                         probe_name=probe.name,
                         prompt=prompt,

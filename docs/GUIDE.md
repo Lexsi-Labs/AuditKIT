@@ -861,6 +861,10 @@ from auditkit.redteam import RedTeamRunner
 print(RedTeamRunner(model="openai:gpt-4o-mini").run(probes=["jailbreak"]).summary())
 ```
 
+Detectors read the answer with any `<think>…</think>` reasoning removed. A reply that cannot be judged
+(empty, reasoning only, or a generation error) is marked `invalid`: it is neither passed nor failed,
+`invalid_probes` counts it, and `pass_rate` is passed over judged checks (`None` when none could be judged).
+
 It's deliberately small: fixed probe lists and keyword/pattern detectors, not an attack
 generator. For broad adversarial testing, Garak, Promptfoo or DeepTeam go much further.
 
