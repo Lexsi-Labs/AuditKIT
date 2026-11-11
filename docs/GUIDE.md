@@ -958,7 +958,7 @@ A **`Scenario`** yields `Sample`s. Three ways in:
 - **`CallableScenario(fn)`** — wraps a zero-arg callable, re-invoked on each read.
 - **Registered scenarios** — looked up by name from the `SCENARIOS` registry when you pass `dataset="mmlu"`.
 
-**Data loaders** (in `__all__`): `load_csv`, `load_hf`, `load_croissant`. `load_hf`/`load_croissant` need `auditkit[interop]` (`datasets` + `mlcroissant`).
+**Data loaders** (in `__all__`): `load_csv`, `load_hf`, `load_croissant`, `load_multijail`, `load_xstest`, `load_global_mmlu`. `load_hf`/`load_croissant` need `auditkit[interop]` (`datasets` + `mlcroissant`).
 
 > **The built-in native scenarios.** The `scenarios/` package registers 6 (`mmlu`, `gsm8k`, `arc`, `hellaswag`, `truthfulqa`, `humaneval`), all needing `auditkit[interop]`. All six load (2026-10-01): MMLU 14,042, GSM8K 1,319, ARC-Challenge 1,172, HellaSwag 10,042, TruthfulQA 817 and HumanEval 164 samples. They use namespaced Hub ids now (`cais/mmlu`, `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`, `truthfulqa/truthful_qa`, `openai/openai_humaneval`), and HumanEval no longer uses the nonexistent `TaskKind.CODE`. HumanEval loads as a generative task whose target is the reference solution: AuditKIT has no code-execution metric, so it can't score pass@k. **For academic benchmarks, `ak.run_lmeval()` (the lm-eval engine) is still the more complete path** (standard prompts, few-shot, and lm-eval's own scoring, including HumanEval execution).
 

@@ -39,6 +39,29 @@ scenario = scenario_cls(subject="abstract_algebra")
 print(ak.SCENARIOS.names())
 ```
 
+## Multilingual benchmarks
+
+Three loaders return a `list[Sample]` with `task` set to the language, so
+`ak.compare(...).per_task_deltas()` reports each metric per language. They need
+`pip install auditkit[interop]` and default to a pinned dataset revision, recorded in
+`metadata["revision"]`.
+
+| Loader | Dataset | Notes |
+|---|---|---|
+| `ak.load_multijail(languages=None)` | `DAMO-NLP-SG/MultiJail` | 315 harmful prompts in 10 languages; no reference answers |
+| `ak.load_xstest()` | `natolambert/xstest-v2-copy` | 250 safe and 200 unsafe English prompts; `metadata["label"]` says which |
+| `ak.load_global_mmlu(languages, split="test")` | `CohereLabs/Global-MMLU` | Multiple choice in 42 languages; `repo=GLOBAL_MMLU_LITE` for 400 questions |
+
+Translations of one item share `metadata["group"]`. MultiJail and the unsafe half of XSTest
+are harmful prompts by design, so take care with where the prompts and answers end up.
+
+```python
+import auditkit as ak
+
+samples = ak.load_global_mmlu(["en", "hi", "sw"], limit=100)
+result = ak.evaluate(samples, "hf:gpt2", ["acc"], adapter="auto")
+```
+
 ## Custom Scenario
 
 ```python

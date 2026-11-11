@@ -19,6 +19,10 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   server is probed once (`GET /models` `owned_by`) and recorded in
   `metadata["api_server"]`; only `APIModel(server="sglang"|"vllm")` clears the note.
   New `Model.run_notes()` hook for backend facts about a run.
+- `ak.load_multijail()`, `ak.load_xstest()` and `ak.load_global_mmlu()`: return samples with
+  `task` set to the language, so `per_task_deltas()` reports each metric per language. Translations
+  of one item share `metadata["group"]`, and each loader records its pinned dataset revision.
+  Needs `auditkit[interop]`.
 - `ak.load_bfcl()` and `ak.bfcl_arg_match`: BFCL v3's 11 single-turn
   categories plus the two irrelevance ones, read from the Hub files (JSON Lines). The
   accepted-value lists stay on the reference, and `bfcl_arg_match` compares against
