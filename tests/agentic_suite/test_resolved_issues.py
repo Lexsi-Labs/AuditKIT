@@ -1,8 +1,8 @@
-"""Regression tests for review items fixed on feat/rag-agent-evals (see FINDINGS.md).
+"""Regression tests for review items fixed in the agent and RAG evaluation (see FINDINGS.md).
 
 - answer-only agent replies: tool use is unobservable (`tool_calls_unavailable`), so tool metrics skip
 - exact matching tolerates extra arguments the schema declares optional
-- the api: judge timeout default (LLM judges here; the RAG judges' share is in PR #6)
+- the api: judge timeout default (LLM judges here; the RAG judges' share is in tests/test_rag_judge.py)
 - OPENAI_API_KEY is only sent to openai.com hosts
 """
 
@@ -128,7 +128,7 @@ def test_post_loop_chat_completion_reply_is_unobservable(agent_server):
 
 # -- JUDGE-TIMEOUT --------------------------------------------------------------------------------
 
-# The RAG judges (faithfulness, context_precision, context_recall) get the same default in PR #6.
+# The RAG judges (faithfulness, context_precision, context_recall) get the same default (tests/test_rag_judge.py).
 
 def test_api_llm_judges_default_to_a_long_timeout(monkeypatch):
     monkeypatch.delenv("AUDITKIT_JUDGE_TIMEOUT", raising=False)
