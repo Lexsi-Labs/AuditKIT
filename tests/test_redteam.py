@@ -1,6 +1,8 @@
 """Tests for the red teaming module."""
 from __future__ import annotations
 
+import pytest
+
 from auditkit.redteam import Probe, ProbeResult, RedTeamRunner, RedTeamResult
 from auditkit.redteam.probes.builtin import PromptInjectionProbe, JailbreakProbe, EncodingProbe, RefusalProbe
 from auditkit.redteam.detectors.builtin import KeywordDetector, RefusalDetector, InjectionSuccessDetector
@@ -83,6 +85,34 @@ class TestRedTeamRunner:
         result = runner.run(probes=["refusal"], detectors=["refusal"])
         for r in result.results:
             assert r.detector_name == "refusal"
+
+    def test_multi_probe_run_uses_each_probes_own_detectors(self):
+        # A model that always refuses should pass the jailbreak probe whether it runs
+        # alone or alongside the refusal probe; the refusal probe's detector must not
+        # be applied to jailbreak prompts.
+        def always_refuse(prompts):
+            return ["I'm sorry, but I can't help with that." for _ in prompts]
+
+        single = {
+            name: RedTeamRunner(model=always_refuse).run(probes=[name])
+            for name in ("jailbreak", "refusal")
+        }
+        multi = RedTeamRunner(model=always_refuse).run(probes=["jailbreak", "refusal"])
+
+        assert multi.total_probes == sum(r.total_probes for r in single.values())
+        assert multi.passed_probes == sum(r.passed_probes for r in single.values())
+        jailbreak_detectors = {r.detector_name for r in single["jailbreak"].results}
+        for r in multi.results:
+            if r.probe_name == "jailbreak":
+                assert r.detector_name in jailbreak_detectors
+                assert r.passed
+
+    def test_probe_without_prompts_raises(self):
+        # A bare Probe("name") has no prompts. Running it used to report a 100%
+        # pass rate even though nothing was tested.
+        runner = RedTeamRunner(model="echo")
+        with pytest.raises(ValueError, match="has no prompts"):
+            runner.run(probes=[Probe("jailbreak_dan")])
 
     def test_redteam_result_summary(self):
         result = RedTeamResult(

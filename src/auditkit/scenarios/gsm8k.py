@@ -11,6 +11,8 @@ from auditkit.registry import SCENARIOS
 @SCENARIOS.register("gsm8k")
 class GSM8KScenario(Scenario):
     name = "gsm8k"
+    # The target is the final number; the reply may show its working.
+    default_scorers = ["numeric_match"]
 
     def __init__(self, split: str = "test"):
         self.split = split
@@ -25,8 +27,10 @@ class GSM8KScenario(Scenario):
         return [
             Sample(
                 input=row["question"],
-                target=row["answer"],
+                # "<worked solution>\n#### 72": the number after #### is the answer
+                target=row["answer"].rsplit("####", 1)[-1].strip().replace(",", ""),
                 kind=TaskKind.GENERATIVE,
+                metadata={"solution": row["answer"]},
             )
             for row in data
         ]

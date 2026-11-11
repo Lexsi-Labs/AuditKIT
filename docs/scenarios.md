@@ -15,6 +15,8 @@ Requires `pip install auditkit[interop]` (the `datasets` package).
 Each loads its namespaced Hub dataset (`cais/mmlu`, `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`,
 `truthfulqa/truthful_qa`, `openai/openai_humaneval`). HumanEval's target is the reference solution, and
 AuditKIT has no code-execution metric, so it can't score pass@k; use `ak.run_lmeval("humaneval", ...)` for that.
+GSM8K's target is the final number, and it is scored with `numeric_match` (the number after `####`,
+else the last number in the reply) unless you pass `scorers=`.
 
 AuditKIT doesn't re-export these classes at the top-level `auditkit` package.
 Import them from their own module, or resolve by name via `SCENARIOS`.

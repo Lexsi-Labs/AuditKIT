@@ -131,12 +131,27 @@ class RedTeamRunner:
             A RedTeamResult with per-probe results.
         """
         resolved_probes = self._resolve_probes(probes)
-        resolved_detectors = self._resolve_detectors(detectors, resolved_probes)
+        # Explicit detectors apply to every probe. Otherwise each probe uses only its own
+        # default detectors, so a refusal on a jailbreak probe is not judged by RefusalDetector.
+        detectors_by_probe = {
+            id(probe): self._resolve_detectors(detectors, [probe]) for probe in resolved_probes
+        }
+        detectors_used: list[str] = []
+        for dets in detectors_by_probe.values():
+            for d in dets:
+                if d.name not in detectors_used:
+                    detectors_used.append(d.name)
 
         results: list[ProbeResult] = []
 
         for probe in resolved_probes:
             prompts = probe.generate()
+            if not prompts:
+                raise ValueError(
+                    f"Probe '{probe.name}' has no prompts, so nothing would be tested. "
+                    f"Use a built-in probe name ({', '.join(_PROBE_REGISTRY)}) "
+                    "or a Probe subclass that returns prompts."
+                )
             requests = [Request(prompt=p) for p in prompts]
             results_list = self._model.generate(requests)
 
@@ -144,7 +159,7 @@ class RedTeamRunner:
                 output_str = result.text
                 probe_results: list[ProbeResult] = []
 
-                for detector in resolved_detectors:
+                for detector in detectors_by_probe[id(probe)]:
                     det_result = detector.detect(prompt, output_str)
                     pr = ProbeResult(
                         probe_name=probe.name,
@@ -161,7 +176,7 @@ class RedTeamRunner:
             results=results,
             model_name=str(self._model),
             probes_used=[p.name for p in resolved_probes],
-            detectors_used=[d.name for d in resolved_detectors],
+            detectors_used=detectors_used,
         )
 
     def _resolve_probes(self, probes: list[str | Probe] | None) -> list[Probe]:
@@ -197,10 +212,11 @@ class RedTeamRunner:
                     raise TypeError(f"Expected Detector or str, got {type(d)}")
             return resolved
 
-        used: set[str] = set()
+        used: list[str] = []
         for probe in probes:
             for det_name in _PROBE_DETECTOR_MAP.get(probe.name, []):
-                used.add(det_name)
+                if det_name not in used:
+                    used.append(det_name)
         if not used:
-            used = {"keyword"}
+            used = ["keyword"]
         return [_DETECTOR_REGISTRY[name]() for name in used]
