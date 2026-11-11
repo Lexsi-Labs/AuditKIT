@@ -21,8 +21,8 @@ env:
 jobs:
   plan:
     name: Inspect release state
-    # Internal-only divergence from public: release/publish only from the public repo,
-    # so merges here never tag, push to main, or upload to PyPI.
+    # Releases come only from Lexsi-Labs/AuditKIT: a fork or copy that inherits this
+    # workflow never tags, pushes to main, or uploads to PyPI.
     if: github.repository == 'Lexsi-Labs/AuditKIT' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     outputs:

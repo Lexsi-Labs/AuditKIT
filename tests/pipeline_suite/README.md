@@ -5,7 +5,7 @@ comment next to the assertion. Judges are scripted and models are stubs; there a
 
 | File | Covers | Runs when |
 |---|---|---|
-| `test_pr1_additions.py` | PR #1 additions not covered by `tests/agentic_suite`: `agent_loop_detection`, `tool_permission`, `tool_selection`, `hallucination`, `answer_relevancy`, `response_groundedness`, `context_relevance`, the RAG-stress metrics, `agent_eval` reliability (A3), the harness loop (A4) and the sidecar (A5) | always, on `feat/rag-agent-evals` |
+| `test_pr1_additions.py` | PR #1 additions not covered by `tests/agentic_suite`: `agent_loop_detection`, `tool_permission`, `tool_selection`, `hallucination`, `answer_relevancy`, `response_groundedness`, `context_relevance`, the RAG-stress metrics, `agent_eval` reliability (A3), the harness loop (A4) and the sidecar (A5) | always |
 | `test_pr2_redteam.py` | PR #2's attack suite: ASR with the unknown and judge-error accounting, target errors, query budgets, method labels, determinism, the manifest, `RefusalJudge` | once `AttackSuite` exists (#2 merged) |
 | `test_pr3_mrm.py` | PR #3's banking model-risk code: ECE, Brier, log loss, dated backtest, paired control, the action oracle (pass / blocked / fail / unknown / not_tested), idempotency, the recipient bypass, maker-checker, the benign/attack pair | once `auditkit.mrm` exists (#3 merged) |
 | `test_pr4_uncertainty.py` | PR #4's uncertainty code: the UQ importer, ECE, false-pass rate, review capacity, selective risk (AURC), claims, the code-execution checks | once `auditkit.uncertainty` exists (#4 merged) |

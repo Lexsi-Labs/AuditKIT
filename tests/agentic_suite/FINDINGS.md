@@ -1,10 +1,9 @@
-# Findings from the PR #1 review, and where each one stands
+# Findings from the agentic-evaluation review, and where each one stands
 
-This suite found every issue below. They were reported on PR #1
-([review comment](https://github.com/aryapratinavseth/AuditKIT-Internal/pull/1#issuecomment-5848428995)).
-The tests here assert the behaviour as fixed on `feat/rag-agent-evals`.
+This suite found every issue below during review of the agentic and RAG evaluation work.
+The tests here assert the fixed behaviour.
 
-## Fixed on `feat/rag-agent-evals` (`f6fd6ef`, `bab4ea3`, `e68e47e`, earlier)
+## Fixed
 
 | Item | Issue | How it was fixed | Covered here by |
 |---|---|---|---|
@@ -25,14 +24,14 @@ The tests here assert the behaviour as fixed on `feat/rag-agent-evals`.
 | — | Conflicting duplicate judge verdicts | Recorded error | `test_faithfulness_conflicting_duplicate_verdict_is_an_error` |
 | — | One failing `api:` request aborted the run | Every failing request (4xx included) fails only its sample; retries follow `RunConfig.max_retries`; no batch replay | `test_api_backend_server_error_is_recorded_not_scored`, `test_api_backend_transient_error_recovers_on_retry`, `test_api_backend_client_error_is_recorded_per_sample` |
 
-## Still open: fixed in PR #6
+## Fixed and tested outside this suite
 
-| Item | Issue | PR #6 |
+| Item | Issue | Fix |
 |---|---|---|
 | 15 (partial) | The 600 s judge timeout reached only the LLM judges; `faithfulness`, `context_precision` and `context_recall` kept 120 s | shared `judge_resolve_args()` helper + tests in `tests/test_rag_judge.py` |
 | FP-3 | `task` / `kind` label cached predictions but aren't hashed: a cached run can show another dataset's task labels | hashed when non-default + tests in `tests/test_fingerprint_stability.py` |
 
-The corresponding tests are in PR #6, not here, so this suite passes on `feat/rag-agent-evals` as it is.
+The corresponding tests are in the files named above, not in this suite.
 
 ## Observed in live runs (model behaviour, not code)
 

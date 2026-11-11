@@ -1,5 +1,5 @@
 """Lexsi SDK login and project resolution. The only place in
-``AuditKIT-Internal`` that imports ``lexsi_sdk``.
+AuditKIT that imports ``lexsi_sdk``.
 
 ``lmeval_engine.py``, ``LexsiCompletionsRelay``, and the ``lexsi:``/``api:``
 lm-eval backends stay SDK-free, talking to the gateway over plain HTTP with
