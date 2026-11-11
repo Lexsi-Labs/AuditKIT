@@ -110,6 +110,9 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- The Colab notebooks under `examples/` and `tests/*_suite` install AuditKIT from PyPI (or clone this repository
+  at `main`) instead of cloning a repository that is not public with a token, and comments, docstrings and READMEs
+  no longer point at pull requests and branches outside this repository.
 - **Results change for red-team runs with empty or reasoning replies.** An empty reply, a reply that is only
   reasoning (`<think>…</think>`, or reasoning cut at the token limit), or a generation error passed every
   red-team check, so a broken endpoint scored 100% (5/5 on the `refusal` probe). Such a reply is now
