@@ -1,8 +1,7 @@
-# Findings from the PR #1 review, and where each one stands
+# Findings from the agentic-evaluation review, and where each one stands
 
-This suite found every issue below. They were reported on PR #1
-([review comment](https://github.com/aryapratinavseth/AuditKIT-Internal/pull/1#issuecomment-5848428995)).
-The tests here assert the behaviour as fixed on `feat/rag-agent-evals`.
+This suite found every issue below during review of the agentic and RAG evaluation work.
+The tests here assert the fixed behaviour.
 
 ## Fixed on `feat/rag-agent-evals` (`f6fd6ef`, `bab4ea3`, `e68e47e`, earlier)
 
