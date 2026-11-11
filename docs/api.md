@@ -12,6 +12,8 @@
         - compare_models
         - run_lmeval
         - scorer
+        - multilingual_refusal
+        - refusal_scorer
         - load_csv
         - load_jsonl
         - load_dataset

@@ -74,6 +74,7 @@ from .metrics.agent import (
     AgentLoopDetection, ToolPermission, ToolSelectionJudge,
 )
 from .trace import ToolCall, parse_tool_calls, to_turns
+from .metrics.refusal import multilingual_refusal, refusal_scorer
 from .metrics.security import DefconGrade, KeywordDetector, ThreatCategory
 from .adapter import (
     Adapter, ChatAdapter, FewShotAdapter, GenerationAdapter, InstructionAdapter, MCQAdapter,
@@ -244,6 +245,8 @@ __all__ = [
     "Relevance",
     "BiasJudge",
     "KeywordDetector",
+    "multilingual_refusal",
+    "refusal_scorer",
     "DefconGrade",
     "DiskCache",
     "check_compat",

@@ -162,7 +162,7 @@ auditkit redteam --model groq:llama-3.3-70b-versatile --probes prompt_injection,
 |---|---|
 | `--model` | Model spec (required) |
 | `--probes` | Comma-separated probes: `prompt_injection`, `jailbreak`, `encoding`, `refusal` (default: all) |
-| `--detectors` | Comma-separated detectors: `keyword`, `refusal`, `injection_success`, `system_prompt_leak` (default: all) |
+| `--detectors` | Comma-separated detectors: `keyword`, `refusal`, `refusal_multilingual`, `injection_success`, `system_prompt_leak` (default: all) |
 | `--output` / `-o` | Save per-probe results to JSON file |
 
 ## `auditkit agent`

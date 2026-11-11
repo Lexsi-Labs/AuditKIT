@@ -850,7 +850,7 @@ exp.log_mlflow(tracking_uri=...)  # optional, needs auditkit[mlflow]
 
 ## 13. Red-teaming (a basic probe suite)
 
-AuditKIT ships a basic red-team suite: four probes (`prompt_injection`, `jailbreak`, `encoding`, `refusal`), four detectors (`keyword`, `refusal`, `injection_success`, `system_prompt_leak`), `RedTeamRunner`, and `auditkit redteam` (`--model`, `--probes`, `--detectors`, `--output`):
+AuditKIT ships a basic red-team suite: four probes (`prompt_injection`, `jailbreak`, `encoding`, `refusal`), five detectors (`keyword`, `refusal`, `refusal_multilingual`, `injection_success`, `system_prompt_leak`), `RedTeamRunner`, and `auditkit redteam` (`--model`, `--probes`, `--detectors`, `--output`):
 
 ```bash
 auditkit redteam --model openai:gpt-4o-mini --probes prompt_injection,jailbreak
