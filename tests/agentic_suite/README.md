@@ -1,7 +1,7 @@
 # Agentic + RAG metrics test suite
 
-An independent test suite for the agent and RAG evaluation added on `feat/rag-agent-evals`. It was
-written while reviewing PR #1: every issue raised in that review was found by one of these tests. It
+An independent test suite for AuditKIT's agent and RAG evaluation. It was written while reviewing
+that work: every issue raised in the review was found by one of these tests. It
 covers:
 - the agentic metrics: `tool_call_f1`, `trajectory_match`, `parallel_tool_calls`, `tool_call_validity`,
   `redundant_tool_calls`, `task_completion`;
@@ -9,7 +9,7 @@ covers:
   `context_recall`, and the four lexical metrics;
 - the run fingerprint and the `api:` / `agent:` backends.
 
-It asserts the **current** behaviour of `feat/rag-agent-evals`, including the design choices made in the
+It asserts the **current** behaviour, including the design choices made in the
 review fixes (see `FINDINGS.md`).
 
 | File | Needs | What it checks |

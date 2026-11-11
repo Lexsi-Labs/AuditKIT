@@ -1,6 +1,6 @@
 # Cohere notebooks
 
-These notebooks evaluate Cohere models (Tiny Aya, Aya Expanse, Aya Vision, North Micro Vision) with AuditKIT. Each is self-contained: on Colab, its first code cell installs AuditKIT from `feat/rag-agent-evals` (#1, with #9, #10 and the #15 / #27 fixes merged), and updates an existing clone so a reused runtime never runs stale code.
+These notebooks evaluate Cohere models (Tiny Aya, Aya Expanse, Aya Vision, North Micro Vision) with AuditKIT. Each is self-contained: on Colab, its first code cell installs AuditKIT from PyPI with the extras that notebook needs.
 
 | Notebook | What it does | Models | Colab GPU |
 |---|---|---|---|
@@ -11,7 +11,6 @@ These notebooks evaluate Cohere models (Tiny Aya, Aya Expanse, Aya Vision, North
 | `tgi_endpoint.ipynb` | Evaluates a model served by Hugging Face **TGI** through `api:` (AuditKIT never imports TGI). Needs a running TGI server; ships without outputs. | any TGI-served model | the TGI server's |
 
 **Colab secrets:**
-- `GITHUB_TOKEN`, to clone the private repo;
 - `HF_TOKEN`, from an account that has accepted the licences for Tiny Aya, Aya Expanse and Aya Vision (North Micro Vision is open).
 
 **Quick smoke test with other models:** the settings cells read `NB_*` environment variables (`NB_MODEL`, `NB_RUN1_A`, …), so the same notebook can run with an open model.

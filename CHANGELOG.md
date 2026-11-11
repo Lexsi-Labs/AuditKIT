@@ -110,6 +110,16 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- The Colab notebooks under `examples/` and `tests/*_suite` install AuditKIT from PyPI (or clone this repository
+  at `main`) instead of cloning a repository that is not public with a token, and comments, docstrings and READMEs
+  no longer point at pull requests and branches outside this repository.
+- **Results change for red-team runs with empty or reasoning replies.** An empty reply, a reply that is only
+  reasoning (`<think>…</think>`, or reasoning cut at the token limit), or a generation error passed every
+  red-team check, so a broken endpoint scored 100% (5/5 on the `refusal` probe). Such a reply is now
+  `ProbeResult.invalid` (reason in `metadata["invalid_reason"]`), counted in `RedTeamResult.invalid_probes`
+  and the summary, and left out of `pass_rate`, which is passed over judged checks and `None` when no reply
+  could be judged. Detectors read the answer with the `<think>` block removed, so a refusal or a harmful plan
+  written only in the reasoning no longer decides the result. Hub rows carry `invalid`.
 - The built-in `gsm8k` scenario scored almost every answer 0: its target was the whole worked
   solution and the default scorer was exact match, so "The answer is 72." scored 0. The target is now
   the final number (the worked solution stays in `Sample.metadata["solution"]`), and `gsm8k` scores with

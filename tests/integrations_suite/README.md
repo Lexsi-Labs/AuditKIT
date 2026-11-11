@@ -1,6 +1,6 @@
 # Integrations suite: AgentTune, Cohere, `hf:`
 
-These are tests for the agentic integrations added by #1 and #9/#10: AgentTune import, Cohere tool calling, and the `hf:` backend's native tool path. The suite is based on `HK-AK/interop` (#10), where these features live.
+These are tests for AuditKIT's agentic integrations: AgentTune import, Cohere tool calling, and the `hf:` backend's native tool path.
 
 | File | Covers | Needs |
 |---|---|---|
@@ -8,7 +8,7 @@ These are tests for the agentic integrations added by #1 and #9/#10: AgentTune i
 | `test_cohere.py` | Every Cohere surface form: Command R7B action blocks, the special-token-stripped decode, Command-R `Action:` JSON, parallel calls, string parameters, no parameters, unicode, and plans containing brackets. Also: plain answers, scoring through `ToolCallF1` / `ParallelToolCalls` / `ToolCallValidity`, Cohere calls in AgentTune event logs, and the **real** Command R7B / Aya Expanse / Tiny Aya chat templates. | offline; the template tests need the gpt2 tokenizer cached |
 | `test_hf.py` | The `hf:` backend with real tokenizers and templates and a stub pipeline. Covers: native tool schemas in the rendered prompt (Qwen3 and Command R7B), the `chat_template_kwargs` precedence, refusal with advice for tool-less templates (Aya Expanse, Tiny Aya, no template), a single BOS, images (refused on text models, batch order kept), whole `evaluate()` runs in native and prompt mode, and the `agent_eval` harness driving an `hf:` policy. | offline; tokenizers for gpt2, Qwen3-1.7B and Llama-2 cached |
 | `test_live.py` | Live runs, **opt-in**: `AK_LIVE_HF=1` (Qwen3-1.7B), `AK_LIVE_COHERE=1` (Tiny Aya Global, gated), `AK_LIVE_R7B=1` (Command R7B, gated, 24 GB+ GPU). | the models, plus an `HF_TOKEN` for Cohere |
-| `colab_integrations.ipynb` | **One notebook for all of the above**, on a Colab GPU. | Colab secrets `GITHUB_TOKEN` and `HF_TOKEN` |
+| `colab_integrations.ipynb` | **One notebook for all of the above**, on a Colab GPU. | Colab secret `HF_TOKEN` |
 
 ```bash
 python -m pytest -o addopts= tests/integrations_suite -q -rx            # offline (+ live tests skip)

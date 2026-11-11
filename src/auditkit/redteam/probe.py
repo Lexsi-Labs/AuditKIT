@@ -15,6 +15,9 @@ class ProbeResult:
     passed: bool
     detector_name: str
     metadata: dict[str, Any] = field(default_factory=dict)
+    # True when the reply could not be judged (empty, reasoning only, or a generation
+    # error): neither passed nor failed, and left out of the pass rate.
+    invalid: bool = False
 
 
 class Probe:

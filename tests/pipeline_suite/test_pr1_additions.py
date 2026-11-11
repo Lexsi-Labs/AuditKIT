@@ -1,4 +1,4 @@
-"""PR #1 (feat/rag-agent-evals), parts added after the first review and not covered by
+"""Agent and RAG evaluation features not covered by
 tests/agentic_suite: reference-free agent metrics, reference-free RAG judges, RAG-stress
 metrics, agent_eval reliability (A3), the harness loop (A4) and the sidecar (A5).
 
