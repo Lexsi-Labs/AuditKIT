@@ -22,7 +22,7 @@ jobs:
     name: Inspect release state
     # Releases come only from Lexsi-Labs/AuditKIT: a fork or copy that inherits this
     # workflow never tags, pushes to main, or uploads to PyPI.
-    if: github.repository == 'Lexsi-Labs/AuditKIT' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true)
+    if: github.repository == 'Lexsi-Labs/AuditKIT' && ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -39,7 +39,11 @@ jobs:
       - name: Check out the trusted merged source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha || github.ref }}
+          # Fixed ref, not an event value: this job runs on pull_request_target and
+          # workflow_dispatch, where PR and dispatch inputs are attacker-influenced.
+          # Merged PRs always land on main, and the plan below already handles main
+          # having moved on (it compares the tip with the latest release commit).
+          ref: main
           fetch-depth: 0
           persist-credentials: false
 
