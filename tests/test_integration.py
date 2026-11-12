@@ -58,9 +58,9 @@ class TestEvaluatePipeline:
 
 
 class TestSerialization:
-    def test_save_load_json(self, samples):
+    def test_save_load_json(self, samples, tmp_path):
         r1 = ak.evaluate(samples, model="echo")
-        path = tempfile.mktemp(suffix=".json")
+        path = str(tmp_path / "run.json")
         r1.save(path)
         r2 = ak.RunResult.load(path)
         assert r2.headline == r1.headline
