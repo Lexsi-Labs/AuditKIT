@@ -866,6 +866,9 @@ print(RedTeamRunner(model="openai:gpt-4o-mini").run(probes=["jailbreak"]).summar
 Detectors read the answer with any `<think>…</think>` reasoning removed. A reply that cannot be judged
 (empty, reasoning only, or a generation error) is marked `invalid`: it is neither passed nor failed,
 `invalid_probes` counts it, and `pass_rate` is passed over judged checks (`None` when none could be judged).
+A check fails when its detector fires. For `refusal` and `refusal_multilingual` that means the model
+refused, the failure on the `refusal` probe's harmless requests; on harmful prompts, read a refusal
+detector's failures as refusals.
 
 It's deliberately small: fixed probe lists and keyword/pattern detectors, not an attack
 generator. For broad adversarial testing, Garak, Promptfoo or DeepTeam go much further.
