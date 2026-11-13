@@ -7,7 +7,13 @@ from typing import Callable
 from ..model import AutoModel, Model, Request
 from ..trace import strip_thinking
 from .detector import Detector
-from .detectors.builtin import InjectionSuccessDetector, KeywordDetector, RefusalDetector, SystemPromptLeakDetector
+from .detectors.builtin import (
+    InjectionSuccessDetector,
+    KeywordDetector,
+    MultilingualRefusalDetector,
+    RefusalDetector,
+    SystemPromptLeakDetector,
+)
 from .probe import Probe, ProbeResult
 from .probes.builtin import EncodingProbe, JailbreakProbe, PromptInjectionProbe, RefusalProbe
 
@@ -22,6 +28,7 @@ _PROBE_REGISTRY: dict[str, type[Probe]] = {
 _DETECTOR_REGISTRY: dict[str, type[Detector]] = {
     "keyword": KeywordDetector,
     "refusal": RefusalDetector,
+    "refusal_multilingual": MultilingualRefusalDetector,
     "system_prompt_leak": SystemPromptLeakDetector,
     "injection_success": InjectionSuccessDetector,
 }

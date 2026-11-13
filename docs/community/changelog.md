@@ -4,6 +4,11 @@
 
 ### Added
 
+- `ak.multilingual_refusal`, `ak.refusal_scorer` and the `refusal_multilingual` red-team detector:
+  refusal phrases in English, Hindi, Hinglish, Bengali, Tamil, Arabic and Swahili. `RefusalDetector`
+  is English-only. The language comes from `sample.metadata["lang"]` or `sample.task`, and a
+  language with no patterns is `not_tested`. The scorer reads the answer without its `<think>`
+  reasoning, and an empty answer or a reply that is only reasoning is not measured.
 - `JsonSchemaValid` (`json_schema_valid`) and `FieldF1` (`field_f1`, with `field_precision` and
   `field_recall`): metrics for structured extraction. `JsonSchemaValid` validates the output against
   a JSON Schema with the `jsonschema` package (new optional extra `auditkit[jsonschema]`) or a

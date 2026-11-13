@@ -15,6 +15,7 @@ Built-in metric families for evaluating model outputs:
 - **rag_judge**: Faithfulness, ContextPrecision, ContextRecall, ContextRelevance, AnswerRelevancy, ResponseGroundedness, Hallucination (LLM-judged, numbered verdicts)
 - **rag_stress**, **rag_stress_runner**, **rag_stress_ops** — deterministic RAG stress checks (EvidenceSetRecall, Freshness, AclCompliance, CitationSupport, Abstention, ContextRetention, NumericAccuracy), the paired stress runner, judge calibration and human review
 - **agent**: ToolCallF1, TrajectoryMatch, ParallelToolCalls, ToolCallValidity, RedundantToolCalls, TaskCompletion, ToolSelectionJudge, ToolPermission, AgentLoopDetection
+- **refusal** — multilingual_refusal, refusal_scorer (refusal phrases in en, hi, Hinglish, bn, ta, ar, sw)
 - **security** — DefconGrade, KeywordDetector, ThreatCategory
 - **toxicity** — ToxicityScore, RepresentationSkew, HateSpeechScore
 - **guard** — GuardJudge (safety scoring via a guard model, e.g. Llama Guard)
