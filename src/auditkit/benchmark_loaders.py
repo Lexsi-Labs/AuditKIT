@@ -23,7 +23,7 @@ from .sample import Sample
 from .types import TaskKind
 
 MULTIJAIL = "DAMO-NLP-SG/MultiJail"
-XSTEST = "natolambert/xstest-v2-copy"
+XSTEST = "Paul/XSTest"
 GLOBAL_MMLU = "CohereLabs/Global-MMLU"
 GLOBAL_MMLU_LITE = "CohereLabs/Global-MMLU-Lite"
 
@@ -31,12 +31,10 @@ MULTIJAIL_LANGUAGES = ("en", "zh", "it", "vi", "ar", "ko", "th", "bn", "sw", "jv
 
 _REVISIONS = {
     MULTIJAIL: "93d65c778925d55973b9ff30c7bccc8545494eb6",
-    XSTEST: "b71afe2a6d10e5a6254ea8bcb006c48b095a15d5",
+    XSTEST: "f600c994b256f12867dfa5b3eb3d545a3e62f8b5",
     GLOBAL_MMLU: "0e619dbeb34206cd48705a1a0ea7fb21cae09993",
     GLOBAL_MMLU_LITE: "36c2fd756f19ccf13a9a96c8e53ccecc02192b8b",
 }
-# XSTest's prompts are one split of six; the other five hold model completions.
-_XSTEST_PROMPTS = {"prompts": "data/prompts-00000-of-00001.parquet"}
 _XSTEST_UNSAFE_PREFIX = "contrast_"
 
 
@@ -103,7 +101,7 @@ def load_multijail(languages: Optional[Union[str, Iterable[str]]] = None, *, rep
     return samples
 
 
-def load_xstest(*, repo: str = XSTEST, revision: Optional[str] = None,
+def load_xstest(*, repo: str = XSTEST, split: Optional[str] = None, revision: Optional[str] = None,
                 limit: Optional[int] = None) -> list[Sample]:
     """XSTest v2 (Röttger et al., NAACL 2024): 250 safe prompts that look unsafe, and
     200 unsafe contrast prompts.
@@ -111,16 +109,24 @@ def load_xstest(*, repo: str = XSTEST, revision: Optional[str] = None,
     The set is English, so ``task`` is ``"en"``. ``metadata["label"]`` and ``tags`` say
     ``safe`` or ``unsafe``, and ``metadata["type"]`` keeps the prompt type. A refusal is
     the failure on safe prompts and the goal on unsafe ones, so score the two apart.
+
+    The default is the authors' copy. ``split`` defaults to the repo's only split, so
+    ``repo="walledai/XSTest"`` works as well; a repo with several splits needs ``split=``
+    (``split="prompts"`` for ``natolambert/xstest-v2-copy``). The label is the ``label``
+    column where there is one, else read from the ``contrast_`` type prefix.
     """
-    data_files = _XSTEST_PROMPTS if repo == XSTEST else None
-    rows, revision = _rows(repo, None, "prompts" if data_files else "test", revision,
-                           **({"data_files": data_files} if data_files else {}))
+    rows, revision = _rows(repo, None, split, revision)
+    if split is None:
+        if len(rows) != 1:
+            raise ValueError(f"{repo} has splits {sorted(rows)}; pass split= to choose one")
+        (rows,) = rows.values()
     samples: list[Sample] = []
-    for row in rows:
+    for n, row in enumerate(rows, 1):
         if limit is not None and len(samples) >= limit:
             break
-        label = "unsafe" if row["type"].startswith(_XSTEST_UNSAFE_PREFIX) else "safe"
-        group = f"xstest-{row['id']}"
+        label = row.get("label") or (
+            "unsafe" if row["type"].startswith(_XSTEST_UNSAFE_PREFIX) else "safe")
+        group = f"xstest-{row.get('id', n)}"
         samples.append(Sample(id=group, input=row["prompt"], task="en", tags=[label],
                               metadata=_meta(group, revision, label=label, type=row["type"])))
     return samples

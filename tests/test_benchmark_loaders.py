@@ -7,7 +7,8 @@ import types
 import pytest
 
 import auditkit as ak
-from auditkit.benchmark_loaders import GLOBAL_MMLU, GLOBAL_MMLU_LITE, MULTIJAIL, MULTIJAIL_LANGUAGES, XSTEST
+from auditkit.benchmark_loaders import GLOBAL_MMLU, GLOBAL_MMLU_LITE, MULTIJAIL, MULTIJAIL_LANGUAGES
+from auditkit.benchmark_loaders import XSTEST as XSTEST_REPO
 from auditkit.errors import ExtraNotInstalled
 
 
@@ -25,9 +26,16 @@ def _mmlu_row(n, answer="B"):
             "cultural_sensitivity_label": "CA"}
 
 
-XSTEST_ROWS = [{"id": "v2-1", "type": "homonyms", "prompt": "safe one", "completion": ""},
-               {"id": "v2-2", "type": "contrast_homonyms", "prompt": "unsafe one", "completion": ""},
-               {"id": "v2-3", "type": "privacy_public", "prompt": "safe two", "completion": ""}]
+# The authors' copy (Paul/XSTest): one "train" split with an id and a label column.
+XSTEST_ROWS = [{"id": 1, "type": "homonyms", "prompt": "safe one", "label": "safe"},
+               {"id": 2, "type": "contrast_homonyms", "prompt": "unsafe one", "label": "unsafe"},
+               {"id": 3, "type": "privacy_public", "prompt": "safe two", "label": "safe"}]
+XSTEST_SPLITS = {"train": XSTEST_ROWS}
+# walledai/XSTest: one "test" split, a label column and no id.
+WALLEDAI_ROWS = {"test": [{k: v for k, v in row.items() if k != "id"} for row in XSTEST_ROWS]}
+# natolambert/xstest-v2-copy's "prompts" split: string ids, no label column.
+COPY_ROWS = [{"id": "v2-1", "type": "homonyms", "prompt": "safe one", "completion": ""},
+             {"id": "v2-2", "type": "contrast_homonyms", "prompt": "unsafe one", "completion": ""}]
 
 
 @pytest.fixture
@@ -93,28 +101,36 @@ class TestMultiJail:
 
 
 class TestXSTest:
-    def test_labels_come_from_the_contrast_prefix(self, hub):
-        hub.rows[(XSTEST, None)] = XSTEST_ROWS
+    def test_the_default_is_the_authors_copy_with_its_labels(self, hub):
+        hub.rows[(XSTEST_REPO, None)] = XSTEST_SPLITS
         samples = ak.load_xstest()
+        assert XSTEST_REPO == "Paul/XSTest" and hub.calls[0]["split"] is None
         assert [s.metadata["label"] for s in samples] == ["safe", "unsafe", "safe"]
         assert [s.tags for s in samples] == [["safe"], ["unsafe"], ["safe"]]
         assert samples[1].metadata["type"] == "contrast_homonyms"
         assert {s.task for s in samples} == {"en"}
+        assert [s.id for s in samples] == ["xstest-1", "xstest-2", "xstest-3"]
 
-    def test_reads_only_the_prompt_file_and_keeps_no_completions(self, hub):
-        hub.rows[(XSTEST, None)] = XSTEST_ROWS
-        samples = ak.load_xstest()
+    def test_walledai_works_without_an_id_column(self, hub):
+        hub.rows[("walledai/XSTest", None)] = WALLEDAI_ROWS
+        samples = ak.load_xstest(repo="walledai/XSTest")
+        assert [s.id for s in samples] == ["xstest-1", "xstest-2", "xstest-3"]
+        assert [s.metadata["label"] for s in samples] == ["safe", "unsafe", "safe"]
+
+    def test_without_a_label_column_the_contrast_prefix_decides(self, hub):
+        hub.rows[("natolambert/xstest-v2-copy", None)] = COPY_ROWS
+        samples = ak.load_xstest(repo="natolambert/xstest-v2-copy", split="prompts")
         assert hub.calls[0]["split"] == "prompts"
-        assert hub.calls[0]["data_files"] == {"prompts": "data/prompts-00000-of-00001.parquet"}
+        assert [s.metadata["label"] for s in samples] == ["safe", "unsafe"]
         assert all("completion" not in s.metadata for s in samples)
 
-    def test_another_repo_gets_its_test_split_and_no_data_files(self, hub):
-        hub.rows[("walledai/XSTest", None)] = XSTEST_ROWS
-        ak.load_xstest(repo="walledai/XSTest")
-        assert hub.calls[0]["split"] == "test" and "data_files" not in hub.calls[0]
+    def test_several_splits_need_one_chosen(self, hub):
+        hub.rows[("x/y", None)] = {"prompts": COPY_ROWS, "gpt4": COPY_ROWS}
+        with pytest.raises(ValueError, match="pass split="):
+            ak.load_xstest(repo="x/y")
 
     def test_limit(self, hub):
-        hub.rows[(XSTEST, None)] = XSTEST_ROWS
+        hub.rows[(XSTEST_REPO, None)] = XSTEST_SPLITS
         assert len(ak.load_xstest(limit=2)) == 2
 
 
@@ -176,7 +192,7 @@ class TestRevisions:
         assert sample.metadata["revision"] == hub.calls[0]["revision"]
 
     def test_the_caller_can_choose_another(self, hub):
-        hub.rows[(XSTEST, None)] = XSTEST_ROWS
+        hub.rows[(XSTEST_REPO, None)] = XSTEST_SPLITS
         sample = ak.load_xstest(revision="abc123")[0]
         assert hub.calls[0]["revision"] == "abc123"
         assert sample.metadata["revision"] == "abc123"
@@ -208,3 +224,14 @@ def test_without_the_extra_it_says_what_to_install(monkeypatch, load):
     monkeypatch.setitem(sys.modules, "datasets", None)
     with pytest.raises(ExtraNotInstalled):
         load()
+
+
+def test_multijail_through_the_refusal_scorer(hub):
+    """task=lang feeds the refusal scorer: languages it has no phrases for are not tested."""
+    hub.rows[(MULTIJAIL, None)] = [_jail_row(1)]
+    samples = ak.load_multijail()
+    for sample in samples:
+        sample.actual_output = "I can't help with that."
+    result = ak.evaluate(samples, "precomputed", ["multilingual_refusal"])
+    assert result.headline["multilingual_refusal"] == pytest.approx(1.0)
+    assert result.unscored["multilingual_refusal"]["not_tested"] == 6  # zh it vi ko th jv

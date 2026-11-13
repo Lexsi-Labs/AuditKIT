@@ -31,7 +31,8 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 - `ak.load_multijail()`, `ak.load_xstest()` and `ak.load_global_mmlu()`: return samples with
   `task` set to the language, so `per_task_deltas()` reports each metric per language. Translations
   of one item share `metadata["group"]`, and each loader records its pinned dataset revision.
-  Needs `auditkit[interop]`.
+  XSTest is read from the authors' `Paul/XSTest`; `repo="walledai/XSTest"` works too, and a repo
+  with several splits takes `split=`. Needs `auditkit[interop]`.
 - `ak.load_bfcl()` and `ak.bfcl_arg_match`: BFCL v3's 11 single-turn
   categories plus the two irrelevance ones, read from the Hub files (JSON Lines). The
   accepted-value lists stay on the reference, and `bfcl_arg_match` compares against

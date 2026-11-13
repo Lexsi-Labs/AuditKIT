@@ -49,7 +49,7 @@ Three loaders return a `list[Sample]` with `task` set to the language, so
 | Loader | Dataset | Notes |
 |---|---|---|
 | `ak.load_multijail(languages=None)` | `DAMO-NLP-SG/MultiJail` | 315 harmful prompts in 10 languages; no reference answers |
-| `ak.load_xstest()` | `natolambert/xstest-v2-copy` | 250 safe and 200 unsafe English prompts; `metadata["label"]` says which |
+| `ak.load_xstest()` | `Paul/XSTest` | 250 safe and 200 unsafe English prompts; `metadata["label"]` says which |
 | `ak.load_global_mmlu(languages, split="test")` | `CohereLabs/Global-MMLU` | Multiple choice in 42 languages; `repo=GLOBAL_MMLU_LITE` for 400 questions |
 
 Translations of one item share `metadata["group"]`. MultiJail and the unsafe half of XSTest
