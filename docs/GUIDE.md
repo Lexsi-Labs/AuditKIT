@@ -829,11 +829,13 @@ res = ak.compare_models([...], dataset, scorers=[...], model_names=[...], config
 
 Per-model failures are isolated into `res.errors[name]` — a crashing model never takes down the comparison; winner selection is direction-aware (uses `min` for MINIMIZE metrics).
 
-### Significance — read this caveat
+### Significance
 
 `significance()` / `CompareResult.significance()` / `Experiment.significance()` all call `paired_bootstrap(score_pairs(...))`, aligned by `sample_id`. The result dict: `{n, mean_baseline, mean_candidate, delta, p_value, significant, ci, ci_level}` (`significant = p < 0.05`, deterministic with `seed=42`). `ci = [lo, hi]` is a percentile bootstrap interval on `delta` at `ci_level` (`confidence=0.95` by default, configurable on each `significance()`). `CompareResult.significance(a, b)` and `Experiment.significance()` report `delta` as baseline minus candidate (`mean_a - mean_b`, best run minus runner-up), and their `ci` is on that same difference.
 
-> **It's a conservative heuristic, not a rigorous test.** The bootstrap resamples the observed per-sample diffs and compares each resample's mean magnitude to the observed mean — the reference distribution is centered on the observed effect, not a null centered at zero. So a large but *low-variance* difference (every sample flips the same way) can report `significant=False`. Treat it as a rough guard.
+How it works: the per-sample differences (candidate minus baseline) are centred on zero, which is the null of no difference, and resampled with replacement `n_resamples` times (1000 by default). The two-sided p-value is `(count + 1) / (n_resamples + 1)`, where `count` is the number of resampled means at least as far from zero as the observed `delta`; ties count as extreme, so 0/1 scores give the same p-value on every Python version. The smallest p-value it can report is `1 / (n_resamples + 1)`, about 0.001 by default, so a consistent difference, even one where every sample moves the same way, is reported `significant=True`. The interval uses the same resampled indices without the centring, so it is centred on the observed `delta`.
+
+> **Limits.** This is a bootstrap test, not an exact permutation or sign test. The percentile interval covers a little under its nominal level on small samples: about 95% at 30 pairs in the test suite's synthetic check, lower with fewer pairs. Fewer than 2 aligned pairs returns `{"error": ...}`. `CompareResult` tests each pair of models on its own, with no multiple-comparisons correction.
 
 ### Experiment tracking
 
@@ -1023,7 +1025,7 @@ A single list of everything flagged inline above. None of these break the *corre
 - `toxicity_score`/`hate_speech_score` with `use_model=False` — keyword blacklist.
 
 **Statistical rigor**
-- `paired_bootstrap` significance is a conservative heuristic (can under-report significance for low-variance differences), not an exact permutation/sign test.
+- `paired_bootstrap` is a bootstrap test centred on the null of no difference, with a percentile interval on `delta`; it is not an exact permutation or sign test, and the interval runs a little under its nominal coverage on small samples (see [Significance](#significance)).
 - `CompareResult` runs an independent p-test per model pair with no multiple-comparisons correction; `winner()` ignores significance (picks the raw best mean).
 
 **bert_score** hits an upstream `bert_score`-vs-`transformers>=5` tokenizer incompatibility on its own — `BertScore.score()` works around it with a scoped monkeypatch clamping the affected tokenizer's `model_max_length`; `cosine_similarity` isn't affected.

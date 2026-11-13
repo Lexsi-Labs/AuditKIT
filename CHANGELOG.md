@@ -111,7 +111,9 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   `delta` from the un-centred resamples, and `ci_level` (`confidence=0.95` by default). The same resamples as
   before, so p-values are unchanged. `RunComparison.significance()`, `CompareResult.significance()` and
   `Experiment.significance()` take `confidence=` and return it; the last two report `delta` as baseline minus
-  candidate, and their `ci` is flipped to match.
+  candidate, and their `ci` is flipped to match. `docs/GUIDE.md` no longer calls the test a "conservative
+  heuristic" that is not centred on zero (true before the #20 fix); it describes the centred test, the
+  p-value floor and the interval.
 - Agent eval: opt-in `AgentEvalSpec(score_partial_on_error=True)` (CLI config key of the same name) (#45). A run
   that ended with a target error still gets its `FinalStateAssertion` / `ArtifactAssertion` verdict (or an
   `AssertionOracle`'s companion `state_oracle`) when that evidence was observed. The row keeps
