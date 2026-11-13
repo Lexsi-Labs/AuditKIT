@@ -21,6 +21,9 @@
         - load_croissant
         - load_agenttune
         - load_bfcl
+        - load_multijail
+        - load_xstest
+        - load_global_mmlu
         - RunConfig
         - RunResult
         - Report
