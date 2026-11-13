@@ -394,6 +394,7 @@ def _agent_spec_from_cfg(cfg: dict) -> "object":
         import_path=cfg.get("import_path"),
         trials=cfg.get("trials", 1),
         reset_confirmed=cfg.get("reset_confirmed", False),
+        score_partial_on_error=cfg.get("score_partial_on_error", False),
         reliability_k=cfg.get("reliability_k"),
         scorers=cfg.get("scorers") or ["tool_call_f1", "tool_call_validity", "task_completion"],
         judge=cfg.get("judge"),

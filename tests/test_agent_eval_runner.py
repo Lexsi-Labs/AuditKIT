@@ -551,3 +551,90 @@ def test_attached_final_state_is_reported_observed():
 def test_final_state_coverage_unchanged_without_a_snapshot_or_when_inferred():
     assert _state_row(None)["coverage"]["final_state"] == "unavailable"
     assert _state_row({"sent": True}, coverage="inferred")["coverage"]["final_state"] == "inferred"
+
+
+# -- #45: opt-in scoring of observed effects on a run that ended with an error --
+def _errored(final_state=None, *, coverage=None, artifacts=None, case_id="c1"):
+    ep = episode_from_openai_messages(
+        [{"role": "user", "content": "send it"}, {"role": "assistant", "content": "Done."}],
+        case_id=case_id, final_answer="Done.")
+    if final_state is not None:
+        ep.final_state = final_state
+        ep.coverage["final_state"] = coverage or "observed"
+    ep.artifacts = artifacts
+    ep.stop_reason = "error"
+    ep.errors.append("endpoint timeout on step 3")
+    return ep
+
+
+def _run_partial(episodes, oracle, *, on, trials=1):
+    spec = AgentEvalSpec(cases=[AgentCase(id=episodes[0].case_id, task="t", outcome=oracle)], episodes=episodes, mode="recorded", scorers=[],
+                         name="partial", trials=trials, score_partial_on_error=on)
+    return AgentEvalRunner().run(spec)
+
+
+def test_errored_run_is_not_scored_by_default():
+    res = _run_partial([_errored({"sent": True})], FinalStateAssertion("sent", equals=False), on=False)
+    row = res.rows[0]
+    assert (row.status, row.outcome["verdict"]) == ("target_error", "error")
+    assert "scored_on_error" not in row.outcome
+    assert "score_partial_on_error" not in res.spec_identity
+    assert "Endpoint errors: 1\n" in res.summary() + "\n"
+
+
+def test_observed_final_state_is_scored_on_an_errored_run_when_opted_in():
+    res = _run_partial([_errored({"sent": True})], FinalStateAssertion("sent", equals=False), on=True)
+    row = res.rows[0]
+    assert row.status == "target_error"
+    assert row.errors == ["endpoint timeout on step 3"]
+    assert row.outcome["verdict"] == "failure" and row.outcome["scored_on_error"] is True
+    assert "endpoint timeout on step 3" in row.outcome["reason"]
+    assert res.spec_identity["score_partial_on_error"] is True
+    s = res.summary()
+    assert "Failure: 1" in s and "Error: 0" in s
+    assert "Endpoint errors: 1 (1 scored on observed evidence)" in s
+
+
+def test_opt_in_leaves_unobserved_or_unscoreable_evidence_as_error():
+    from auditkit.agent_eval.outcome import ArtifactAssertion, AssertionOracle
+
+    state = FinalStateAssertion("sent", equals=False)
+    cases = [
+        (_errored({"sent": True}, coverage="inferred"), state),       # inferred is not observed
+        (_errored(None), state),                                        # no snapshot
+        (_errored({"other": 1}), state),                                # key missing -> unknown
+        (_errored(None), AnswerAssertion("Done.")),                     # answer is not evidence
+        (_errored(None), ArtifactAssertion("draft")),                   # no artifacts recorded
+    ]
+    for ep, oracle in cases:
+        row = _run_partial([ep], oracle, on=True).rows[0]
+        assert (row.status, row.outcome["verdict"]) == ("target_error", "error"), (oracle, row.outcome)
+
+    # artifacts dict and an AssertionOracle's companion state oracle do count (no judge is called)
+    row = _run_partial([_errored(artifacts={"draft": "x"})], ArtifactAssertion("draft", equals="x"),
+                       on=True).rows[0]
+    assert row.outcome["verdict"] == "success" and row.outcome["scored_on_error"]
+    judge_free = AssertionOracle("did not send", judge_model=object(), state_oracle=state)
+    row = _run_partial([_errored({"sent": True})], judge_free, on=True).rows[0]
+    assert row.outcome["verdict"] == "failure" and row.status == "target_error"
+
+
+def test_scored_on_error_trials_count_in_reliability_only_when_opted_in():
+    eps = [_errored({"sent": True}) for _ in range(3)]
+    for i, ep in enumerate(eps):
+        ep.trial_id = f"t{i}"
+    oracle = FinalStateAssertion("sent", equals=False)
+    off = _run_partial(eps, oracle, on=False, trials=3).rows[0]
+    res = _run_partial([_errored({"sent": True}) for _ in range(3)], oracle, on=True, trials=3)
+    on = res.rows[0]
+    assert off.reliability["n_error"] == 3
+    assert on.reliability["n_error"] == 0 and on.outcome["verdict"] == "failure"
+    assert on.status == "target_error" and on.outcome["scored_on_error"] is True
+    assert "Endpoint errors: 1 (1 scored on observed evidence)" in res.summary()
+
+
+def test_cli_config_sets_score_partial_on_error():
+    from auditkit.cli import _agent_spec_from_cfg
+
+    assert _agent_spec_from_cfg({"score_partial_on_error": True}).score_partial_on_error is True
+    assert _agent_spec_from_cfg({}).score_partial_on_error is False

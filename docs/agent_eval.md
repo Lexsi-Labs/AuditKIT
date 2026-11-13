@@ -305,8 +305,8 @@ Build an `AgentEvalSpec` and run it with `AgentEvalRunner().run(spec)`.
 `AgentEvalSpec` fields: `cases`, `mode` (`recorded` / `deployed` / `harness`),
 `agent` (deployed endpoint or harness policy), `agent_opts`, `episodes`
 (recorded), `import_path` (recorded, an AgentTune file), `trials`,
-`reset_confirmed` and `reliability_k` (reliability), `scorers`, `judge` and
-`name`. The scorers are diagnostic and default to
+`reset_confirmed` and `reliability_k` (reliability), `scorers`, `judge`,
+`name` and `score_partial_on_error` (see below). The scorers are diagnostic and default to
 `["tool_call_f1", "tool_call_validity", "task_completion"]`. The valid scorer
 names are:
 
@@ -401,6 +401,26 @@ is authoritative: the case status is `target_error`, the outcome verdict is
 `error`, and the failure text is captured. It is never a fabricated failure
 scored on an empty string, and the summary does not count it as a decided case.
 
+**Scoring observed effects on an errored run (opt-in).** An agent that sends an
+email and then times out has still sent the email. With
+`AgentEvalSpec(score_partial_on_error=True)` (CLI config key
+`score_partial_on_error`), an errored run still gets its case's
+`FinalStateAssertion` or `ArtifactAssertion` verdict, or the companion
+`state_oracle` of an `AssertionOracle`, when that evidence was observed:
+`final_state` coverage is `observed` (not `inferred`), or `artifacts` is a
+recorded dict. Answer and custom oracles and judges are not run, since an errored
+run's answer is not evidence. The row keeps `status="target_error"` and its
+`errors`; the outcome carries `scored_on_error: true` and the error in its
+reason; the summary still counts it under `Endpoint errors` (with "N scored on
+observed evidence") and counts its verdict as decided. When the evidence is
+missing or the oracle says `unknown`, the outcome stays `error`. In a
+multi-trial case such a trial contributes its verdict to the reliability counts.
+Off by default.
+
+```python
+spec = AgentEvalSpec(cases=cases, episodes=episodes, score_partial_on_error=True)
+```
+
 **Deployed state comes only from the reply.** When the endpoint's JSON reply
 carries a `final_state` (or `artifacts`) object, the episode gets it and
 `final_state` coverage is `observed`. Set other reply paths with
@@ -483,7 +503,7 @@ row.reliability
 `pass_hat_k` estimators and are computed over decided trials only; `unknown` and
 `error` trials are counted separately, never as a 0. A trial that errored or
 blew its budget (`target_error`, `budget_exhausted`, `method_error`) lands in
-the `n_error` bucket, so it never counts as a reliable success -- mirroring the
+the `n_error` bucket (unless `score_partial_on_error` scored it, see above), so it never counts as a reliable success -- matching the
 summary's rule. A single trial (or no decided trial) is an explicit
 `status="unknown"` with a reason -- no reliability is claimed. `reliability_k=`
 sets `k` (default: the decided-trial count). In the CLI config, set `trials`,

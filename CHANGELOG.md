@@ -112,6 +112,12 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   before, so p-values are unchanged. `RunComparison.significance()`, `CompareResult.significance()` and
   `Experiment.significance()` take `confidence=` and return it; the last two report `delta` as baseline minus
   candidate, and their `ci` is flipped to match.
+- Agent eval: opt-in `AgentEvalSpec(score_partial_on_error=True)` (CLI config key of the same name) (#45). A run
+  that ended with a target error still gets its `FinalStateAssertion` / `ArtifactAssertion` verdict (or an
+  `AssertionOracle`'s companion `state_oracle`) when that evidence was observed. The row keeps
+  `status="target_error"` and its errors, the outcome carries `scored_on_error`, and the summary's
+  `Endpoint errors` line says how many were scored. Answers, custom predicates and judges are not run on
+  errored runs. Off by default; the run identity changes only when it is on.
 
 ### Fixed
 
