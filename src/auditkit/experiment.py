@@ -82,8 +82,11 @@ class Experiment:
                     mlflow.log_metric("failed_count", run.failed_count)
                     mlflow.log_text(json.dumps(run.errors, default=str), "errors.json")
 
-    def significance(self, metric: str, method: str = "bootstrap", n_resamples: int = 1000) -> dict[str, Any]:
-        """Compare the best two runs and return a p-value.
+    def significance(self, metric: str, method: str = "bootstrap", n_resamples: int = 1000,
+                     confidence: float = 0.95) -> dict[str, Any]:
+        """Compare the best two runs and return a p-value and a ``confidence`` interval.
+
+        ``delta`` is the best run's mean minus the runner-up's, and ``ci`` bounds that same difference.
 
         Aligns per-sample scores **by sample_id** via the shared paired bootstrap
         (see :mod:`auditkit._bootstrap`), rather than zipping by list position.
@@ -102,7 +105,8 @@ class Experiment:
             return {"error": "Need at least 2 runs with predictions for significance test"}
         baseline_run = scored[0][1]
         contrast_run = scored[1][1]
-        bs = paired_bootstrap(score_pairs(baseline_run, contrast_run, None), n_resamples=n_resamples)
+        bs = paired_bootstrap(score_pairs(baseline_run, contrast_run, None), n_resamples=n_resamples,
+                              confidence=confidence)
         if "error" in bs:
             return {"error": "Need at least 2 paired predictions per run"}
         return {
@@ -111,6 +115,9 @@ class Experiment:
             "delta": round(bs["mean_baseline"] - bs["mean_candidate"], 6),
             "p_value": bs["p_value"],
             "significant": bs["significant"],
+            # the bootstrap's interval is on contrast − baseline; negate and swap
+            "ci": [0.0 - bs["ci"][1], 0.0 - bs["ci"][0]],  # 0.0 - x: no -0.0
+            "ci_level": bs["ci_level"],
             "method": method,
             "n_resamples": n_resamples,
             "n_samples": bs["n"],

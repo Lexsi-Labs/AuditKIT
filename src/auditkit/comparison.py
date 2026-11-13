@@ -277,8 +277,9 @@ class RunComparison:
         return out.get(metric) if metric else out
 
     # -- significance (shared, by sample_id) ------------------------------
-    def significance(self, metric: Optional[str] = None) -> dict[str, Any]:
-        return paired_bootstrap(score_pairs(self.baseline, self.candidate, metric))
+    def significance(self, metric: Optional[str] = None, *, confidence: float = 0.95) -> dict[str, Any]:
+        """Paired bootstrap of candidate minus baseline: p-value and a ``confidence`` interval on ``delta``."""
+        return paired_bootstrap(score_pairs(self.baseline, self.candidate, metric), confidence=confidence)
 
     # -- size / latency tradeoff (everything measured, nothing caller-supplied) --
     def tradeoff(self, *, metric: Optional[str] = None) -> dict[str, Any]:

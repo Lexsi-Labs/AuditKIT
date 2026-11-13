@@ -73,6 +73,7 @@ for pm in result.per_metric():
 # Check significance
 sig = result.significance("GPT-4o", "Claude 3", metric="exact_match")
 print(f"p-value: {sig['p_value']}, significant: {sig['significant']}")
+print(f"delta (a - b): {sig['delta']}, 95% CI: {sig['ci']}")
 ```
 
 ## Run It

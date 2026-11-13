@@ -107,6 +107,11 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 - `check_compat()`: warns for sglang on Python 3.13, and for accelerate < 1.0 with
   transformers 5; with `check_cuda=True`, errors on a torchaudio that won't load
   against torch's CUDA.
+- Paired bootstrap confidence interval (#43): `paired_bootstrap` returns `ci = [lo, hi]`, percentile bounds on
+  `delta` from the un-centred resamples, and `ci_level` (`confidence=0.95` by default). The same resamples as
+  before, so p-values are unchanged. `RunComparison.significance()`, `CompareResult.significance()` and
+  `Experiment.significance()` take `confidence=` and return it; the last two report `delta` as baseline minus
+  candidate, and their `ci` is flipped to match.
 
 ### Fixed
 

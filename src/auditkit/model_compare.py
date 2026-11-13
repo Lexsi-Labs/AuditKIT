@@ -89,12 +89,14 @@ class CompareResult:
                 return m.winner
         return None
 
-    def significance(self, model_a: str, model_b: str, metric: str | None = None) -> dict[str, Any]:
+    def significance(self, model_a: str, model_b: str, metric: str | None = None,
+                     *, confidence: float = 0.95) -> dict[str, Any]:
         """Paired-bootstrap significance test between two models on a given metric.
 
         Per-sample scores are aligned **by sample_id** (via the shared
         :func:`~auditkit._bootstrap.score_pairs`), so the test is robust even if
-        the two runs' prediction order diverges.
+        the two runs' prediction order diverges. ``delta`` is ``mean_a - mean_b`` and
+        ``ci`` is the ``confidence`` interval on that same difference.
         """
         from ._bootstrap import paired_bootstrap, score_pairs
 
@@ -106,7 +108,7 @@ class CompareResult:
         if target is None:
             return {"error": "No metrics available"}
 
-        bs = paired_bootstrap(score_pairs(run_a, run_b, target))
+        bs = paired_bootstrap(score_pairs(run_a, run_b, target), confidence=confidence)
         if "error" in bs:
             return {"error": bs["error"], "model_a": model_a, "model_b": model_b, "metric": target}
         return {
@@ -118,6 +120,9 @@ class CompareResult:
             "delta": round(bs["mean_baseline"] - bs["mean_candidate"], 6),  # a − b
             "p_value": bs["p_value"],
             "significant": bs["significant"],
+            # the bootstrap's interval is on b − a; negate and swap for a − b
+            "ci": [0.0 - bs["ci"][1], 0.0 - bs["ci"][0]],  # 0.0 - x: no -0.0
+            "ci_level": bs["ci_level"],
         }
 
     def pairwise(self, baseline_name: str, candidate_name: str, **kw: Any):

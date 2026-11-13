@@ -831,7 +831,7 @@ Per-model failures are isolated into `res.errors[name]` — a crashing model nev
 
 ### Significance — read this caveat
 
-`significance()` / `CompareResult.significance()` / `Experiment.significance()` all call `paired_bootstrap(score_pairs(...))`, aligned by `sample_id`. The result dict: `{n, mean_baseline, mean_candidate, delta, p_value, significant}` (`significant = p < 0.05`, deterministic with `seed=42`).
+`significance()` / `CompareResult.significance()` / `Experiment.significance()` all call `paired_bootstrap(score_pairs(...))`, aligned by `sample_id`. The result dict: `{n, mean_baseline, mean_candidate, delta, p_value, significant, ci, ci_level}` (`significant = p < 0.05`, deterministic with `seed=42`). `ci = [lo, hi]` is a percentile bootstrap interval on `delta` at `ci_level` (`confidence=0.95` by default, configurable on each `significance()`). `CompareResult.significance(a, b)` and `Experiment.significance()` report `delta` as baseline minus candidate (`mean_a - mean_b`, best run minus runner-up), and their `ci` is on that same difference.
 
 > **It's a conservative heuristic, not a rigorous test.** The bootstrap resamples the observed per-sample diffs and compares each resample's mean magnitude to the observed mean — the reference distribution is centered on the observed effect, not a null centered at zero. So a large but *low-variance* difference (every sample flips the same way) can report `significant=False`. Treat it as a rough guard.
 

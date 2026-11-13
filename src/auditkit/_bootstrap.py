@@ -47,19 +47,32 @@ def score_pairs(
     return [(b[i], c[i]) for i in sorted(b.keys() & c.keys())]
 
 
+def _percentile(sorted_vals: list[float], q: float) -> float:
+    """Linear-interpolation percentile (numpy's default method) of an ascending list."""
+    pos = q * (len(sorted_vals) - 1)
+    lo = math.floor(pos)
+    hi = min(lo + 1, len(sorted_vals) - 1)
+    return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (pos - lo)
+
+
 def paired_bootstrap(
-    pairs: list[tuple[float, float]], *, n_resamples: int = 1000, seed: int = 42
+    pairs: list[tuple[float, float]], *, n_resamples: int = 1000, seed: int = 42,
+    confidence: float = 0.95,
 ) -> dict[str, Any]:
     """Two-sided paired bootstrap over ``(baseline, candidate)`` value pairs.
 
-    Returns ``{n, mean_baseline, mean_candidate, delta, p_value, significant}``
+    Returns ``{n, mean_baseline, mean_candidate, delta, p_value, significant, ci, ci_level}``
     where ``delta = mean_candidate - mean_baseline`` (positive ⇒ candidate scored
-    higher). Fewer than 2 pairs can't be resampled meaningfully → ``{"error": ...}``.
+    higher) and ``ci = [lo, hi]`` is the percentile bootstrap interval on ``delta`` at
+    ``ci_level = confidence``, taken from the un-centred resampled means (the p-value uses
+    centred ones). Fewer than 2 pairs can't be resampled meaningfully → ``{"error": ...}``.
     ``n_resamples`` below 1 raises ``ValueError``: with none the p-value is not defined, and a negative
-    count gave a negative p-value.
+    count gave a negative p-value. ``confidence`` must be strictly between 0 and 1.
     """
     if n_resamples < 1:
         raise ValueError(f"n_resamples must be at least 1, got {n_resamples}")
+    if not 0.0 < confidence < 1.0:
+        raise ValueError(f"confidence must be strictly between 0 and 1, got {confidence}")
     n = len(pairs)
     if n < 2:
         return {"error": "need at least 2 aligned sample pairs", "n": n}
@@ -77,11 +90,18 @@ def paired_bootstrap(
     # by float noise. A tie counts as "at least as extreme", as in exact arithmetic.
     threshold = abs(observed) - 1e-9 * max(1.0, abs(observed))
     count = 0
+    boot_deltas: list[float] = []
+    idx = range(n)
     for _ in range(n_resamples):
-        resample = [rng.choice(centred) for _ in range(n)]
-        if abs(math.fsum(resample) / n) >= threshold:
+        # rng.choice(range(n)) draws the same stream as rng.choice(centred) did, so p-values
+        # are unchanged; the same indices give the un-centred resample for the interval.
+        picks = [rng.choice(idx) for _ in range(n)]
+        if abs(math.fsum(centred[i] for i in picks) / n) >= threshold:
             count += 1
+        boot_deltas.append(math.fsum(diffs[i] for i in picks) / n)
     p = (count + 1) / (n_resamples + 1)
+    boot_deltas.sort()
+    tail = (1.0 - confidence) / 2
     return {
         "n": n,
         "mean_baseline": round(mean_baseline, 6),
@@ -89,4 +109,6 @@ def paired_bootstrap(
         "delta": round(observed, 6),
         "p_value": round(p, 6),
         "significant": p < 0.05,
+        "ci": [round(_percentile(boot_deltas, tail), 6), round(_percentile(boot_deltas, 1.0 - tail), 6)],
+        "ci_level": confidence,
     }
