@@ -110,6 +110,11 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- Agent eval: a `final_state` dict attached to a recorded episode after import (`episode.final_state = {...}`,
+  as the guide shows) was used by `FinalStateAssertion` while the row still reported `coverage["final_state"]`
+  as `unavailable`. The row now reports it `observed`; an importer's `inferred` is kept (#44). The guide says how a
+  missing key (`unknown`) differs from a key set to `None` (compared as a value), and the links in
+  `auditkit/agent_eval/README.md` point at GitHub, since `docs/` and `examples/` are not in the wheel.
 - The Colab notebooks under `examples/` and `tests/*_suite` install AuditKIT from PyPI (or clone this repository
   at `main`) instead of cloning a repository that is not public with a token, and comments, docstrings and READMEs
   no longer point at pull requests and branches outside this repository.

@@ -524,3 +524,30 @@ def test_tool_permission_ineligible_without_a_policy():
     case = AgentCase(id="c1", task="t")  # no allowed_tools, no denied_tools
     r = rescore([ep], ["tool_permission"], cases=[case])
     assert r.rows[0].ineligible.get("tool_permission") == "case.allowed_tools"
+
+
+# -- #44: a state snapshot attached after import is reported as observed -------
+def _state_row(final_state, *, coverage=None, error=False):
+    ep = _episode("Done.", case_id="c1", final_state=final_state)
+    if coverage is not None:
+        ep.coverage["final_state"] = coverage
+    if error:
+        ep.stop_reason = "error"
+        ep.errors.append("endpoint timeout")
+    spec = AgentEvalSpec(cases=[AgentCase(id="c1", task="t",
+                                          outcome=FinalStateAssertion("sent", equals=False))],
+                         episodes=[ep], mode="recorded", scorers=[], name="state")
+    return AgentEvalRunner().run(spec).to_dict()["rows"][0]
+
+
+def test_attached_final_state_is_reported_observed():
+    row = _state_row({"sent": True})
+    assert row["outcome"]["verdict"] == "failure"
+    assert row["coverage"]["final_state"] == "observed"
+    # the error row reports coverage too
+    assert _state_row({"sent": True}, error=True)["coverage"]["final_state"] == "observed"
+
+
+def test_final_state_coverage_unchanged_without_a_snapshot_or_when_inferred():
+    assert _state_row(None)["coverage"]["final_state"] == "unavailable"
+    assert _state_row({"sent": True}, coverage="inferred")["coverage"]["final_state"] == "inferred"

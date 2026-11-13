@@ -713,6 +713,13 @@ class AgentEvalRunner:
                                             reason="no episode found for this case").to_dict(),
                 coverage={}, coverage_label="none")
 
+        # A snapshot attached after import (``episode.final_state = {...}``, as the guide shows) is
+        # evidence the state oracle reads, so the row must not report it unavailable. Never
+        # overrides an importer's ``inferred``.
+        if (isinstance(episode.final_state, dict)
+                and episode.coverage.get("final_state", UNAVAILABLE) == UNAVAILABLE):
+            episode.coverage["final_state"] = OBSERVED
+
         # An endpoint error is authoritative (finish_reason=='error'): the run
         # produced no usable answer, so it is 'error', NOT a fabricated failure
         # scored on an empty string (release gate: errors never become zeros).

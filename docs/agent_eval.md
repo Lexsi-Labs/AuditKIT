@@ -116,6 +116,10 @@ episode = episode_from_openai_messages(
 episode.final_state = {"shipment_decision": "ready"}   # attach verified state
 ```
 
+Attaching a dict to `final_state` is enough: the runner reports
+`coverage["final_state"]` as `observed` for that row (an importer's `inferred` is
+kept).
+
 **A `Sample`.** `episode_from_sample(sample)` reads `sample.actual_trace`
 (`messages`, or `tool_calls` turns, plus `retrieved_contexts`) and
 `sample.actual_output`. It bridges the recorded-trace format from
@@ -181,7 +185,11 @@ evidence is never turned into a pass or a fail.
 the case's oracle is a state or artifact check, the answer text plays no part in
 the verdict. A recorded episode with no state snapshot is
 scored `unknown`, never a failure: the absence of state is not evidence of a
-wrong state. `CustomPredicate` requires an explicit `version=` so the run can be
+wrong state. The same holds for one key: a key missing from the snapshot gives
+`unknown`, but a key present with the value `None` is a recorded value and is
+compared like any other (`FinalStateAssertion("sent", equals=False)` on
+`{"sent": None}` is a `failure`). Drop nullable keys you could not observe rather
+than writing them as `None`. `CustomPredicate` requires an explicit `version=` so the run can be
 described as reproducible, and it cannot be built from JSON (pass an oracle
 instance in Python).
 
