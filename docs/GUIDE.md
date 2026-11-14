@@ -277,7 +277,8 @@ result = ak.evaluate(
 | `model` = callable | `CallableModel(fn)` |
 | `scorers` = `None` | `[ExactMatch()]` if any sample has a `target`, else `[]` |
 | `scorers` = `"exact_match"` etc. | built-in map, else `METRICS` registry lookup (`ValueError` if unknown) |
-| `scorers` = `@scorer` fn / bare callable | wrapped as `FunctionScorer` → `ScorerMetric` |
+| `scorers` = `@scorer` fn / `FunctionScorer` | wrapped as `ScorerMetric` |
+| `scorers` = bare callable | `TypeError`: it has no `direction`; use `@scorer(direction=...)` or `scorer(fn, direction=...)` |
 | `scorers` = `Metric` | used as-is |
 | `adapter` = `None` | `GenerationAdapter()` |
 | `adapter` = `"auto"` | `route_adapter(samples)` — shape-based ([§9](#9-adapters-and-routing)) |

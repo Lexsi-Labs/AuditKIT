@@ -15,6 +15,7 @@ from __future__ import annotations
 import functools
 import hashlib
 import importlib
+import os
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -431,6 +432,60 @@ class Model(ABC):
         string in ``self._model_name``, so including it here fixes this for
         all of them at once, with no per-backend override needed."""
         return {"name": self.name, "model": getattr(self, "_model_name", None)}
+
+
+def _identity_value(value: Any) -> Any:
+    """*value* as JSON-stable data for a fingerprint: containers recursed, objects with
+    ``to_dict()`` (``BitsAndBytesConfig``) expanded, a ``torch.dtype`` as its bare name, and
+    any other object reduced to its type (its repr carries a memory address)."""
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, str):
+        return value.removeprefix("torch.")
+    if isinstance(value, dict):
+        return {str(k): _identity_value(v) for k, v in sorted(value.items(), key=lambda kv: str(kv[0]))}
+    if isinstance(value, (list, tuple)):
+        return [_identity_value(v) for v in value]
+    if isinstance(value, (set, frozenset)):
+        return sorted((_identity_value(v) for v in value), key=str)
+    to_dict = getattr(value, "to_dict", None)
+    if callable(to_dict):
+        try:
+            return _identity_value(to_dict())
+        except Exception:  # noqa: BLE001 -- fall through to the type name
+            pass
+    text = str(value)
+    return text.removeprefix("torch.") if " at 0x" not in text else type(value).__qualname__
+
+
+def weights_identity(model_name: Any, load_kwargs: dict[str, Any]) -> dict[str, Any]:
+    """What a local-weights backend adds to :meth:`Model.identity`.
+
+    Anything that can change the outputs belongs in the run fingerprint, or a second run is
+    served the first run's cached answers: the ``load_kwargs`` (``dtype``, ``batch_size`` and
+    padding, ``quantization_config``, ``revision``, ``attn_implementation``, extra generation
+    kwargs ...) and, when *model_name* is a local folder or file, a cheap signature of what is on
+    disk, so retraining into the same folder is not mistaken for the old model. The signature is
+    each top-level file's name, size and modification time (weights, ``config.json``, tokenizer,
+    ``generation_config.json``): copying the folder with ``cp`` re-keys it (a spare miss), the same
+    folder run again does not. Keys appear only when set, so a hub model with default settings
+    keeps its fingerprint. Not covered: a hub id's moving ``main`` (pin ``revision=``) and the
+    base model a PEFT adapter folder points to.
+    """
+    out: dict[str, Any] = {}
+    if load_kwargs:
+        out["extra"] = _identity_value(load_kwargs)
+    try:
+        path = os.fspath(model_name)
+        if os.path.isdir(path):
+            files = [e for e in os.scandir(path) if e.is_file() and not e.name.startswith(".")]
+            out["checkpoint"] = sorted([e.name, e.stat().st_size, e.stat().st_mtime_ns] for e in files)
+        elif os.path.isfile(path):
+            st = os.stat(path)
+            out["checkpoint"] = [[os.path.basename(path), st.st_size, st.st_mtime_ns]]
+    except (TypeError, OSError):      # not a path, or unreadable: nothing on disk to sign
+        pass
+    return out
 
 
 def _stable_capture_repr(value: Any) -> Optional[str]:

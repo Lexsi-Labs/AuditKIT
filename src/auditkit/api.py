@@ -84,8 +84,9 @@ def _to_metrics(
       (populated by every metric class in ``metrics/*.py``) for any other
       registered name (e.g. ``"acc_norm"``, ``"bleu"``, ``"lexical_groundedness"``).
     - :class:`Metric`: returned as-is.
-    - :class:`ScorerType` (``FunctionScorer`` / callable): wrap in
-      :class:`ScorerMetric`.
+    - :class:`FunctionScorer` (what ``@scorer`` returns): wrapped in
+      :class:`ScorerMetric`. A *bare* callable is refused with a ``TypeError``: it has no
+      ``direction`` and none is guessed (see :func:`~auditkit.scorers.scorer`).
     - ``list``: recurse on each element.
     """
     if scorers is None:
@@ -108,10 +109,7 @@ def _to_metrics(
     if isinstance(scorers, Metric):
         return [scorers]
 
-    if isinstance(scorers, FunctionScorer) or callable(scorers):
-        # Wrap a bare callable as a FunctionScorer if needed, then as Metric
-        if not isinstance(scorers, FunctionScorer):
-            scorers = FunctionScorer(scorers)
+    if isinstance(scorers, FunctionScorer):
         return [ScorerMetric(scorers)]
 
     if isinstance(scorers, list):
@@ -119,6 +117,16 @@ def _to_metrics(
         for item in scorers:
             result.extend(_to_metrics(item, samples))
         return result
+
+    if isinstance(scorers, type) and issubclass(scorers, Metric):
+        raise TypeError(f"scorers={scorers.__name__} is a Metric class; pass an instance: {scorers.__name__}()")
+    if callable(scorers):
+        # direction is required, not guessed: a wrong default silently flips every comparison verdict
+        raise TypeError(
+            f"scorers={getattr(scorers, '__name__', scorers)!r} is a bare callable, which has no direction "
+            f"(is a higher or a lower value better?). Declare it: decorate it with "
+            f"@ak.scorer(direction=ak.Direction.MAXIMIZE), or wrap it: "
+            f"ak.scorer(fn, direction=ak.Direction.MAXIMIZE) (MINIMIZE when lower is better).")
 
     raise TypeError(f"cannot interpret scorers={scorers!r}")
 
@@ -216,8 +224,10 @@ def evaluate(
         ``engine="lmeval"`` a string spec is required (``"hf:gpt2"``, …).
     scorers
         ``None`` (auto-select ``ExactMatch`` if golden samples exist),
-        a metric name string, a :class:`Metric`, a :class:`FunctionScorer`,
-        a ``(sample, output) -> float|Score`` callable, or a list of any of
+        a metric name string, a :class:`Metric`, a :class:`FunctionScorer`
+        (a ``(sample, output) -> float|Score`` function declared with
+        ``@scorer(direction=...)`` or ``scorer(fn, direction=...)``;
+        a bare function is refused, as it has no direction), or a list of any of
         the above. Ignored by ``engine="lmeval"`` (lm-eval owns its scoring).
     adapter
         An :class:`Adapter` instance, a registered adapter name string (e.g.

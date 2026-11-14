@@ -137,6 +137,19 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- `evaluate(scorers=...)`: a bare `(sample, output)` function raised
+  `FunctionScorer.__init__() missing ... 'direction'` although the docstring and the guide said it was wrapped (#49).
+  A scorer has no default direction, because a wrong one flips every comparison verdict, so it now raises a
+  `TypeError` that names the fix (`@ak.scorer(direction=...)`, or `ak.scorer(fn, direction=...)`), and a `Metric`
+  class passed instead of an instance is told to instantiate it. The docstring and the guide say the same.
+- **Cached results change for local weights (re-run once).** The run fingerprint of `hf:` and `vllm:` models
+  covered only the model string, so a run with another `batch_size`, `dtype`, `device`, `revision` or quantization
+  config, or after new weights were written into the same local folder, was served the earlier run's cached
+  outputs (#50). The fingerprint now includes the load and call kwargs (never the token), an explicit
+  `device`, and, for a local folder or file, each top-level file's name, size and modification time. A hub model
+  with default settings keeps its fingerprint; a local checkpoint, or any run with extra kwargs, gets a new one,
+  so its cached run is not replayed once. `device="auto"` and key order stay out. Not covered: a hub id's
+  moving `main` (pin `revision=`) and the base model behind a PEFT adapter folder.
 - Agent eval: a `final_state` dict attached to a recorded episode after import (`episode.final_state = {...}`,
   as the guide shows) was used by `FinalStateAssertion` while the row still reported `coverage["final_state"]`
   as `unavailable`. The row now reports it `observed`; an importer's `inferred` is kept (#44). The guide says how a

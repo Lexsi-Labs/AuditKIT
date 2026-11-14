@@ -10,6 +10,7 @@ from typing import Any, Optional
 from . import (
     Capability, Model, Request, Result_, Generated, resolve_params, DEFAULT_TEMPERATURE,
     reject_generation_kwargs, _free_torch_memory, template_messages, explain_unknown_architecture,
+    weights_identity,
 )
 from ..errors import CapabilityError, ExtraNotInstalled
 
@@ -231,6 +232,10 @@ class VLLMModel(Model):
         self._llm = None
         self._launch_env: dict[str, str] = {}   # what _apply_launch_advice set
         self.name = name
+
+    def identity(self) -> dict:
+        # Engine kwargs (dtype, quantization, max_model_len ...) and the local checkpoint's files.
+        return {**super().identity(), **weights_identity(self._model_name, self._extra_kwargs)}
 
     def unload(self) -> None:
         """Tear down the loaded vLLM engine and free the GPU, so
