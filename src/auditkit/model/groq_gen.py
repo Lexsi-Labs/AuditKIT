@@ -10,13 +10,15 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Any
+from typing import Any, Sequence
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs, split_session_kwargs,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, split_session_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
+
+_DEFAULT_API_BASE = "https://api.groq.com/openai/v1"
 
 _KEY_MAP = {
     "temperature": "temperature",
@@ -50,8 +52,9 @@ class GroqModel(Model):
         self,
         model: str = "llama-3.3-70b-versatile",
         api_key: str | None = None,
-        api_base: str = "https://api.groq.com/openai/v1",
+        api_base: str = _DEFAULT_API_BASE,
         name: str = "groq",
+        identity_extra: Sequence[str] = (),
         **kwargs: Any,
     ) -> None:
         reject_generation_kwargs(kwargs, "GroqModel")
@@ -63,8 +66,12 @@ class GroqModel(Model):
         # GroqModel(verify=False) actually disables TLS verification instead
         # of silently becoming an extra, ignored JSON field in the payload.
         self._session_kwargs, self._extra_kwargs = split_session_kwargs(kwargs)
+        self._identity_extra = tuple(identity_extra)
         self._session = None
         self.name = name
+
+    def identity(self) -> dict:
+        return {**super().identity(), **remote_identity(self, self._api_base, _DEFAULT_API_BASE)}
 
     def _ensure_session(self) -> None:
         if self._session is not None:

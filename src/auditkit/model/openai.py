@@ -1,11 +1,11 @@
 """OpenAI model backend (optional extra: auditkit[openai])."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
 
@@ -45,14 +45,20 @@ class OpenAIModel(Model):
     name = "openai"
 
     def __init__(self, model: str = "gpt-4o-mini", api_key: str | None = None,
-                 api_base: str | None = None, name: str = "openai", **kwargs: Any) -> None:
+                 api_base: str | None = None, name: str = "openai",
+                 identity_extra: Sequence[str] = (), **kwargs: Any) -> None:
         reject_generation_kwargs(kwargs, "OpenAIModel")
         self._model_name = model
         self._extra_kwargs = kwargs
+        self._identity_extra = tuple(identity_extra)
         self._client = None
         self._api_key = api_key
         self._api_base = api_base
         self.name = name
+
+    def identity(self) -> dict:
+        # api_base and an allowlist of extra kwargs (see remote_identity); the rest stay out.
+        return {**super().identity(), **remote_identity(self, self._api_base, env_base=("OPENAI_BASE_URL", "OPENAI_API_BASE"))}
 
     def _ensure_client(self) -> None:
         if self._client is not None:

@@ -126,6 +126,7 @@ class AgentEvalResult:
         errored = len(verdicts) - success - failure - unknown  # error (or unrecognized)
         decided = success + failure  # excludes unknown/error (never counted as 0)
         endpoint_errors = sum(1 for r in self.rows if r.status == "target_error")
+        scored_on_error = sum(1 for r in self.rows if r.outcome.get("scored_on_error"))
         statuses = Counter(r.status for r in self.rows)
 
         labels = [r.coverage_label for r in self.rows]
@@ -147,7 +148,8 @@ class AgentEvalResult:
             f"Agent eval   Mode: {self.mode}   Cases: {n}",
             f"Verified success: {success}/{n} ({decided_str})   Failure: {failure}   "
             f"Unknown outcome: {unknown}   Error: {errored}   Over budget: {over_budget}",
-            f"Endpoint errors: {endpoint_errors}",
+            f"Endpoint errors: {endpoint_errors}"
+            + (f" ({scored_on_error} scored on observed evidence)" if scored_on_error else ""),
             "Status: " + ", ".join(f"{k} {v}" for k, v in sorted(statuses.items())),
             f"Trace coverage: full {full}, tool names only {names_only}, answer only {answer_only}",
             f"Tool validity: {validity_pass}/{validity_eligible} eligible",

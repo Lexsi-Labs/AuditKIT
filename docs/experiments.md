@@ -39,8 +39,12 @@ exp.leaderboard()
 ```python
 exp.significance("exact_match")
 # {"baseline": "...", "contrast": "...", "delta": 0.05, "p_value": 0.032,
-#  "significant": True, "method": "bootstrap", "n_resamples": 1000, "n_samples": 50}
+#  "significant": True, "ci": [0.008, 0.094], "ci_level": 0.95,
+#  "method": "bootstrap", "n_resamples": 1000, "n_samples": 50}
 ```
+
+`ci` is a percentile bootstrap interval on `delta` (best run minus runner-up);
+`exp.significance("exact_match", confidence=0.9)` changes its level.
 
 Compares the best two runs in the experiment (ranked by the mean of
 `exact_match`). It aligns per-sample scores by `sample_id` and runs a paired

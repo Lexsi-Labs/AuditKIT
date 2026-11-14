@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, Sequence
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, DEFAULT_TEMPERATURE,
-    reject_generation_kwargs, split_session_kwargs,
+    reject_generation_kwargs, split_session_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
+
+_DEFAULT_API_BASE = "https://api.lexsi.ai/v1"
 
 # The Lexsi platform's real accepted parameter set beyond temperature/
 # max_tokens isn't documented in this codebase -- kept deliberately
@@ -43,10 +45,11 @@ class LexsiModel(Model):
         self,
         model: str = "lexsi-3.5",
         api_key: str | None = None,
-        api_base: str = "https://api.lexsi.ai/v1",
+        api_base: str = _DEFAULT_API_BASE,
         mlflow_tracking_uri: str | None = None,
         mlflow_experiment: str | None = None,
         name: str = "lexsi",
+        identity_extra: Sequence[str] = (),
         **kwargs: Any,
     ) -> None:
         reject_generation_kwargs(kwargs, "LexsiModel")
@@ -60,10 +63,15 @@ class LexsiModel(Model):
         # LexsiModel(verify=False) actually disables TLS verification
         # instead of silently becoming an extra, ignored JSON field.
         self._session_kwargs, self._extra_kwargs = split_session_kwargs(kwargs)
+        self._identity_extra = tuple(identity_extra)
         self._session = None
         self.name = name
         self._total_requests = 0
         self._total_latency_ms = 0.0
+
+    def identity(self) -> dict:
+        # mlflow_* only log the run
+        return {**super().identity(), **remote_identity(self, self._api_base, _DEFAULT_API_BASE)}
 
     def _ensure_session(self) -> None:
         if self._session is not None:

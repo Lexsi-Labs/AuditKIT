@@ -12,6 +12,8 @@
         - compare_models
         - run_lmeval
         - scorer
+        - multilingual_refusal
+        - refusal_scorer
         - load_csv
         - load_jsonl
         - load_dataset
@@ -19,6 +21,9 @@
         - load_croissant
         - load_agenttune
         - load_bfcl
+        - load_multijail
+        - load_xstest
+        - load_global_mmlu
         - RunConfig
         - RunResult
         - Report

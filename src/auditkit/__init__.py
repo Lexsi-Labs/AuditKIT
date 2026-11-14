@@ -14,6 +14,7 @@ from .lexsi_login import lexsi_login
 from .lmeval_engine import BenchmarkEvaluator, map_model_spec, run_benchmark
 from .loaders import load_agenttune, load_croissant, load_csv, load_dataset, load_hf, load_jsonl
 from .bfcl import bfcl_arg_match, load_bfcl
+from .benchmark_loaders import load_global_mmlu, load_multijail, load_xstest
 from .provenance import read_provenance
 from .agent_eval import (
     AgentCase, AgentEvent, AgentEpisode, AgentEvalSpec, AgentEvalRunner, AgentEvalResult,
@@ -74,6 +75,7 @@ from .metrics.agent import (
     AgentLoopDetection, ToolPermission, ToolSelectionJudge,
 )
 from .trace import ToolCall, parse_tool_calls, to_turns
+from .metrics.refusal import multilingual_refusal, refusal_scorer
 from .metrics.security import DefconGrade, KeywordDetector, ThreatCategory
 from .adapter import (
     Adapter, ChatAdapter, FewShotAdapter, GenerationAdapter, InstructionAdapter, MCQAdapter,
@@ -119,6 +121,9 @@ __all__ = [
     "load_agenttune",
     "load_bfcl",
     "bfcl_arg_match",
+    "load_multijail",
+    "load_xstest",
+    "load_global_mmlu",
     "AgentCase",
     "AgentEvent",
     "AgentEpisode",
@@ -244,6 +249,8 @@ __all__ = [
     "Relevance",
     "BiasJudge",
     "KeywordDetector",
+    "multilingual_refusal",
+    "refusal_scorer",
     "DefconGrade",
     "DiskCache",
     "check_compat",

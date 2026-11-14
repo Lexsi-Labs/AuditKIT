@@ -7,6 +7,7 @@ auditkit/
 ├── adapter.py           # Adapter ABC + 8 implementations (generation, chat, fewshot, tools, etc.)
 ├── annotator.py         # Annotator ABC for post-generation annotation
 ├── api.py               # evaluate(), evaluate_many(), generate(), compare(), run_lmeval()
+├── benchmark_loaders.py # load_multijail, load_xstest, load_global_mmlu: Sample(task=lang)
 ├── bfcl.py              # load_bfcl, bfcl_arg_match: BFCL v3 single-turn categories as samples
 ├── cache.py             # DiskCache — fingerprint-keyed result cache
 ├── cli.py               # argparse CLI: eval, init, list, redteam, compare, agent

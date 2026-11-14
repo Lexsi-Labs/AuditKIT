@@ -75,9 +75,13 @@ class AgentEvalSpec:
     # harness: generation settings for every policy step (a RunConfig; max_tokens,
     # temperature, top_p, top_k, seed, stop_sequences). None = the backend's defaults.
     config: Any = None
+    # Opt-in: on a run that ended with a target error, still score a state/artifact oracle
+    # whose evidence was observed (a sent email stays sent after a timeout). The row keeps
+    # status target_error and its errors. Default off: errored runs are never scored.
+    score_partial_on_error: bool = False
 
     def identity(self) -> dict[str, Any]:
-        return {
+        ident = {
             "name": self.name, "mode": self.mode, "trials": self.trials,
             "reset_confirmed": self.reset_confirmed,
             "scorers": list(self.scorers),
@@ -87,6 +91,9 @@ class AgentEvalSpec:
             "judge": _judge_identity(self.judge),
             "generation": _generation_params(self.config),
         }
+        if self.score_partial_on_error:  # only when on, so existing run identities are unchanged
+            ident["score_partial_on_error"] = True
+        return ident
 
 
 def _judge_identity(judge: Any) -> Any:
@@ -336,7 +343,8 @@ class AgentEvalRunner:
         # A trial that errored or blew its budget never counts as a reliable
         # success (mirrors the summary's release gate): its verdict lands in the
         # reliability n_error bucket, excluded from decided.
-        verdicts = [tr.outcome.get("verdict") if tr.status == "completed"
+        verdicts = [tr.outcome.get("verdict")
+                    if tr.status == "completed" or tr.outcome.get("scored_on_error")
                     else outcome_mod.ERROR for tr in trial_rows]
         rel = reliability(
             verdicts, k=spec.reliability_k, independent=spec.reset_confirmed,
@@ -376,7 +384,9 @@ class AgentEvalRunner:
             status=status,
             outcome={"verdict": agg_verdict, "reason": agg_reason,
                      "source": {"type": "trial_aggregate", "n_trials": len(trial_rows)},
-                     "diagnostic": False, "aggregate": True},
+                     "diagnostic": False, "aggregate": True,
+                     **({"scored_on_error": True}
+                        if any(tr.outcome.get("scored_on_error") for tr in trial_rows) else {})},
             coverage=dict(first.coverage),
             coverage_label=first.coverage_label,
             diagnostics=first.diagnostics,
@@ -713,14 +723,27 @@ class AgentEvalRunner:
                                             reason="no episode found for this case").to_dict(),
                 coverage={}, coverage_label="none")
 
+        # A snapshot attached after import (``episode.final_state = {...}``, as the guide shows) is
+        # evidence the state oracle reads, so the row must not report it unavailable. Never
+        # overrides an importer's ``inferred``.
+        if (isinstance(episode.final_state, dict)
+                and episode.coverage.get("final_state", UNAVAILABLE) == UNAVAILABLE):
+            episode.coverage["final_state"] = OBSERVED
+
         # An endpoint error is authoritative (finish_reason=='error'): the run
         # produced no usable answer, so it is 'error', NOT a fabricated failure
         # scored on an empty string (release gate: errors never become zeros).
         if episode.stop_reason == "error":
             reason = "; ".join(episode.errors) or "agent endpoint error (finish_reason=error)"
+            outcome = outcome_mod.Outcome(outcome_mod.ERROR, reason=reason).to_dict()
+            partial = _observed_outcome(case, episode) if spec.score_partial_on_error else None
+            if partial is not None:
+                outcome = partial.to_dict()
+                outcome["scored_on_error"] = True
+                outcome["reason"] = f"{outcome['reason']} (scored on observed evidence; run ended with error: {reason})"
             return AgentCaseResult(
                 case_id=case.id, status="target_error",
-                outcome=outcome_mod.Outcome(outcome_mod.ERROR, reason=reason).to_dict(),
+                outcome=outcome,
                 coverage=dict(episode.coverage), coverage_label=episode.coverage_label(),
                 ineligible={s: "target_error" for s in spec.scorers},
                 resource_use={"latency_ms": episode.counters.get("latency_ms"),
@@ -856,6 +879,32 @@ class AgentEvalRunner:
         if all_ineligible and not has_oracle:
             return "ineligible"
         return "completed"
+
+
+def _observed_outcome(case: AgentCase, episode: AgentEpisode) -> Optional[outcome_mod.Outcome]:
+    """The case's state/artifact oracle verdict on an errored run, when its evidence was observed.
+
+    ``final_state`` counts when coverage says ``observed`` (not ``inferred``); ``artifacts`` has no
+    coverage key, so a recorded dict counts. An :class:`AssertionOracle` contributes only its
+    companion state/artifact oracle, never the judge. Answer and custom oracles are not scored: the
+    answer of an errored run is not evidence. ``None`` unless the verdict is success or failure.
+    """
+    oracle = case.outcome
+    if isinstance(oracle, outcome_mod.AssertionOracle):
+        oracle = oracle.state_oracle
+    if isinstance(oracle, outcome_mod.FinalStateAssertion):
+        observed = episode.coverage.get("final_state") == OBSERVED
+    elif isinstance(oracle, outcome_mod.ArtifactAssertion):
+        observed = isinstance(episode.artifacts, dict)
+    else:
+        return None
+    if not observed:
+        return None
+    try:
+        verdict = oracle.evaluate(episode, case)
+    except Exception:
+        return None
+    return verdict if verdict.verdict in (outcome_mod.SUCCESS, outcome_mod.FAILURE) else None
 
 
 # --------------------------------------------------------------------------

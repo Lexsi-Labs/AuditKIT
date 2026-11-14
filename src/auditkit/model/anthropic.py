@@ -1,11 +1,11 @@
 """Anthropic model backend (optional extra: auditkit[anthropic])."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
 
@@ -38,13 +38,19 @@ class AnthropicModel(Model):
     name = "anthropic"
 
     def __init__(self, model: str = "claude-sonnet-4-20250514", api_key: str | None = None,
-                 name: str = "anthropic", **kwargs: Any) -> None:
+                 name: str = "anthropic",
+                 identity_extra: Sequence[str] = (), **kwargs: Any) -> None:
         reject_generation_kwargs(kwargs, "AnthropicModel")
         self._model_name = model
         self._extra_kwargs = kwargs
+        self._identity_extra = tuple(identity_extra)
         self._client = None
         self._api_key = api_key
         self.name = name
+
+    def identity(self) -> dict:
+        # base_url and an allowlist of extra kwargs (see remote_identity); the rest stay out.
+        return {**super().identity(), **remote_identity(self, None, env_base=("ANTHROPIC_BASE_URL",))}
 
     def _ensure_client(self) -> None:
         if self._client is not None:

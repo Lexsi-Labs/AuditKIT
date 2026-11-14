@@ -4,6 +4,15 @@
 
 ### Added
 
+- `ak.multilingual_refusal`, `ak.refusal_scorer` and the `refusal_multilingual` red-team detector:
+  refusal phrases in English, Hindi, Hinglish, Bengali, Tamil, Arabic and Swahili. `RefusalDetector`
+  is English-only. The language comes from `sample.metadata["lang"]` or `sample.task`, and a
+  language with no patterns is `not_tested`. The scorer reads the answer without its `<think>`
+  reasoning, and an empty answer or a reply that is only reasoning is not measured. Phrases are
+  matched in the first sentence of the answer, as `RefusalDetector` does, so an answer that
+  mentions legality later is not a refusal. The scorer is also the registered metric
+  `multilingual_refusal`. More Hindi and Hinglish refusal openings (`माफ़ी चाहता हूँ`,
+  `उचित नहीं`, `नहीं दे सकती`).
 - `JsonSchemaValid` (`json_schema_valid`) and `FieldF1` (`field_f1`, with `field_precision` and
   `field_recall`): metrics for structured extraction. `JsonSchemaValid` validates the output against
   a JSON Schema with the `jsonschema` package (new optional extra `auditkit[jsonschema]`) or a
@@ -19,6 +28,11 @@
   server is probed once (`GET /models` `owned_by`) and recorded in
   `metadata["api_server"]`; only `APIModel(server="sglang"|"vllm")` clears the note.
   New `Model.run_notes()` hook for backend facts about a run.
+- `ak.load_multijail()`, `ak.load_xstest()` and `ak.load_global_mmlu()`: return samples with
+  `task` set to the language, so `per_task_deltas()` reports each metric per language. Translations
+  of one item share `metadata["group"]`, and each loader records its pinned dataset revision.
+  XSTest is read from the authors' `Paul/XSTest`; `repo="walledai/XSTest"` works too, and a repo
+  with several splits takes `split=`. Needs `auditkit[interop]`.
 - `ak.load_bfcl()` and `ak.bfcl_arg_match`: BFCL v3's 11 single-turn
   categories plus the two irrelevance ones, read from the Hub files (JSON Lines). The
   accepted-value lists stay on the reference, and `bfcl_arg_match` compares against

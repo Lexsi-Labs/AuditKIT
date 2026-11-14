@@ -28,6 +28,6 @@ Stdlib only -- AgentTune, torch and transformers are never imported here.
   join keys; `join_evidence` attaches it to an episode only on explicit ids;
   `lineage_sidecar` summarizes sample lineage. No producer library is imported.
 
-See [`docs/agent_eval.md`](../../../docs/agent_eval.md) for the guide and
-[`examples/agent_eval_offline.py`](../../../examples/agent_eval_offline.py) for
+See [`docs/agent_eval.md`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/docs/agent_eval.md) for the guide and
+[`examples/agent_eval_offline.py`](https://github.com/Lexsi-Labs/AuditKIT/blob/main/examples/agent_eval_offline.py) for
 a runnable offline example.

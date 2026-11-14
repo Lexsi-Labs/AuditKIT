@@ -1,11 +1,11 @@
 """LiteLLM unified API backend (optional extra: auditkit[litellm])."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
 
@@ -29,11 +29,25 @@ class LiteLLMModel(Model):
     threadsafe = True
 
     def __init__(self, model: str = "gpt-4o-mini",
-                 name: str = "litellm", **kwargs: Any) -> None:
+                 name: str = "litellm",
+                 identity_extra: Sequence[str] = (), **kwargs: Any) -> None:
         reject_generation_kwargs(kwargs, "LiteLLMModel")
         self._model_name = model
         self._extra_kwargs = kwargs
+        self._identity_extra = tuple(identity_extra)
         self.name = name
+
+    def _env_base_names(self) -> tuple[str, ...]:
+        """The base-URL variables litellm reads for this model's provider (``azure/...`` ->
+        ``AZURE_API_BASE``, no prefix -> OpenAI's)."""
+        provider = str(self._extra_kwargs.get("custom_llm_provider")
+                       or (self._model_name.split("/", 1)[0] if "/" in self._model_name else "openai"))
+        p = provider.upper().replace("-", "_")
+        return (f"{p}_API_BASE", f"{p}_BASE_URL") + (("AZURE_OPENAI_ENDPOINT",) if p == "AZURE" else ())
+
+    def identity(self) -> dict:
+        # api_base and an allowlist of extra kwargs (see remote_identity); the rest stay out.
+        return {**super().identity(), **remote_identity(self, None, env_base=self._env_base_names())}
 
     def generate(self, requests: list[Request]) -> list[Result_]:
         try:

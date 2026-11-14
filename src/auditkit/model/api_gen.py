@@ -11,7 +11,8 @@ from urllib.parse import urlsplit
 
 from . import (
     Model, Request, Result_, Generated, generate_each, resolve_params, resolve_messages,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs, split_session_kwargs,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, split_session_kwargs, _identity_value,
+    _scrub_url,
 )
 from ..errors import ExtraNotInstalled, ModelError
 from ..types import Capability
@@ -237,14 +238,14 @@ class APIModel(Model):
         # api_base and chat_template change results (which server answers, tool
         # support, and whether the trace is parsed), so they must enter the run
         # fingerprint or the same api:<model> spec against a different server
-        # returns a stale cached result. api_key stays out; _extra_kwargs are
-        # non-secret body fields that only feed the sha256 fingerprint.
+        # returns a stale cached result. api_key stays out, and so does any secret-like
+        # value in _extra_kwargs (see _identity_value).
         # A declared server changes the run's metadata (which fields are
         # unverified), so it keys the cache; left out when undeclared, so
         # existing api: fingerprints are unchanged.
         declared = {"server": self._server[0]} if self._server and self._server[1] == "declared" else {}
-        return {**super().identity(), "api_base": self._api_base,
-                "chat_template": self._chat_template, "extra": self._extra_kwargs, **declared}
+        return {**super().identity(), "api_base": _scrub_url(self._api_base),
+                "chat_template": self._chat_template, "extra": _identity_value(self._extra_kwargs), **declared}
 
     def _server_kind(self) -> tuple[str | None, str]:
         """(kind, source): declared, or probed once from ``GET /models``.

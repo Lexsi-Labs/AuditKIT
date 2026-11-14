@@ -6,6 +6,15 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Added
 
+- `ak.multilingual_refusal`, `ak.refusal_scorer` and the `refusal_multilingual` red-team detector:
+  refusal phrases in English, Hindi, Hinglish, Bengali, Tamil, Arabic and Swahili. `RefusalDetector`
+  is English-only. The language comes from `sample.metadata["lang"]` or `sample.task`, and a
+  language with no patterns is `not_tested`. The scorer reads the answer without its `<think>`
+  reasoning, and an empty answer or a reply that is only reasoning is not measured. Phrases are
+  matched in the first sentence of the answer, as `RefusalDetector` does, so an answer that
+  mentions legality later is not a refusal. The scorer is also the registered metric
+  `multilingual_refusal`. More Hindi and Hinglish refusal openings (`माफ़ी चाहता हूँ`,
+  `उचित नहीं`, `नहीं दे सकती`).
 - Discord link (`https://discord.gg/MhVUGVYE8q`, Lexsi Labs) in the docs footer, the README badges and
   community section, the FAQ, and the PyPI project URLs, which now also list the docs site, the issue
   tracker and `Homepage` pointing at `auditkit.lexsi.ai`.
@@ -19,6 +28,11 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   server is probed once (`GET /models` `owned_by`) and recorded in
   `metadata["api_server"]`; only `APIModel(server="sglang"|"vllm")` clears the note.
   New `Model.run_notes()` hook for backend facts about a run.
+- `ak.load_multijail()`, `ak.load_xstest()` and `ak.load_global_mmlu()`: return samples with
+  `task` set to the language, so `per_task_deltas()` reports each metric per language. Translations
+  of one item share `metadata["group"]`, and each loader records its pinned dataset revision.
+  XSTest is read from the authors' `Paul/XSTest`; `repo="walledai/XSTest"` works too, and a repo
+  with several splits takes `split=`. Needs `auditkit[interop]`.
 - `ak.load_bfcl()` and `ak.bfcl_arg_match`: BFCL v3's 11 single-turn
   categories plus the two irrelevance ones, read from the Hub files (JSON Lines). The
   accepted-value lists stay on the reference, and `bfcl_arg_match` compares against
@@ -107,9 +121,57 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 - `check_compat()`: warns for sglang on Python 3.13, and for accelerate < 1.0 with
   transformers 5; with `check_cuda=True`, errors on a torchaudio that won't load
   against torch's CUDA.
+- Paired bootstrap confidence interval (#43): `paired_bootstrap` returns `ci = [lo, hi]`, percentile bounds on
+  `delta` from the un-centred resamples, and `ci_level` (`confidence=0.95` by default). The same resamples as
+  before, so p-values are unchanged. `RunComparison.significance()`, `CompareResult.significance()` and
+  `Experiment.significance()` take `confidence=` and return it; the last two report `delta` as baseline minus
+  candidate, and their `ci` is flipped to match. `docs/GUIDE.md` no longer calls the test a "conservative
+  heuristic" that is not centred on zero (true before the #20 fix); it describes the centred test, the
+  p-value floor and the interval.
+- Agent eval: opt-in `AgentEvalSpec(score_partial_on_error=True)` (CLI config key of the same name) (#45). A run
+  that ended with a target error still gets its `FinalStateAssertion` / `ArtifactAssertion` verdict (or an
+  `AssertionOracle`'s companion `state_oracle`) when that evidence was observed. The row keeps
+  `status="target_error"` and its errors, the outcome carries `scored_on_error`, and the summary's
+  `Endpoint errors` line says how many were scored. Answers, custom predicates and judges are not run on
+  errored runs. Off by default; the run identity changes only when it is on.
 
 ### Fixed
 
+- `evaluate(scorers=...)`: a bare `(sample, output)` function raised
+  `FunctionScorer.__init__() missing ... 'direction'` although the docstring and the guide said it was wrapped (#49).
+  A scorer has no default direction, because a wrong one flips every comparison verdict, so it now raises a
+  `TypeError` that names the fix (`@ak.scorer(direction=...)`, or `ak.scorer(fn, direction=...)`), and a `Metric`
+  class passed instead of an instance is told to instantiate it. The docstring and the guide say the same.
+- **Cached results change for local weights (re-run once).** The run fingerprint of `hf:` and `vllm:` models
+  covered only the model string, so a run with another `batch_size`, `dtype`, `device`, `revision` or quantization
+  config, or after new weights were written into the same local folder, was served the earlier run's cached
+  outputs (#50). The fingerprint now includes the load and call kwargs (never the token), an explicit
+  `device`, and, for a local folder or file, each top-level file's name, size and modification time. A hub model
+  with default settings keeps its fingerprint; a local checkpoint, or any run with extra kwargs, gets a new one,
+  so its cached run is not replayed once. `device="auto"` and key order stay out. Not covered: a hub id's
+  moving `main` (pin `revision=`) and the base model behind a PEFT adapter folder.
+- **Cached results change for hosted APIs with extra kwargs (re-run once).** The same gap existed for `openai:`,
+  `anthropic:`, `groq:`, `litellm:`, `openrouter:` and `lexsi:`: the fingerprint ignored the endpoint and the extra
+  kwargs, so a run with another `api_base` / `base_url`, `organization`, `project`, `api_version`, `reasoning_effort`,
+  `thinking` or `response_format` was served another deployment's cached outputs. The fingerprint now includes the
+  endpoint (scheme, host and path only, when it is not the backend's default; a path segment that looks like a credential, such as `/v1/sk-...` or `/key/<token>`, is redacted) and an allowlist of kwargs that change
+  what answers (`response_format`, `reasoning_effort`, `thinking`, `tools`, `tool_choice`, `logprobs`, `service_tier`,
+  `api_version`, `organization`, `project`, `deployment`, `custom_llm_provider`, ...). Everything else, headers and
+  credentials included, stays out whatever its name or value, so a secret cannot reach the cache key and rotating a
+  key does not invalidate it. One warning names the kwargs left out; `identity_extra=[...]` on those backends adds
+  them (values that look like credentials are still redacted). Timeouts and retry counts stay out. A default
+  configuration keeps its fingerprint; a run with an allowlisted kwarg or a non-default endpoint gets a new one,
+  once. `api:` and `hf:`/`vllm:` keep every kwarg but redact secret-like names (`api_key`, `apiKey`, `x-api-key`,
+  header pairs), key-looking values (`sk-`, `ghp_`, JWTs, armoured `-----BEGIN` blocks) and URL userinfo, `;`
+  parameters, fragments and query values. An endpoint the client reads from the environment when none is passed
+  (`OPENAI_BASE_URL` / `OPENAI_API_BASE`, `ANTHROPIC_BASE_URL`, litellm's per-provider `*_API_BASE` / `*_BASE_URL` and
+  `AZURE_OPENAI_ENDPOINT`) counts as `api_base`, reduced the same way; keys and tokens are never read from the
+  environment. With none of these set the fingerprint is unchanged.
+- Agent eval: a `final_state` dict attached to a recorded episode after import (`episode.final_state = {...}`,
+  as the guide shows) was used by `FinalStateAssertion` while the row still reported `coverage["final_state"]`
+  as `unavailable`. The row now reports it `observed`; an importer's `inferred` is kept (#44). The guide says how a
+  missing key (`unknown`) differs from a key set to `None` (compared as a value), and the links in
+  `auditkit/agent_eval/README.md` point at GitHub, since `docs/` and `examples/` are not in the wheel.
 - The Colab notebooks under `examples/` and `tests/*_suite` install AuditKIT from PyPI (or clone this repository
   at `main`) instead of cloning a repository that is not public with a token, and comments, docstrings and READMEs
   no longer point at pull requests and branches outside this repository.

@@ -277,7 +277,8 @@ result = ak.evaluate(
 | `model` = callable | `CallableModel(fn)` |
 | `scorers` = `None` | `[ExactMatch()]` if any sample has a `target`, else `[]` |
 | `scorers` = `"exact_match"` etc. | built-in map, else `METRICS` registry lookup (`ValueError` if unknown) |
-| `scorers` = `@scorer` fn / bare callable | wrapped as `FunctionScorer` → `ScorerMetric` |
+| `scorers` = `@scorer` fn / `FunctionScorer` | wrapped as `ScorerMetric` |
+| `scorers` = bare callable | `TypeError`: it has no `direction`; use `@scorer(direction=...)` or `scorer(fn, direction=...)` |
 | `scorers` = `Metric` | used as-is |
 | `adapter` = `None` | `GenerationAdapter()` |
 | `adapter` = `"auto"` | `route_adapter(samples)` — shape-based ([§9](#9-adapters-and-routing)) |
@@ -436,6 +437,8 @@ Every knob, with its real default:
 ¹ `PrecomputedModel.reads_actual_output = True` — the Runner special-cases it and never calls `generate()`.
 ² OpenAI/Anthropic don't read the env var in AuditKIT code — they pass `api_key=None` and let the vendor SDK read it.
 ³ `VLLMModel` is marked `is_local=True` but intentionally does **not** override `model_info()`, so it reports identity-only (no size). A known gap.
+
+**What a hosted backend puts in the run fingerprint.** `openai:`, `anthropic:`, `groq:`, `litellm:`, `openrouter:` and `lexsi:` fingerprint the model, the endpoint (`api_base` / `base_url` reduced to scheme, host and path with credential-like path segments redacted, when not the backend's default, including one the client reads from `OPENAI_BASE_URL`, `ANTHROPIC_BASE_URL` or litellm's per-provider `*_API_BASE`) and an allowlist of constructor kwargs that change what answers: `response_format`, `reasoning_effort`, `thinking`, `tools`, `tool_choice`, `logprobs`, `service_tier`, `api_version`, `organization`, `project`, `deployment`, `custom_llm_provider` and similar. Headers, auth, timeouts and any other kwarg stay out, so a credential cannot reach the cache key; one warning names the kwargs left out. A kwarg that changes your outputs and is not on the list goes in with `identity_extra=["name", ...]` (its value is still redacted if it looks like a credential), or run with `cache=False`.
 
 **`threadsafe=True`** (safe to call concurrently): `CallableModel`, `PrecomputedModel`, `LiteLLMModel`. Explicitly `False`: `VLLMModel`, `APIModel`, `GroqModel`, `OpenRouterModel`. Default `False`: everything else. Only `threadsafe` models actually parallelize at `concurrency>1`.
 
@@ -829,11 +832,13 @@ res = ak.compare_models([...], dataset, scorers=[...], model_names=[...], config
 
 Per-model failures are isolated into `res.errors[name]` — a crashing model never takes down the comparison; winner selection is direction-aware (uses `min` for MINIMIZE metrics).
 
-### Significance — read this caveat
+### Significance
 
-`significance()` / `CompareResult.significance()` / `Experiment.significance()` all call `paired_bootstrap(score_pairs(...))`, aligned by `sample_id`. The result dict: `{n, mean_baseline, mean_candidate, delta, p_value, significant}` (`significant = p < 0.05`, deterministic with `seed=42`).
+`significance()` / `CompareResult.significance()` / `Experiment.significance()` all call `paired_bootstrap(score_pairs(...))`, aligned by `sample_id`. The result dict: `{n, mean_baseline, mean_candidate, delta, p_value, significant, ci, ci_level}` (`significant = p < 0.05`, deterministic with `seed=42`). `ci = [lo, hi]` is a percentile bootstrap interval on `delta` at `ci_level` (`confidence=0.95` by default, configurable on each `significance()`). `CompareResult.significance(a, b)` and `Experiment.significance()` report `delta` as baseline minus candidate (`mean_a - mean_b`, best run minus runner-up), and their `ci` is on that same difference.
 
-> **It's a conservative heuristic, not a rigorous test.** The bootstrap resamples the observed per-sample diffs and compares each resample's mean magnitude to the observed mean — the reference distribution is centered on the observed effect, not a null centered at zero. So a large but *low-variance* difference (every sample flips the same way) can report `significant=False`. Treat it as a rough guard.
+How it works: the per-sample differences (candidate minus baseline) are centred on zero, which is the null of no difference, and resampled with replacement `n_resamples` times (1000 by default). The two-sided p-value is `(count + 1) / (n_resamples + 1)`, where `count` is the number of resampled means at least as far from zero as the observed `delta`; ties count as extreme, so 0/1 scores give the same p-value on every Python version. The smallest p-value it can report is `1 / (n_resamples + 1)`, about 0.001 by default, so a consistent difference, even one where every sample moves the same way, is reported `significant=True`. The interval uses the same resampled indices without the centring, so it is centred on the observed `delta`.
+
+> **Limits.** This is a bootstrap test, not an exact permutation or sign test. The percentile interval covers a little under its nominal level on small samples: about 95% at 30 pairs in the test suite's synthetic check, lower with fewer pairs. Fewer than 2 aligned pairs returns `{"error": ...}`. `CompareResult` tests each pair of models on its own, with no multiple-comparisons correction.
 
 ### Experiment tracking
 
@@ -850,7 +855,7 @@ exp.log_mlflow(tracking_uri=...)  # optional, needs auditkit[mlflow]
 
 ## 13. Red-teaming (a basic probe suite)
 
-AuditKIT ships a basic red-team suite: four probes (`prompt_injection`, `jailbreak`, `encoding`, `refusal`), four detectors (`keyword`, `refusal`, `injection_success`, `system_prompt_leak`), `RedTeamRunner`, and `auditkit redteam` (`--model`, `--probes`, `--detectors`, `--output`):
+AuditKIT ships a basic red-team suite: four probes (`prompt_injection`, `jailbreak`, `encoding`, `refusal`), five detectors (`keyword`, `refusal`, `refusal_multilingual`, `injection_success`, `system_prompt_leak`), `RedTeamRunner`, and `auditkit redteam` (`--model`, `--probes`, `--detectors`, `--output`):
 
 ```bash
 auditkit redteam --model openai:gpt-4o-mini --probes prompt_injection,jailbreak
@@ -864,6 +869,9 @@ print(RedTeamRunner(model="openai:gpt-4o-mini").run(probes=["jailbreak"]).summar
 Detectors read the answer with any `<think>…</think>` reasoning removed. A reply that cannot be judged
 (empty, reasoning only, or a generation error) is marked `invalid`: it is neither passed nor failed,
 `invalid_probes` counts it, and `pass_rate` is passed over judged checks (`None` when none could be judged).
+A check fails when its detector fires. For `refusal` and `refusal_multilingual` that means the model
+refused, the failure on the `refusal` probe's harmless requests; on harmful prompts, read a refusal
+detector's failures as refusals.
 
 It's deliberately small: fixed probe lists and keyword/pattern detectors, not an attack
 generator. For broad adversarial testing, Garak, Promptfoo or DeepTeam go much further.
@@ -958,7 +966,7 @@ A **`Scenario`** yields `Sample`s. Three ways in:
 - **`CallableScenario(fn)`** — wraps a zero-arg callable, re-invoked on each read.
 - **Registered scenarios** — looked up by name from the `SCENARIOS` registry when you pass `dataset="mmlu"`.
 
-**Data loaders** (in `__all__`): `load_csv`, `load_hf`, `load_croissant`. `load_hf`/`load_croissant` need `auditkit[interop]` (`datasets` + `mlcroissant`).
+**Data loaders** (in `__all__`): `load_csv`, `load_hf`, `load_croissant`, `load_multijail`, `load_xstest`, `load_global_mmlu`. `load_hf`/`load_croissant` need `auditkit[interop]` (`datasets` + `mlcroissant`).
 
 > **The built-in native scenarios.** The `scenarios/` package registers 6 (`mmlu`, `gsm8k`, `arc`, `hellaswag`, `truthfulqa`, `humaneval`), all needing `auditkit[interop]`. All six load (2026-10-01): MMLU 14,042, GSM8K 1,319, ARC-Challenge 1,172, HellaSwag 10,042, TruthfulQA 817 and HumanEval 164 samples. They use namespaced Hub ids now (`cais/mmlu`, `openai/gsm8k`, `allenai/ai2_arc`, `Rowan/hellaswag`, `truthfulqa/truthful_qa`, `openai/openai_humaneval`), and HumanEval no longer uses the nonexistent `TaskKind.CODE`. HumanEval loads as a generative task whose target is the reference solution: AuditKIT has no code-execution metric, so it can't score pass@k. **For academic benchmarks, `ak.run_lmeval()` (the lm-eval engine) is still the more complete path** (standard prompts, few-shot, and lm-eval's own scoring, including HumanEval execution).
 
@@ -1023,7 +1031,7 @@ A single list of everything flagged inline above. None of these break the *corre
 - `toxicity_score`/`hate_speech_score` with `use_model=False` — keyword blacklist.
 
 **Statistical rigor**
-- `paired_bootstrap` significance is a conservative heuristic (can under-report significance for low-variance differences), not an exact permutation/sign test.
+- `paired_bootstrap` is a bootstrap test centred on the null of no difference, with a percentile interval on `delta`; it is not an exact permutation or sign test, and the interval runs a little under its nominal coverage on small samples (see [Significance](#significance)).
 - `CompareResult` runs an independent p-test per model pair with no multiple-comparisons correction; `winner()` ignores significance (picks the raw best mean).
 
 **bert_score** hits an upstream `bert_score`-vs-`transformers>=5` tokenizer incompatibility on its own — `BertScore.score()` works around it with a scoped monkeypatch clamping the affected tokenizer's `model_max_length`; `cosine_similarity` isn't affected.

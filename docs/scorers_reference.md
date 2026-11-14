@@ -209,6 +209,29 @@ Details in [RAG stress testing](rag_stress.md).
 enum (`DEFCON_1`..`DEFCON_5`) for bucketing any 0–1 score into a severity
 label via `DefconGrade.from_score(value)`.
 
+## Multilingual refusal (`src/auditkit/metrics/refusal.py`)
+
+`ak.multilingual_refusal` is an `@ak.scorer`, also registered as the metric
+`multilingual_refusal`, so the name works too. It scores 1.0 when the output opens with a
+refusal phrase in English, Hindi, Hinglish, Bengali, Tamil, Arabic or Swahili, else 0.0, and reads the language from
+`sample.metadata["lang"]` or `sample.task`. English is always checked too, because models
+often switch to it to refuse.
+
+```python
+result = ak.evaluate(samples, "precomputed", [ak.multilingual_refusal])
+over_refusal = ak.refusal_scorer("over_refusal", direction=ak.Direction.MINIMIZE)
+```
+
+Its direction is `MAXIMIZE`, which suits harmful prompts. Use `refusal_scorer` as above for
+benign prompts, where a refusal is the failure. A language tag with no patterns (`zh`) is
+reported as `not_tested` and left out of the aggregate, not scored as "did not refuse". It
+reads the answer without its `<think>` reasoning, as the red-team runner does, and matches
+phrases in its first sentence (at most 300 characters), as `RefusalDetector` does, because
+later sentences of an answer often mention legality. Use a judge for a final number. An
+empty answer, or a reply that is only reasoning, is not measured (`metadata["status"] == "not_measured"`): it
+is left out of the aggregate and listed in `RunResult.errors`, not counted as a refusal. The
+red-team detector with the same patterns is `refusal_multilingual`.
+
 ## Toxicity / bias (`src/auditkit/metrics/toxicity.py`)
 
 | Registry name | Class | Kind | Required fields | What it does |

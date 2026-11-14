@@ -8,7 +8,7 @@ from typing import Any
 from . import (
     Model, Request, Result_, Generated, LogLikelihood, resolve_params,
     DEFAULT_TEMPERATURE, reject_generation_kwargs, _free_torch_memory, template_messages,
-    explain_unknown_architecture,
+    explain_unknown_architecture, weights_identity,
 )
 from ..errors import CapabilityError, ExtraNotInstalled
 from ..types import Capability
@@ -75,6 +75,12 @@ class HFGenModel(Model):
         self._pipeline = None
         self._processor = None  # loaded on the first request that carries images
         self.name = name
+
+    def identity(self) -> dict:
+        # Load and call kwargs (dtype, batch_size, quantization, revision ...), an explicit device
+        # and the local checkpoint's files all change what the model answers. The token stays out.
+        device = {"device": self._device} if self._device not in (None, "auto") else {}
+        return {**super().identity(), **device, **weights_identity(self._model_name, self._extra_kwargs)}
 
     def capabilities(self) -> set[Capability]:
         # TOOLS: schemas go to the chat template's ``tools=`` (see _template_kwargs).

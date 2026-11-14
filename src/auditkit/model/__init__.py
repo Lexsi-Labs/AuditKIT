@@ -15,10 +15,15 @@ from __future__ import annotations
 import functools
 import hashlib
 import importlib
+import math
+import os
+import re
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from collections.abc import Mapping
+from typing import Any, Callable, Optional, Sequence
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 from ..errors import AuditKitError, CapabilityError, ExtraNotInstalled
 from ..runspec import RunConfig
@@ -431,6 +436,252 @@ class Model(ABC):
         string in ``self._model_name``, so including it here fixes this for
         all of them at once, with no per-backend override needed."""
         return {"name": self.name, "model": getattr(self, "_model_name", None)}
+
+
+# --- Secret handling for fingerprints --------------------------------------------------------
+# Fail closed: a value is kept out of the fingerprint when its key *or* the value itself looks
+# like a credential. Only the name is kept (so adding a key still re-keys the run); the value
+# becomes "<redacted>", never a hash. A rotated key therefore does not invalidate the cache.
+_REDACTED = "<redacted>"
+
+# Matched as substrings of the key lower-cased with camelCase split and separators dropped, so
+# ``api_key``, ``apiKey``, ``x-api-key``, ``AccessToken``, ``clientSecret`` and ``Authorization``
+# all hit.
+_SECRET_WORDS = ("key", "secret", "token", "password", "passwd", "passphrase", "credential",
+                 "auth", "cookie", "bearer", "signature")
+# Exactly these names contain a secret word but carry a count, a tokenizer setting or a name, not a
+# credential, and change outputs. Matched on the whole compact name, so ``access_tokens`` or
+# ``apiauthors`` are not exempt.
+_SAFE_KEYS = frozenset({
+    "maxtokens", "mintokens", "numtokens", "budgettokens", "maxnewtokens", "minnewtokens",
+    "maxcompletiontokens", "maxoutputtokens", "tokenizerkwargs", "tokentypeids",
+    "keyword", "keywords", "author", "authors"})
+# Keys whose values are identifiers, not credentials (a 40-hex commit would otherwise look like a key).
+_ID_KEY = re.compile(r"revision$|^(model|engine|deployment(id)?|organi[sz]ation|project|apiversion)$")
+# Query parameters whose values are settings, not credentials.
+_SAFE_QUERY = frozenset({"api-version", "api_version", "version", "deployment", "deployment_id",
+                         "model", "region", "location"})
+# Values that are credentials whatever they are called.
+_KEY_PREFIX = r"(?:sk-|sk_|pk-|gsk_|hf_|ghp_|gho_|ghs_|github_pat_|xox[abprs]-|AKIA|ASIA|AIza)"
+_SECRET_VALUE = re.compile(
+    rf"^(?:{_KEY_PREFIX}|eyJ)"                                   # a provider key or a JWT, any length
+    rf"|(?<![A-Za-z0-9]){_KEY_PREFIX}[A-Za-z0-9_\-]{{8,}}"       # the same inside a longer string
+    r"|eyJ[A-Za-z0-9_\-]{6,}\.[A-Za-z0-9_\-]{6,}"
+    r"|^(?:Bearer|Basic)\s|\b(?i:bearer|basic)\s+\S{8,}"
+    r"|-----BEGIN(?! CERTIFICATE)")           # any armoured block (PGP, RSA/EC/OPENSSH keys, odd or cut headers); a public certificate stays
+_HEADER_STRING = re.compile(r"\s*([^:=\s]{1,40})\s*([:=])\s*(\S.*)", re.S)
+_PLAIN_ID = re.compile(r"[A-Za-z0-9_.:\-]{1,64}")
+_KEYLIKE = re.compile(r"[A-Za-z0-9_\-+=.]{24,}")   # no "/" or spaces: model ids, paths and prose stay
+
+
+def _compact(key: Any) -> str:
+    """``apiKey`` / ``x-api-key`` / ``API_KEY`` -> ``apikey`` / ``xapikey`` / ``apikey``."""
+    return re.sub(r"[-_. ]+", "", re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", str(key)).lower())
+
+
+def _secret_key(key: Any) -> bool:
+    c = _compact(key)
+    return any(w in c for w in _SECRET_WORDS) and c not in _SAFE_KEYS
+
+
+def _secret_value(text: str, key: Any = None) -> bool:
+    if _SECRET_VALUE.search(text):
+        return True
+    if key is not None and _ID_KEY.search(_compact(key)):
+        return False
+    if not _KEYLIKE.fullmatch(text) or not (any(c.isdigit() for c in text) and any(c.isalpha() for c in text)):
+        return False
+    counts = {c: text.count(c) for c in set(text)}
+    entropy = -sum(n / len(text) * math.log2(n / len(text)) for n in counts.values())
+    return entropy >= 3.5
+
+
+def _bare_path(path: str) -> str:
+    """*path* without ``;name=value`` parameters, a trailing slash, or any segment that could be a
+    credential (``/v1/sk-...``, ``/hf_...``, a JWT, a long hex or base64 token, or the segment after
+    ``/key/`` or ``/token/``): those become ``<redacted>``. Ordinary paths (``/v1``,
+    ``/openai/deployments/gpt-4o``) are kept as they are."""
+    out, prev = [], ""
+    for seg in re.sub(r";[^/]*", "", path).split("/"):
+        plain = unquote(seg)                                 # %73k-... is sk-...
+        out.append(_REDACTED if seg and (_secret_value(plain) or (prev and _secret_key(prev))) else seg)
+        prev = plain
+    return "/".join(out).rstrip("/")
+
+
+def _scrub_url(url: str) -> str:
+    """*url* without credentials: no ``user:pass@``, no fragment, every query value blanked
+    (``&`` and ``;`` separated) except version-like settings, no trailing slash, so
+    ``https://h/v1`` and ``https://h/v1/`` agree."""
+    try:
+        parts = urlsplit(url)
+        host = parts.netloc.rpartition("@")[2]
+        pairs = [q.partition("=") for q in re.split(r"[&;]", parts.query) if q]
+        query = "&".join(
+            (f"{k}={v if k.lower() in _SAFE_QUERY and not _secret_value(v) else _REDACTED}" if sep
+             else (k if k.lower() in _SAFE_QUERY else _REDACTED))        # a bare ``?sk-abc`` or ``?token``
+            for k, sep, v in pairs)
+        return urlunsplit((parts.scheme, host, _bare_path(parts.path), query, ""))
+    except ValueError:
+        return _REDACTED
+
+
+def _pairs(value: Any) -> Optional[list]:
+    """*value* as ``[(name, value), ...]`` when it is a mapping or a list/tuple of 2-item
+    (name, value) pairs with string names, else None."""
+    if isinstance(value, Mapping):
+        return list(value.items())
+    if (isinstance(value, (list, tuple)) and value and all(
+            isinstance(p, (list, tuple)) and len(p) == 2 and isinstance(p[0], str) for p in value)):
+        return [tuple(p) for p in value]
+    return None
+
+
+def _identity_value(value: Any, key: Any = None) -> Any:
+    """*value* as JSON-stable data for a fingerprint, with secrets removed.
+
+    Mappings and lists of (name, value) pairs (``default_headers=[("Authorization", ...)]``) are
+    walked as key/value pairs; objects with ``to_dict()`` (``BitsAndBytesConfig``) are expanded; a
+    ``torch.dtype`` is its bare name; any other object is reduced to its type (its repr carries a
+    memory address). Anything under a secret-like key (``api_key``, ``apiKey``, ``Authorization``),
+    any string that looks like a credential, a ``Name: secret`` / ``name=secret`` string, and the
+    credentials in a URL become ``"<redacted>"``. Everything else is kept, normalised.
+    """
+    if value is None or isinstance(value, bool):
+        return value
+    if key is not None and _secret_key(key):
+        return _REDACTED                  # whatever the value is: a PIN is a number
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        if "://" in value:
+            value = _scrub_url(value)     # first, so a key in the userinfo does not hide the host
+        if _secret_value(value, key):
+            return _REDACTED
+        header = _HEADER_STRING.match(value)      # the first of ":" / "=" splits name from value
+        if "://" not in value and header and _secret_key(header.group(1)):
+            return f"{header.group(1)}{header.group(2)} {_REDACTED}"   # "Authorization: Bearer ...", "api_key=..."
+        return value.removeprefix("torch.")
+    pairs = _pairs(value)
+    if pairs is not None:
+        items = sorted(((str(k), _identity_value(v, k)) for k, v in pairs), key=lambda kv: (kv[0], str(kv[1])))
+        return dict(items) if isinstance(value, Mapping) else [list(kv) for kv in items]
+    if isinstance(value, (list, tuple)):
+        return [_identity_value(v) for v in value]
+    if isinstance(value, (set, frozenset)):
+        return sorted((_identity_value(v) for v in value), key=str)
+    to_dict = getattr(value, "to_dict", None)
+    if callable(to_dict):
+        try:
+            return _identity_value(to_dict())
+        except Exception:  # noqa: BLE001 -- fall through to the type name
+            pass
+    text = str(value)
+    return text.removeprefix("torch.") if " at 0x" not in text else type(value).__qualname__
+
+
+# Client settings that change how a call travels, never what the model answers.
+_TRANSPORT_ONLY = frozenset({"timeout", "request_timeout", "max_retries", "num_retries"})
+
+# Fail closed for hosted APIs: only these constructor kwargs (exact names) enter the fingerprint.
+# They change which model or deployment answers, or how. Everything else -- headers, auth,
+# client objects, unknown kwargs -- stays out, whatever its name or value, unless the caller lists
+# it in ``identity_extra=``. Generation settings (temperature, top_p, max_tokens, seed, stop) are
+# part of ``RunConfig`` and already in the fingerprint.
+_HOSTED_IDENTITY_KWARGS = frozenset({
+    "response_format", "reasoning_effort", "reasoning", "verbosity", "logprobs", "top_logprobs",
+    "logit_bias", "tools", "tool_choice", "parallel_tool_calls", "service_tier", "modalities",
+    "prediction", "thinking", "min_p", "repetition_penalty", "stop", "n", "max_completion_tokens",
+    "max_output_tokens", "api_version", "organization", "project", "deployment", "deployment_id",
+    "custom_llm_provider"})
+_URL_KWARGS = ("api_base", "base_url")
+_EXCLUDED_WARNED: set[tuple[str, tuple[str, ...]]] = set()
+
+
+def _url_base(url: str) -> str:
+    """scheme + host + path of *url*: no userinfo, ``;`` path parameters, query or fragment, no trailing slash."""
+    try:
+        parts = urlsplit(url)
+        return urlunsplit((parts.scheme, parts.netloc.rpartition("@")[2], _bare_path(parts.path), "", ""))
+    except ValueError:
+        return _REDACTED
+
+
+def remote_identity(model: "Model", api_base: Optional[str], default_base: Optional[str] = None,
+                    env_base: Sequence[str] = ()) -> dict[str, Any]:
+    """What a hosted-API backend adds to :meth:`Model.identity`, from an allowlist.
+
+    Included: the endpoint (``api_base`` / ``base_url``, reduced to scheme, host and path) when it
+    is not the backend's default, the kwargs named in ``_HOSTED_IDENTITY_KWARGS`` and any the
+    caller lists in ``identity_extra=``. Every other kwarg is left out, whatever it is called or
+    holds, so a credential cannot reach the fingerprint through a header, an unusual name or an
+    odd encoding; one warning names the left-out keys (never their values) so they can be opted
+    in. Timeouts and retry counts are left out silently. Included values still pass
+    :func:`_identity_value`, which redacts anything that looks like a credential, and an
+    ``organization`` / ``project`` / ``deployment`` / ``api_version`` must be a plain id. A default
+    configuration keeps its fingerprint. An endpoint the client would read from the environment
+    (``env_base``, base-URL variables only) counts as ``api_base``; keys and tokens are never read.
+    """
+    extra = dict(getattr(model, "_extra_kwargs", None) or {})
+    opted = frozenset(getattr(model, "_identity_extra", ()) or ())
+    out: dict[str, Any] = {}
+    urls = {"api_base": api_base or extra.get("api_base"), "base_url": extra.get("base_url")}
+    if not any(urls.values()):
+        # No endpoint was passed, so the client reads one from the environment (the first of
+        # ``env_base`` that is set), as the vendor SDK does. Only these base-URL variables are
+        # read, never a key or token.
+        urls["api_base"] = next((os.environ[v] for v in env_base if os.environ.get(v)), None)
+    for k, v in urls.items():
+        if v and (not default_base or _url_base(str(v)) != _url_base(default_base)):
+            out[k] = _url_base(str(v))
+    kept: dict[str, Any] = {}
+    for k, v in extra.items():
+        if k in _HOSTED_IDENTITY_KWARGS or k in opted:
+            plain_id = k in ("api_version", "organization", "project", "deployment", "deployment_id")
+            kept[k] = _REDACTED if plain_id and not (isinstance(v, str) and _PLAIN_ID.fullmatch(v)) \
+                else _identity_value(v, k)
+    if kept:
+        out["extra"] = dict(sorted(kept.items()))
+    left_out = tuple(sorted(k for k in extra if k not in _HOSTED_IDENTITY_KWARGS and k not in opted
+                            and k not in _URL_KWARGS and k not in _TRANSPORT_ONLY))
+    if left_out and (type(model).__name__, left_out) not in _EXCLUDED_WARNED:
+        _EXCLUDED_WARNED.add((type(model).__name__, left_out))
+        warnings.warn(
+            f"{type(model).__name__}: {list(left_out)} are not part of the run fingerprint, so a run that "
+            f"differs only there is served the earlier cached result. Pass identity_extra={list(left_out)} "
+            f"to include those that change outputs (credentials are redacted), or cache=False.",
+            stacklevel=3)
+    return out
+
+
+def weights_identity(model_name: Any, load_kwargs: dict[str, Any]) -> dict[str, Any]:
+    """What a local-weights backend adds to :meth:`Model.identity`.
+
+    Anything that can change the outputs belongs in the run fingerprint, or a second run is
+    served the first run's cached answers: the ``load_kwargs`` (``dtype``, ``batch_size`` and
+    padding, ``quantization_config``, ``revision``, ``attn_implementation``, extra generation
+    kwargs ...) and, when *model_name* is a local folder or file, a cheap signature of what is on
+    disk, so retraining into the same folder is not mistaken for the old model. The signature is
+    each top-level file's name, size and modification time (weights, ``config.json``, tokenizer,
+    ``generation_config.json``): copying the folder with ``cp`` re-keys it (a spare miss), the same
+    folder run again does not. Keys appear only when set, so a hub model with default settings
+    keeps its fingerprint. Not covered: a hub id's moving ``main`` (pin ``revision=``) and the
+    base model a PEFT adapter folder points to.
+    """
+    out: dict[str, Any] = {}
+    if load_kwargs:
+        out["extra"] = _identity_value(load_kwargs)
+    try:
+        path = os.fspath(model_name)
+        if os.path.isdir(path):
+            files = [e for e in os.scandir(path) if e.is_file() and not e.name.startswith(".")]
+            out["checkpoint"] = sorted([e.name, e.stat().st_size, e.stat().st_mtime_ns] for e in files)
+        elif os.path.isfile(path):
+            st = os.stat(path)
+            out["checkpoint"] = [[os.path.basename(path), st.st_size, st.st_mtime_ns]]
+    except (TypeError, OSError):      # not a path, or unreadable: nothing on disk to sign
+        pass
+    return out
 
 
 def _stable_capture_repr(value: Any) -> Optional[str]:

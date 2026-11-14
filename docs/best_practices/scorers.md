@@ -63,7 +63,9 @@ optional and there's no default to fall back on.
 - **Built-in metrics** (`ak.Equals`, `ak.F1Score`, `ak.Perplexity`, ...)
   already declare the right one — you don't set anything.
 - **`@ak.scorer`** requires `direction=` explicitly; the bare `@ak.scorer`
-  form (no parens) no longer works, since there'd be nowhere to put it:
+  form (no parens) no longer works, since there'd be nowhere to put it. A plain
+  function passed to `evaluate(scorers=...)` is refused for the same reason;
+  wrap an existing one with `ak.scorer(fn, direction=...)`:
 
   ```python
   import auditkit as ak
