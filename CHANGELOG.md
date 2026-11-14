@@ -150,6 +150,17 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   with default settings keeps its fingerprint; a local checkpoint, or any run with extra kwargs, gets a new one,
   so its cached run is not replayed once. `device="auto"` and key order stay out. Not covered: a hub id's
   moving `main` (pin `revision=`) and the base model behind a PEFT adapter folder.
+- **Cached results change for hosted APIs with extra kwargs (re-run once).** The same gap existed for `openai:`,
+  `anthropic:`, `groq:`, `litellm:`, `openrouter:` and `lexsi:`: the fingerprint ignored the endpoint and the extra
+  kwargs, so a run with another `api_base` / `base_url`, `organization`, `project`, `default_query` (Azure
+  `api-version`), `reasoning_effort`, `thinking`, `response_format` or proxy headers was served another
+  deployment's cached outputs. These now enter the fingerprint, normalised (key order, a trailing slash). Credentials
+  never do: a secret-like name (`api_key`, `token`, `Authorization`, `x-api-key`, `default_headers` entries, ...),
+  a key-looking value (`sk-`, `gsk_`, `hf_`, `Bearer ...`) and `user:pass@` or `?api_key=` in a URL are kept out and
+  only the name is recorded, so rotating a key does not invalidate the cache. Timeouts and retry counts stay out, as
+  do `site_url`, `app_name` and `mlflow_*`. A default configuration keeps its fingerprint; only a run that passes
+  extra kwargs or a non-default endpoint gets a new one, once. The same filter now covers `api:` and `hf:`/`vllm:`.
+  Not covered: a base URL or key read from the environment.
 - Agent eval: a `final_state` dict attached to a recorded episode after import (`episode.final_state = {...}`,
   as the guide shows) was used by `FinalStateAssertion` while the row still reported `coverage["final_state"]`
   as `unavailable`. The row now reports it `observed`; an importer's `inferred` is kept (#44). The guide says how a

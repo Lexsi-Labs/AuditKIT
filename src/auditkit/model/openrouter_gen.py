@@ -18,9 +18,11 @@ from typing import Any
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs, split_session_kwargs,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, split_session_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
+
+_DEFAULT_API_BASE = "https://openrouter.ai/api/v1"
 
 _KEY_MAP = {
     "temperature": "temperature",
@@ -64,7 +66,7 @@ class OpenRouterModel(Model):
         self,
         model: str = "openai/gpt-4o-mini",
         api_key: str | None = None,
-        api_base: str = "https://openrouter.ai/api/v1",
+        api_base: str = _DEFAULT_API_BASE,
         site_url: str | None = None,
         app_name: str | None = None,
         name: str = "openrouter",
@@ -83,6 +85,10 @@ class OpenRouterModel(Model):
         self._session_kwargs, self._extra_kwargs = split_session_kwargs(kwargs)
         self._session = None
         self.name = name
+
+    def identity(self) -> dict:
+        # site_url / app_name only label the caller on OpenRouter's dashboard
+        return {**super().identity(), **remote_identity(self._api_base, self._extra_kwargs, _DEFAULT_API_BASE)}
 
     def _ensure_session(self) -> None:
         if self._session is not None:

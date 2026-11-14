@@ -6,9 +6,11 @@ from typing import Any
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, DEFAULT_TEMPERATURE,
-    reject_generation_kwargs, split_session_kwargs,
+    reject_generation_kwargs, split_session_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
+
+_DEFAULT_API_BASE = "https://api.lexsi.ai/v1"
 
 # The Lexsi platform's real accepted parameter set beyond temperature/
 # max_tokens isn't documented in this codebase -- kept deliberately
@@ -43,7 +45,7 @@ class LexsiModel(Model):
         self,
         model: str = "lexsi-3.5",
         api_key: str | None = None,
-        api_base: str = "https://api.lexsi.ai/v1",
+        api_base: str = _DEFAULT_API_BASE,
         mlflow_tracking_uri: str | None = None,
         mlflow_experiment: str | None = None,
         name: str = "lexsi",
@@ -64,6 +66,10 @@ class LexsiModel(Model):
         self.name = name
         self._total_requests = 0
         self._total_latency_ms = 0.0
+
+    def identity(self) -> dict:
+        # mlflow_* only log the run
+        return {**super().identity(), **remote_identity(self._api_base, self._extra_kwargs, _DEFAULT_API_BASE)}
 
     def _ensure_session(self) -> None:
         if self._session is not None:

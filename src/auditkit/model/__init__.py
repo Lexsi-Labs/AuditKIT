@@ -16,10 +16,12 @@ import functools
 import hashlib
 import importlib
 import os
+import re
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from ..errors import AuditKitError, CapabilityError, ExtraNotInstalled
 from ..runspec import RunConfig
@@ -434,16 +436,51 @@ class Model(ABC):
         return {"name": self.name, "model": getattr(self, "_model_name", None)}
 
 
+# A key is secret-like when one of its words (split on - _ . space) is one of these, so
+# ``api_key``, ``x-api-key``, ``Authorization`` and ``access_token`` match while
+# ``max_completion_tokens`` and ``budget_tokens`` (plural, they change outputs) do not.
+_SECRET_KEY = re.compile(
+    r"(?i)(^|[-_. ])(api[-_]?key|key|secret|token|password|passwd|authorization|auth|cookie|"
+    r"credentials?|bearer|signature)($|[-_. ])")
+# Values that are credentials whatever they are called: provider key prefixes, bearer/basic
+# headers, JWTs.
+_SECRET_VALUE = re.compile(
+    r"^(sk-|sk_|pk-|gsk_|hf_|ghp_|gho_|github_pat_|xox[abp]-|AKIA|AIza|eyJ|Bearer\s|Basic\s)")
+_REDACTED = "<redacted>"
+
+
+def _scrub_url(url: str) -> str:
+    """*url* without credentials: no ``user:pass@``, secret-like query values blanked, no
+    trailing slash, so ``https://h/v1`` and ``https://h/v1/`` agree."""
+    try:
+        parts = urlsplit(url)
+        host = parts.netloc.rpartition("@")[2]
+        query = urlencode([(k, _REDACTED if _SECRET_KEY.search(k) else v)
+                           for k, v in parse_qsl(parts.query, keep_blank_values=True)])
+        return urlunsplit((parts.scheme, host, parts.path.rstrip("/"), query, ""))
+    except ValueError:
+        return _REDACTED
+
+
 def _identity_value(value: Any) -> Any:
-    """*value* as JSON-stable data for a fingerprint: containers recursed, objects with
-    ``to_dict()`` (``BitsAndBytesConfig``) expanded, a ``torch.dtype`` as its bare name, and
-    any other object reduced to its type (its repr carries a memory address)."""
+    """*value* as JSON-stable data for a fingerprint, with secrets removed.
+
+    Containers are recursed; objects with ``to_dict()`` (``BitsAndBytesConfig``) are expanded; a
+    ``torch.dtype`` is its bare name; any other object is reduced to its type (its repr carries a
+    memory address). A dict value under a secret-like key (``api_key``, ``Authorization``,
+    ``default_headers={"x-api-key": ...}``), a string that looks like a key, and the credentials
+    in a URL never enter the result: the name stays (so adding a key still re-keys the run), the
+    value is ``"<redacted>"``. A rotated key therefore does not invalidate the cache.
+    """
     if value is None or isinstance(value, (bool, int, float)):
         return value
     if isinstance(value, str):
-        return value.removeprefix("torch.")
+        if _SECRET_VALUE.match(value):
+            return _REDACTED
+        return _scrub_url(value) if "://" in value else value.removeprefix("torch.")
     if isinstance(value, dict):
-        return {str(k): _identity_value(v) for k, v in sorted(value.items(), key=lambda kv: str(kv[0]))}
+        return {str(k): _REDACTED if _SECRET_KEY.search(str(k)) else _identity_value(v)
+                for k, v in sorted(value.items(), key=lambda kv: str(kv[0]))}
     if isinstance(value, (list, tuple)):
         return [_identity_value(v) for v in value]
     if isinstance(value, (set, frozenset)):
@@ -456,6 +493,32 @@ def _identity_value(value: Any) -> Any:
             pass
     text = str(value)
     return text.removeprefix("torch.") if " at 0x" not in text else type(value).__qualname__
+
+
+# Client settings that change how a call travels, never what the model answers.
+_TRANSPORT_ONLY = frozenset({"timeout", "request_timeout", "max_retries", "num_retries"})
+
+
+def remote_identity(api_base: Optional[str], extra_kwargs: dict[str, Any],
+                    default_base: Optional[str] = None) -> dict[str, Any]:
+    """What a hosted-API backend adds to :meth:`Model.identity`.
+
+    The endpoint and the extra kwargs decide which deployment answers and how (``organization``,
+    ``project``, ``default_query={"api-version": ...}``, ``reasoning_effort``, ``thinking``,
+    ``response_format``, a proxy's routing headers ...), so they belong in the run fingerprint.
+    Everything goes through :func:`_identity_value`, so credentials (``api_key``, ``token``,
+    ``default_headers={"Authorization": ...}``, key-looking values, ``user:pass@`` in a URL) never
+    reach it. Left out: timeouts and retry counts. Keys appear only when set and ``api_base``
+    only when it is not the backend's own default, so a default configuration keeps its
+    fingerprint. Not covered: a base URL or key taken from the environment.
+    """
+    out: dict[str, Any] = {}
+    if api_base and _scrub_url(str(api_base)) != (_scrub_url(default_base) if default_base else None):
+        out["api_base"] = _scrub_url(str(api_base))
+    extra = {k: v for k, v in extra_kwargs.items() if k not in _TRANSPORT_ONLY}
+    if extra:
+        out["extra"] = _identity_value(extra)
+    return out
 
 
 def weights_identity(model_name: Any, load_kwargs: dict[str, Any]) -> dict[str, Any]:

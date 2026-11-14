@@ -138,6 +138,11 @@ def scorer(
 
         @scorer(direction=ak.Direction.MAXIMIZE, name="custom")
         def another(sample, output): ...
+
+    An existing function (a bare callable is not accepted by :func:`evaluate`) is wrapped with
+    ``scorer(fn, direction=...)``::
+
+        wrapped = ak.scorer(existing_fn, direction=ak.Direction.MINIMIZE)
     """
     if fn is not None:
         return FunctionScorer(fn, direction=direction, name=name or fn.__name__)

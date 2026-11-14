@@ -5,7 +5,7 @@ from typing import Any
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
 
@@ -53,6 +53,11 @@ class OpenAIModel(Model):
         self._api_key = api_key
         self._api_base = api_base
         self.name = name
+
+    def identity(self) -> dict:
+        # api_base and the extra kwargs (organization, project, default_query, reasoning_effort,
+        # response_format ...) change what answers; credentials are stripped (see remote_identity).
+        return {**super().identity(), **remote_identity(self._api_base, self._extra_kwargs)}
 
     def _ensure_client(self) -> None:
         if self._client is not None:

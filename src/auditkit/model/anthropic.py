@@ -5,7 +5,7 @@ from typing import Any
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
 
@@ -45,6 +45,11 @@ class AnthropicModel(Model):
         self._client = None
         self._api_key = api_key
         self.name = name
+
+    def identity(self) -> dict:
+        # base_url and the extra kwargs (thinking, default_query ...) change what answers;
+        # credentials are stripped (see remote_identity).
+        return {**super().identity(), **remote_identity(None, self._extra_kwargs)}
 
     def _ensure_client(self) -> None:
         if self._client is not None:

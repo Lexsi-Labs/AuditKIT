@@ -5,7 +5,7 @@ from typing import Any
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, remote_identity,
 )
 from ..errors import ExtraNotInstalled
 
@@ -34,6 +34,11 @@ class LiteLLMModel(Model):
         self._model_name = model
         self._extra_kwargs = kwargs
         self.name = name
+
+    def identity(self) -> dict:
+        # api_base, custom_llm_provider, extra_headers ... change what answers; credentials
+        # (api_key, Authorization headers) are stripped (see remote_identity).
+        return {**super().identity(), **remote_identity(None, self._extra_kwargs)}
 
     def generate(self, requests: list[Request]) -> list[Result_]:
         try:
