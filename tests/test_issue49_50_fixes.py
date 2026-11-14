@@ -107,6 +107,7 @@ def test_evaluate_does_not_replay_another_batch_size(ckpt):
 
 import json
 import warnings
+from urllib.parse import urlsplit
 
 from auditkit.model import _EXCLUDED_WARNED, _identity_value
 from auditkit.model.anthropic import AnthropicModel
@@ -390,7 +391,7 @@ def test_a_credential_in_the_url_path_never_reaches_the_identity(make, secret):
         ident = make(f"https://host.example{path}").identity()
         text = json.dumps(ident)
         assert secret not in text and secret.lstrip("%73") not in text, path
-        assert ident["api_base" if "api_base" in ident else "base_url"].startswith("https://host.example")
+        assert urlsplit(ident["api_base" if "api_base" in ident else "base_url"]).netloc == "host.example"
     assert make(f"https://host.example/v1/{secret}").identity() == make("https://host.example/v1/sk-rotated-9999999999999").identity()
 
 
