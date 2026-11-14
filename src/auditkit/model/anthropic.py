@@ -50,7 +50,7 @@ class AnthropicModel(Model):
 
     def identity(self) -> dict:
         # base_url and an allowlist of extra kwargs (see remote_identity); the rest stay out.
-        return {**super().identity(), **remote_identity(self, None)}
+        return {**super().identity(), **remote_identity(self, None, env_base=("ANTHROPIC_BASE_URL",))}
 
     def _ensure_client(self) -> None:
         if self._client is not None:

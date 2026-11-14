@@ -37,9 +37,17 @@ class LiteLLMModel(Model):
         self._identity_extra = tuple(identity_extra)
         self.name = name
 
+    def _env_base_names(self) -> tuple[str, ...]:
+        """The base-URL variables litellm reads for this model's provider (``azure/...`` ->
+        ``AZURE_API_BASE``, no prefix -> OpenAI's)."""
+        provider = str(self._extra_kwargs.get("custom_llm_provider")
+                       or (self._model_name.split("/", 1)[0] if "/" in self._model_name else "openai"))
+        p = provider.upper().replace("-", "_")
+        return (f"{p}_API_BASE", f"{p}_BASE_URL") + (("AZURE_OPENAI_ENDPOINT",) if p == "AZURE" else ())
+
     def identity(self) -> dict:
         # api_base and an allowlist of extra kwargs (see remote_identity); the rest stay out.
-        return {**super().identity(), **remote_identity(self, None)}
+        return {**super().identity(), **remote_identity(self, None, env_base=self._env_base_names())}
 
     def generate(self, requests: list[Request]) -> list[Result_]:
         try:

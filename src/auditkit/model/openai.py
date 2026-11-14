@@ -58,7 +58,7 @@ class OpenAIModel(Model):
 
     def identity(self) -> dict:
         # api_base and an allowlist of extra kwargs (see remote_identity); the rest stay out.
-        return {**super().identity(), **remote_identity(self, self._api_base)}
+        return {**super().identity(), **remote_identity(self, self._api_base, env_base=("OPENAI_BASE_URL", "OPENAI_API_BASE"))}
 
     def _ensure_client(self) -> None:
         if self._client is not None:

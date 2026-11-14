@@ -163,7 +163,10 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   configuration keeps its fingerprint; a run with an allowlisted kwarg or a non-default endpoint gets a new one,
   once. `api:` and `hf:`/`vllm:` keep every kwarg but redact secret-like names (`api_key`, `apiKey`, `x-api-key`,
   header pairs), key-looking values (`sk-`, `ghp_`, JWTs, armoured `-----BEGIN` blocks) and URL userinfo, `;`
-  parameters, fragments and query values. Not covered: a base URL or key read from the environment.
+  parameters, fragments and query values. An endpoint the client reads from the environment when none is passed
+  (`OPENAI_BASE_URL` / `OPENAI_API_BASE`, `ANTHROPIC_BASE_URL`, litellm's per-provider `*_API_BASE` / `*_BASE_URL` and
+  `AZURE_OPENAI_ENDPOINT`) counts as `api_base`, reduced the same way; keys and tokens are never read from the
+  environment. With none of these set the fingerprint is unchanged.
 - Agent eval: a `final_state` dict attached to a recorded episode after import (`episode.final_state = {...}`,
   as the guide shows) was used by `FinalStateAssertion` while the row still reported `coverage["final_state"]`
   as `unavailable`. The row now reports it `observed`; an importer's `inferred` is kept (#44). The guide says how a

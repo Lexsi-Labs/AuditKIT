@@ -414,3 +414,55 @@ def test_urls_inside_proxies_and_the_api_backend_are_cleaned_too():
     url = f"https://u:p@host.example/v1/{SECRET}/x"
     assert _identity_value({"proxies": {"https": url}}) == {"proxies": {"https": "https://host.example/v1/<redacted>/x"}}
     assert SECRET not in json.dumps(APIModel(model="m", api_base=url).identity())
+
+
+# ---- an endpoint taken from the environment --------------------------------------------------
+
+ENV_BASES = [
+    (lambda: OpenAIModel(), "OPENAI_BASE_URL"),
+    (lambda: OpenAIModel(), "OPENAI_API_BASE"),
+    (lambda: AnthropicModel(), "ANTHROPIC_BASE_URL"),
+    (lambda: LiteLLMModel(), "OPENAI_API_BASE"),
+    (lambda: LiteLLMModel(model="azure/my-deployment"), "AZURE_API_BASE"),
+    (lambda: LiteLLMModel(model="azure/my-deployment"), "AZURE_OPENAI_ENDPOINT"),
+    (lambda: LiteLLMModel(model="groq/llama-3.3-70b"), "GROQ_API_BASE"),
+    (lambda: LiteLLMModel(model="x", custom_llm_provider="anthropic"), "ANTHROPIC_API_BASE"),
+]
+
+
+@pytest.mark.parametrize("make,var", ENV_BASES)
+def test_an_endpoint_from_the_environment_keys_the_run(make, var, monkeypatch):
+    for _, v in ENV_BASES:
+        monkeypatch.delenv(v, raising=False)
+    default = make().identity()
+    assert "api_base" not in default                                            # no env: nothing added
+    assert make().identity() == default
+    monkeypatch.setenv(var, "https://one.example/v1")
+    one = make().identity()
+    monkeypatch.setenv(var, "https://two.example/v1")
+    two = make().identity()
+    assert one != default and two != one
+    monkeypatch.setenv(var, "https://one.example/v1/")
+    assert make().identity() == one                                              # trailing slash
+
+
+@pytest.mark.parametrize("make,var", ENV_BASES)
+def test_a_secret_in_an_environment_endpoint_never_reaches_the_identity(make, var, monkeypatch):
+    monkeypatch.setenv(var, f"https://u:{SECRET}@h.example/v1/{SECRET}?api_key={SECRET}#{SECRET}")
+    text = json.dumps(make().identity())
+    assert SECRET not in text and "h.example" in text
+
+
+def test_keys_in_the_environment_are_never_read(monkeypatch):
+    for var in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GROQ_API_KEY", "AZURE_API_KEY"):
+        monkeypatch.setenv(var, SECRET)
+    for make, _ in ENV_BASES[:3]:
+        assert SECRET not in json.dumps(make().identity())
+    assert OpenAIModel().identity() == {"name": "openai", "model": "gpt-4o-mini"}
+
+
+def test_an_explicit_endpoint_wins_over_the_environment(monkeypatch):
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://env.example/v1")
+    assert OpenAIModel(api_base="https://arg.example/v1").identity() == OpenAIModel(
+        api_base="https://arg.example/v1").identity() != OpenAIModel().identity()
+    assert "env.example" not in json.dumps(OpenAIModel(api_base="https://arg.example/v1").identity())

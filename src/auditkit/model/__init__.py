@@ -22,7 +22,7 @@ import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from collections.abc import Mapping
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Sequence
 from urllib.parse import unquote, urlsplit, urlunsplit
 
 from ..errors import AuditKitError, CapabilityError, ExtraNotInstalled
@@ -607,7 +607,8 @@ def _url_base(url: str) -> str:
         return _REDACTED
 
 
-def remote_identity(model: "Model", api_base: Optional[str], default_base: Optional[str] = None) -> dict[str, Any]:
+def remote_identity(model: "Model", api_base: Optional[str], default_base: Optional[str] = None,
+                    env_base: Sequence[str] = ()) -> dict[str, Any]:
     """What a hosted-API backend adds to :meth:`Model.identity`, from an allowlist.
 
     Included: the endpoint (``api_base`` / ``base_url``, reduced to scheme, host and path) when it
@@ -618,12 +619,18 @@ def remote_identity(model: "Model", api_base: Optional[str], default_base: Optio
     in. Timeouts and retry counts are left out silently. Included values still pass
     :func:`_identity_value`, which redacts anything that looks like a credential, and an
     ``organization`` / ``project`` / ``deployment`` / ``api_version`` must be a plain id. A default
-    configuration keeps its fingerprint. Not covered: a base URL or key taken from the environment.
+    configuration keeps its fingerprint. An endpoint the client would read from the environment
+    (``env_base``, base-URL variables only) counts as ``api_base``; keys and tokens are never read.
     """
     extra = dict(getattr(model, "_extra_kwargs", None) or {})
     opted = frozenset(getattr(model, "_identity_extra", ()) or ())
     out: dict[str, Any] = {}
     urls = {"api_base": api_base or extra.get("api_base"), "base_url": extra.get("base_url")}
+    if not any(urls.values()):
+        # No endpoint was passed, so the client reads one from the environment (the first of
+        # ``env_base`` that is set), as the vendor SDK does. Only these base-URL variables are
+        # read, never a key or token.
+        urls["api_base"] = next((os.environ[v] for v in env_base if os.environ.get(v)), None)
     for k, v in urls.items():
         if v and (not default_base or _url_base(str(v)) != _url_base(default_base)):
             out[k] = _url_base(str(v))
