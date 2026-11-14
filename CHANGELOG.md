@@ -155,10 +155,12 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   kwargs, so a run with another `api_base` / `base_url`, `organization`, `project`, `default_query` (Azure
   `api-version`), `reasoning_effort`, `thinking`, `response_format` or proxy headers was served another
   deployment's cached outputs. These now enter the fingerprint, normalised (key order, a trailing slash). Credentials
-  never do: a secret-like name (`api_key`, `token`, `Authorization`, `x-api-key`, `default_headers` entries, ...),
-  a key-looking value (`sk-`, `gsk_`, `hf_`, `Bearer ...`) and `user:pass@` or `?api_key=` in a URL are kept out and
-  only the name is recorded, so rotating a key does not invalidate the cache. Timeouts and retry counts stay out, as
-  do `site_url`, `app_name` and `mlflow_*`. A default configuration keeps its fingerprint; only a run that passes
+  never do, and the filter fails closed: anything under a secret-like name (`api_key`, `apiKey`, `accessToken`,
+  `x-api-key`, `Authorization`, `default_headers` entries given as a dict or as `(name, value)` pairs; counts such as
+  `max_tokens` and `budget_tokens` are kept), any key-looking value (`sk-`, `gsk_`, `ghp_`, `xox`, `eyJ` tokens,
+  `Bearer ...`, long mixed-case strings) and the `user:pass@`, fragment and non-version query values of a URL
+  (`&` or `;` separated) are kept out and only the name is recorded, so rotating a key does not invalidate the cache. Timeouts
+  and retry counts stay out, as `site_url`, `app_name` and `mlflow_*`. A default configuration keeps its fingerprint; only a run that passes
   extra kwargs or a non-default endpoint gets a new one, once. The same filter now covers `api:` and `hf:`/`vllm:`.
   Not covered: a base URL or key read from the environment.
 - Agent eval: a `final_state` dict attached to a recorded episode after import (`episode.final_state = {...}`,

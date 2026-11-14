@@ -15,13 +15,15 @@ from __future__ import annotations
 import functools
 import hashlib
 import importlib
+import math
 import os
 import re
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from collections.abc import Mapping
 from typing import Any, Callable, Optional
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from ..errors import AuditKitError, CapabilityError, ExtraNotInstalled
 from ..runspec import RunConfig
@@ -436,51 +438,112 @@ class Model(ABC):
         return {"name": self.name, "model": getattr(self, "_model_name", None)}
 
 
-# A key is secret-like when one of its words (split on - _ . space) is one of these, so
-# ``api_key``, ``x-api-key``, ``Authorization`` and ``access_token`` match while
-# ``max_completion_tokens`` and ``budget_tokens`` (plural, they change outputs) do not.
-_SECRET_KEY = re.compile(
-    r"(?i)(^|[-_. ])(api[-_]?key|key|secret|token|password|passwd|authorization|auth|cookie|"
-    r"credentials?|bearer|signature)($|[-_. ])")
-# Values that are credentials whatever they are called: provider key prefixes, bearer/basic
-# headers, JWTs.
-_SECRET_VALUE = re.compile(
-    r"^(sk-|sk_|pk-|gsk_|hf_|ghp_|gho_|github_pat_|xox[abp]-|AKIA|AIza|eyJ|Bearer\s|Basic\s)")
+# --- Secret handling for fingerprints --------------------------------------------------------
+# Fail closed: a value is kept out of the fingerprint when its key *or* the value itself looks
+# like a credential. Only the name is kept (so adding a key still re-keys the run); the value
+# becomes "<redacted>", never a hash. A rotated key therefore does not invalidate the cache.
 _REDACTED = "<redacted>"
+
+# Matched as substrings of the key lower-cased with camelCase split and separators dropped, so
+# ``api_key``, ``apiKey``, ``x-api-key``, ``AccessToken``, ``clientSecret`` and ``Authorization``
+# all hit.
+_SECRET_WORDS = ("key", "secret", "token", "password", "passwd", "passphrase", "credential",
+                 "auth", "cookie", "bearer", "signature")
+# Names that contain a secret word but carry a count, a tokenizer setting or a name, not a
+# credential: ``max_tokens``, ``max_new_tokens``, ``budget_tokens``, ``tokenizer_kwargs``,
+# ``token_type_ids``, ``keyword``. They change outputs, so they must stay in the fingerprint.
+_SAFE_KEY = re.compile(r"tokens$|^tokenizer|tokentypeids$|^keyword|^keep|^authors?$")
+# Keys whose values are identifiers, not credentials (a 40-hex commit would otherwise look like a key).
+_ID_KEY = re.compile(r"revision$|^(model|engine|deployment(id)?)$")
+# Query parameters whose values are settings, not credentials.
+_SAFE_QUERY = frozenset({"api-version", "api_version", "version", "deployment", "deployment_id",
+                         "model", "region", "location"})
+# Values that are credentials whatever they are called.
+_SECRET_VALUE = re.compile(
+    r"(sk-|sk_|pk-|gsk_|hf_|ghp_|gho_|ghs_|github_pat_|xox[abprs]-|AKIA|ASIA|AIza)[A-Za-z0-9_\-]{8,}"
+    r"|eyJ[A-Za-z0-9_\-]{6,}\.[A-Za-z0-9_\-]{6,}"
+    r"|(?i:bearer|basic)\s+\S{8,}|-----BEGIN[^\n]*PRIVATE KEY")
+_KEYLIKE = re.compile(r"[A-Za-z0-9_\-+=.]{24,}")   # no "/" or spaces: model ids, paths and prose stay
+
+
+def _compact(key: Any) -> str:
+    """``apiKey`` / ``x-api-key`` / ``API_KEY`` -> ``apikey`` / ``xapikey`` / ``apikey``."""
+    return re.sub(r"[-_. ]+", "", re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", str(key)).lower())
+
+
+def _secret_key(key: Any) -> bool:
+    c = _compact(key)
+    return any(w in c for w in _SECRET_WORDS) and not _SAFE_KEY.search(c)
+
+
+def _secret_value(text: str, key: Any = None) -> bool:
+    if _SECRET_VALUE.search(text):
+        return True
+    if key is not None and _ID_KEY.search(_compact(key)):
+        return False
+    if not _KEYLIKE.fullmatch(text) or not (any(c.isdigit() for c in text) and any(c.isalpha() for c in text)):
+        return False
+    counts = {c: text.count(c) for c in set(text)}
+    entropy = -sum(n / len(text) * math.log2(n / len(text)) for n in counts.values())
+    return entropy >= 3.5
 
 
 def _scrub_url(url: str) -> str:
-    """*url* without credentials: no ``user:pass@``, secret-like query values blanked, no
-    trailing slash, so ``https://h/v1`` and ``https://h/v1/`` agree."""
+    """*url* without credentials: no ``user:pass@``, no fragment, every query value blanked
+    (``&`` and ``;`` separated) except version-like settings, no trailing slash, so
+    ``https://h/v1`` and ``https://h/v1/`` agree."""
     try:
         parts = urlsplit(url)
         host = parts.netloc.rpartition("@")[2]
-        query = urlencode([(k, _REDACTED if _SECRET_KEY.search(k) else v)
-                           for k, v in parse_qsl(parts.query, keep_blank_values=True)])
+        pairs = [q.partition("=") for q in re.split(r"[&;]", parts.query) if q]
+        query = "&".join(f"{k}={v if k.lower() in _SAFE_QUERY and not _secret_value(v) else _REDACTED}"
+                         if sep else k for k, sep, v in pairs)
         return urlunsplit((parts.scheme, host, parts.path.rstrip("/"), query, ""))
     except ValueError:
         return _REDACTED
 
 
-def _identity_value(value: Any) -> Any:
+def _pairs(value: Any) -> Optional[list]:
+    """*value* as ``[(name, value), ...]`` when it is a mapping or a list/tuple of 2-item
+    (name, value) pairs with string names, else None."""
+    if isinstance(value, Mapping):
+        return list(value.items())
+    if (isinstance(value, (list, tuple)) and value and all(
+            isinstance(p, (list, tuple)) and len(p) == 2 and isinstance(p[0], str) for p in value)):
+        return [tuple(p) for p in value]
+    return None
+
+
+def _identity_value(value: Any, key: Any = None) -> Any:
     """*value* as JSON-stable data for a fingerprint, with secrets removed.
 
-    Containers are recursed; objects with ``to_dict()`` (``BitsAndBytesConfig``) are expanded; a
+    Mappings and lists of (name, value) pairs (``default_headers=[("Authorization", ...)]``) are
+    walked as key/value pairs; objects with ``to_dict()`` (``BitsAndBytesConfig``) are expanded; a
     ``torch.dtype`` is its bare name; any other object is reduced to its type (its repr carries a
-    memory address). A dict value under a secret-like key (``api_key``, ``Authorization``,
-    ``default_headers={"x-api-key": ...}``), a string that looks like a key, and the credentials
-    in a URL never enter the result: the name stays (so adding a key still re-keys the run), the
-    value is ``"<redacted>"``. A rotated key therefore does not invalidate the cache.
+    memory address). Anything under a secret-like key (``api_key``, ``apiKey``, ``Authorization``),
+    any string that looks like a credential, a ``Name: secret`` / ``name=secret`` string, and the
+    credentials in a URL become ``"<redacted>"``. Everything else is kept, normalised.
     """
-    if value is None or isinstance(value, (bool, int, float)):
+    if value is None or isinstance(value, bool):
+        return value
+    if key is not None and _secret_key(key):
+        return _REDACTED                  # whatever the value is: a PIN is a number
+    if isinstance(value, (int, float)):
         return value
     if isinstance(value, str):
-        if _SECRET_VALUE.match(value):
+        if "://" in value:
+            value = _scrub_url(value)     # first, so a key in the userinfo does not hide the host
+        if _secret_value(value, key):
             return _REDACTED
-        return _scrub_url(value) if "://" in value else value.removeprefix("torch.")
-    if isinstance(value, dict):
-        return {str(k): _REDACTED if _SECRET_KEY.search(str(k)) else _identity_value(v)
-                for k, v in sorted(value.items(), key=lambda kv: str(kv[0]))}
+        name, sep, rest = value.partition(":") if ": " in value else value.partition("=")
+        if "://" not in value and sep and rest.strip() and len(name) <= 40 and " " not in name.strip() \
+                and _secret_key(name.strip()):
+            return f"{name.strip()}{sep} {_REDACTED}"                 # "Authorization: Bearer ...", "api_key=..."
+        return value.removeprefix("torch.")
+    pairs = _pairs(value)
+    if pairs is not None:
+        items = sorted(((str(k), _identity_value(v, k)) for k, v in pairs), key=lambda kv: (kv[0], str(kv[1])))
+        return dict(items) if isinstance(value, Mapping) else [list(kv) for kv in items]
     if isinstance(value, (list, tuple)):
         return [_identity_value(v) for v in value]
     if isinstance(value, (set, frozenset)):

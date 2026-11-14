@@ -201,3 +201,63 @@ def test_the_api_backend_hides_secrets_too():
     from auditkit.model.api_gen import APIModel
     a = APIModel(model="m", api_base="http://h/v1", extra_headers={"Authorization": SECRET}).identity()
     assert SECRET not in json.dumps(a, default=str)
+
+
+# ---- #50, the deny-list fails closed -------------------------------------------------------
+
+from auditkit.model import _scrub_url
+
+
+@pytest.mark.parametrize("key", ["apiKey", "accessToken", "clientSecret", "AuthToken", "x-api-key", "API_KEY",
+                                 "X-Auth-Token", "privateKey", "Authorization", "use_auth_token", "dbPassword"])
+def test_secret_names_in_any_case_style_are_redacted(key):
+    assert _identity_value({key: "anything", "n": 1})[key] == "<redacted>"
+    assert _identity_value({key: 1234})[key] == "<redacted>"                  # a PIN is a number
+
+
+@pytest.mark.parametrize("key", ["max_tokens", "max_new_tokens", "num_tokens", "max_completion_tokens",
+                                 "budget_tokens", "maxTokens", "tokenizer_kwargs", "token_type_ids", "keyword"])
+def test_count_and_tokenizer_names_stay(key):
+    assert _identity_value({key: 7}) == {key: 7}
+
+
+def test_pair_lists_are_walked_as_key_value_pairs():
+    out = _identity_value({"default_headers": [("Authorization", f"Bearer {SECRET}"), ["X-Route", "a"], ("apiKey", "z")]})
+    assert out == {"default_headers": [["Authorization", "<redacted>"], ["X-Route", "a"], ["apiKey", "<redacted>"]]}
+    assert SECRET not in json.dumps(out)
+    assert _identity_value({"stop": ["a", "b"]}) == {"stop": ["a", "b"]}      # a plain list is not pairs
+    assert OpenAIModel(default_headers=[("X-Route", "a"), ("Authorization", "x")]).identity() != OpenAIModel().identity()
+
+
+def test_header_strings_are_redacted():
+    assert _identity_value({"h": ["Authorization: Bearer abcdefgh1234"]}) == {"h": ["<redacted>"]}
+    assert _identity_value({"h": ["x-api-key: zz"]}) == {"h": ["x-api-key: <redacted>"]}
+
+
+def test_urls_lose_userinfo_fragment_and_every_query_value_but_version_settings():
+    url = f"https://user:{SECRET}@h.example/v1/?api-version=2024-10-21&key=a1;token=b2&foo=bar#frag-{SECRET}"
+    out = _scrub_url(url)
+    assert out == "https://h.example/v1?api-version=2024-10-21&key=<redacted>&token=<redacted>&foo=<redacted>"
+    assert _scrub_url("https://h.example/v1/") == _scrub_url("https://h.example/v1")
+    assert _identity_value({"proxies": {"https": f"http://u:{SECRET}@p.example:3128"}}) == {"proxies": {"https": "http://p.example:3128"}}
+    ident = OpenAIModel(api_base=f"https://u:{SECRET}@h.example/v1?foo={SECRET}").identity()
+    assert SECRET not in json.dumps(ident) and ident["api_base"] == "https://h.example/v1?foo=<redacted>"
+    from auditkit.model.api_gen import APIModel
+    assert SECRET not in json.dumps(APIModel(model="m", api_base=f"http://u:{SECRET}@h.example/v1").identity())
+
+
+@pytest.mark.parametrize("value", ["sk-proj-abcdefghijklmnop", "ghp_abcdefghijklmnopqrstuvwx", "xoxb-1234-abcdefgh",
+                                   "eyJhbGciOiJI.eyJzdWIiOiIx.abcdefgh", "a1B2c3D4e5F6g7H8i9J0k1L2m3",
+                                   "AKIAABCDEFGHIJKLMNOP", "Bearer abcdefgh12345"])
+def test_key_looking_values_are_redacted_under_any_name(value):
+    assert _identity_value({"X-Custom": value, "note": value}) == {"X-Custom": "<redacted>", "note": "<redacted>"}
+    assert _identity_value({"extra": [value]}) == {"extra": ["<redacted>"]}
+
+
+def test_ordinary_values_stay():
+    kept = {"revision": "3f786850e387550fdab836ed7e6dc881de23001b", "model": "meta-llama/Llama-3.1-8B-Instruct",
+            "attn_implementation": "flash_attention_2", "chat_template": "You are a helpful assistant, be brief.",
+            "path": "/data/checkpoints/run-2026-11-13-final", "reasoning_effort": "high", "n": 2}
+    assert _identity_value(kept) == kept
+    assert HFGenModel(model="x/y", revision="3f786850e387550fdab836ed7e6dc881de23001b").identity() != HFGenModel(
+        model="x/y", revision="0" * 40).identity()
