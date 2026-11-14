@@ -261,3 +261,39 @@ def test_ordinary_values_stay():
     assert _identity_value(kept) == kept
     assert HFGenModel(model="x/y", revision="3f786850e387550fdab836ed7e6dc881de23001b").identity() != HFGenModel(
         model="x/y", revision="0" * 40).identity()
+
+
+# ---- armoured blocks and the other value patterns --------------------------------------------
+
+def _pem(kind, tail="-----"):
+    return f"-----BEGIN {kind}{tail}\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC\n-----END {kind}-----"
+
+
+@pytest.mark.parametrize("kind", ["PGP PRIV" "ATE KEY BLOCK", "RSA PRIV" "ATE KEY", "OPENSSH PRIV" "ATE KEY",
+                                  "PRIV" "ATE KEY", "EC PRIV" "ATE KEY", "ENCRYPTED PRIV" "ATE KEY", "PGP MESSAGE"])
+def test_armoured_blocks_are_redacted(kind):
+    assert _identity_value({"x": _pem(kind)}) == {"x": "<redacted>"}
+    assert _identity_value({"x": [_pem(kind)]}) == {"x": ["<redacted>"]}
+
+
+@pytest.mark.parametrize("text", ["-----BEGIN RSA PRIV", "-----BEGIN", "-----BEGIN OPENSSH PRIV" "ATE KEY",
+                                  "-----BEGIN KEY-----MIIEvQIBADANBg"])
+def test_truncated_and_odd_headers_are_redacted(text):
+    assert _identity_value({"x": text}) == {"x": "<redacted>"}
+
+
+def test_a_public_certificate_stays_in_the_fingerprint():
+    cert = _pem("CERTIFICATE")
+    assert _identity_value({"x": cert}) == {"x": cert}
+
+
+@pytest.mark.parametrize("text", ["eyJhbGciOiJIUzI1NiJ9", "eyJ", "Bearer abc", "basic dXNlcjpwdw==", "sk-abc", "hf_x",
+                                  "see sk-abcdefghijkl here", "Authorization: Bearer abcdefghijkl", "ghp_abc"])
+def test_the_earlier_value_patterns_still_match(text):
+    assert _identity_value({"x": text}) == {"x": "<redacted>"}
+
+
+def test_prose_that_merely_resembles_a_pattern_stays():
+    kept = {"a": "a bearer of news", "b": "task_description_long", "c": "basic usage is fine".lower(), "d": "begin"}
+    assert _identity_value(kept) == {"a": "a bearer of news", "b": "task_description_long",
+                                     "c": "basic usage is fine", "d": "begin"}

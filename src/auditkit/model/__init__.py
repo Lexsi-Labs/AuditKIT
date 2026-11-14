@@ -459,10 +459,13 @@ _ID_KEY = re.compile(r"revision$|^(model|engine|deployment(id)?)$")
 _SAFE_QUERY = frozenset({"api-version", "api_version", "version", "deployment", "deployment_id",
                          "model", "region", "location"})
 # Values that are credentials whatever they are called.
+_KEY_PREFIX = r"(?:sk-|sk_|pk-|gsk_|hf_|ghp_|gho_|ghs_|github_pat_|xox[abprs]-|AKIA|ASIA|AIza)"
 _SECRET_VALUE = re.compile(
-    r"(sk-|sk_|pk-|gsk_|hf_|ghp_|gho_|ghs_|github_pat_|xox[abprs]-|AKIA|ASIA|AIza)[A-Za-z0-9_\-]{8,}"
+    rf"^(?:{_KEY_PREFIX}|eyJ)"                                   # a provider key or a JWT, any length
+    rf"|(?<![A-Za-z0-9]){_KEY_PREFIX}[A-Za-z0-9_\-]{{8,}}"       # the same inside a longer string
     r"|eyJ[A-Za-z0-9_\-]{6,}\.[A-Za-z0-9_\-]{6,}"
-    r"|(?i:bearer|basic)\s+\S{8,}|-----BEGIN[^\n]*KEY-----")
+    r"|^(?:Bearer|Basic)\s|\b(?i:bearer|basic)\s+\S{8,}"
+    r"|-----BEGIN(?! CERTIFICATE)")           # any armoured block (PGP, RSA/EC/OPENSSH keys, odd or cut headers); a public certificate stays
 _KEYLIKE = re.compile(r"[A-Za-z0-9_\-+=.]{24,}")   # no "/" or spaces: model ids, paths and prose stay
 
 
