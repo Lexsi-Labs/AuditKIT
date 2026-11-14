@@ -106,8 +106,9 @@ def test_evaluate_does_not_replay_another_batch_size(ckpt):
 # ---- #50, hosted backends ------------------------------------------------
 
 import json
+import warnings
 
-from auditkit.model import _identity_value
+from auditkit.model import _EXCLUDED_WARNED, _identity_value
 from auditkit.model.anthropic import AnthropicModel
 from auditkit.model.groq_gen import GroqModel
 from auditkit.model.litellm_gen import LiteLLMModel
@@ -134,7 +135,7 @@ def test_hosted_default_config_keeps_its_identity(cls, model, name, monkeypatch)
     assert cls(api_key="a").identity() == cls(api_key="b").identity()         # a key never keys the run
 
 
-@pytest.mark.parametrize("kw", [{"organization": "org-b"}, {"project": "p"}, {"default_query": {"api-version": "2"}},
+@pytest.mark.parametrize("kw", [{"organization": "org-b"}, {"project": "p"}, {"api_version": "2024-10-21"},
                                 {"reasoning_effort": "high"}, {"api_base": "https://proxy.example/v1"}])
 def test_openai_settings_change_the_identity(kw):
     assert OpenAIModel(**kw).identity() != OpenAIModel().identity()
@@ -161,25 +162,71 @@ def test_litellm_and_anthropic_see_their_kwargs():
     assert OpenAIModel(max_retries=1, timeout=3).identity() == OpenAIModel().identity()
 
 
-@pytest.mark.parametrize("make", [
+LEAKY = [
     lambda s: OpenAIModel(default_headers={"Authorization": f"Bearer {s}", "X-Route": "a"}),
     lambda s: OpenAIModel(default_headers={"x-api-key": s}),
+    lambda s: OpenAIModel(default_headers=[("Authorization", s), ("X-Route", "a")]),          # pair list
     lambda s: OpenAIModel(api_base=f"https://user:{s}@proxy.example/v1?api_key={s}"),
+    lambda s: OpenAIModel(api_base=f"https://proxy.example/v1;token={s}?{s}&token#{s}"),     # ; query, bare parts
+    lambda s: OpenAIModel(apiKey=s, accessToken=s, access_tokens=s, apiauthors=s, clientSecret=s),   # camelCase, odd names
+    lambda s: OpenAIModel(extra_headers=[f"api_key=b: {s}", f"a=b: {s}"], default_query={"?": s}),    # header strings
+    lambda s: OpenAIModel(default_headers={"X-Custom": s}, response_format={"type": "json", "api_key": s}),
     lambda s: AnthropicModel(default_headers={"X-Custom": s}, base_url=f"https://h.example/?key={s}"),
     lambda s: LiteLLMModel(api_key=s, extra_headers={"Authorization": s}),
+    lambda s: LiteLLMModel(api_base=f"https://{s}@h.example/v1", custom_llm_provider="azure"),
     lambda s: GroqModel(extra_headers={"api-key": s}),
-    lambda s: LexsiModel(api_base=f"https://{s}@h.example/v1"),
-    lambda s: OpenRouterModel(default_query={"token": s}),
-])
+    lambda s: LexsiModel(api_base=f"https://{s}@h.example/v1", client_blob=_pem("PGP PRIV" "ATE KEY BLOCK")),
+    lambda s: OpenRouterModel(default_query={"token": s}, organization=s),
+]
+
+
+@pytest.mark.parametrize("make", LEAKY)
 def test_a_secret_never_reaches_the_identity_or_the_cache_key(make):
-    ident = make(SECRET).identity()
-    assert SECRET not in json.dumps(ident, default=str)
-    assert make(SECRET).identity() == make("sk-rotated-9999999999999999").identity()   # rotation keeps the cache
-    assert ident != type(make(SECRET))().identity()                           # the setting itself still keys the run
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ident = make(SECRET).identity()
+        rotated = make("sk-rotated-9999999999999999").identity()
+    text = json.dumps(ident, default=str)
+    assert SECRET not in text and "BEGIN" not in text and "Bearer" not in text
+    assert ident == rotated                                                   # rotation keeps the cache
+
+
+@pytest.mark.parametrize("make", LEAKY[:3] + LEAKY[5:9])
+def test_non_allowlisted_kwargs_are_left_out_with_one_warning(make):
+    _EXCLUDED_WARNED.clear()
+    with pytest.warns(UserWarning, match="identity_extra") as rec:
+        make(SECRET).identity()
+        make(SECRET).identity()
+    assert len([w for w in rec if "identity_extra" in str(w.message)]) == 1   # once
+    assert all(SECRET not in str(w.message) for w in rec)                     # names, never values
+
+
+def test_identity_extra_opts_a_kwarg_in_and_it_is_still_filtered():
+    m = OpenAIModel(default_headers={"X-Route": "a", "Authorization": f"Bearer {SECRET}"},
+                    identity_extra=["default_headers"])
+    ident = m.identity()
+    assert ident["extra"]["default_headers"] == {"Authorization": "<redacted>", "X-Route": "a"}
+    assert SECRET not in json.dumps(ident)
+    assert ident != OpenAIModel().identity()
+    assert m.identity() != OpenAIModel(default_headers={"X-Route": "b", "Authorization": "z"},
+                                       identity_extra=["default_headers"]).identity()
+
+
+def test_allowlisted_ids_must_be_plain_ids():
+    assert OpenAIModel(organization="org-b").identity()["extra"] == {"organization": "org-b"}
+    assert OpenAIModel(organization=SECRET + " x").identity()["extra"] == {"organization": "<redacted>"}
+    assert OpenAIModel(api_version=f"{SECRET}").identity()["extra"] == {"api_version": "<redacted>"}
+    assert OpenAIModel(response_format={"type": "json_object"}).identity()["extra"] == {
+        "response_format": {"type": "json_object"}}
+
+
+def test_hosted_endpoint_is_scheme_host_and_path_only():
+    ident = OpenAIModel(api_base=f"https://u:{SECRET}@H.example:8443/v1/?api-version=1&k=v#f").identity()
+    assert ident["api_base"] == "https://H.example:8443/v1"
 
 
 def test_a_secret_never_reaches_the_cache_files(tmp_path):
-    m = OpenAIModel(default_headers={"Authorization": f"Bearer {SECRET}"})
+    m = OpenAIModel(default_headers={"Authorization": f"Bearer {SECRET}"}, identity_extra=["default_headers"])
     ak.evaluate(SAMPLES, model=_Echo(m))
     blob = b"".join(p.read_bytes() for p in (tmp_path / "cache").rglob("*") if p.is_file())
     assert blob and SECRET.encode() not in blob
@@ -226,7 +273,8 @@ def test_pair_lists_are_walked_as_key_value_pairs():
     assert out == {"default_headers": [["Authorization", "<redacted>"], ["X-Route", "a"], ["apiKey", "<redacted>"]]}
     assert SECRET not in json.dumps(out)
     assert _identity_value({"stop": ["a", "b"]}) == {"stop": ["a", "b"]}      # a plain list is not pairs
-    assert OpenAIModel(default_headers=[("X-Route", "a"), ("Authorization", "x")]).identity() != OpenAIModel().identity()
+    assert OpenAIModel(default_headers=[("X-Route", "a"), ("Authorization", "x")],
+                       identity_extra=["default_headers"]).identity() != OpenAIModel().identity()
 
 
 def test_header_strings_are_redacted():
@@ -241,7 +289,7 @@ def test_urls_lose_userinfo_fragment_and_every_query_value_but_version_settings(
     assert _scrub_url("https://h.example/v1/") == _scrub_url("https://h.example/v1")
     assert _identity_value({"proxies": {"https": f"http://u:{SECRET}@p.example:3128"}}) == {"proxies": {"https": "http://p.example:3128"}}
     ident = OpenAIModel(api_base=f"https://u:{SECRET}@h.example/v1?foo={SECRET}").identity()
-    assert SECRET not in json.dumps(ident) and ident["api_base"] == "https://h.example/v1?foo=<redacted>"
+    assert SECRET not in json.dumps(ident) and ident["api_base"] == "https://h.example/v1"
     from auditkit.model.api_gen import APIModel
     assert SECRET not in json.dumps(APIModel(model="m", api_base=f"http://u:{SECRET}@h.example/v1").identity())
 
@@ -297,3 +345,23 @@ def test_prose_that_merely_resembles_a_pattern_stays():
     kept = {"a": "a bearer of news", "b": "task_description_long", "c": "basic usage is fine".lower(), "d": "begin"}
     assert _identity_value(kept) == {"a": "a bearer of news", "b": "task_description_long",
                                      "c": "basic usage is fine", "d": "begin"}
+
+
+# ---- the sanitiser behind identity_extra / hf: / vllm: / api: -------------------------------
+
+def test_bare_query_parts_are_redacted():
+    assert _scrub_url("https://h.example/v1?sk-abc123&token&api-version&x=1") == \
+        "https://h.example/v1?<redacted>&<redacted>&api-version&x=<redacted>"
+
+
+@pytest.mark.parametrize("key", ["access_tokens", "refresh_tokens", "apiauthors", "authTokens", "accessTokens"])
+def test_only_exact_count_names_are_exempt(key):
+    assert _identity_value({key: "abc"}) == {key: "<redacted>"}
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("api_key=b: c", "api_key= <redacted>"), ("Authorization: x=y", "Authorization: <redacted>"),
+    ("  x-api-key =  zz ", "x-api-key= <redacted>"), ("a=b: c", "a=b: c"),
+])
+def test_header_strings_split_on_the_first_delimiter(text, expected):
+    assert _identity_value({"h": [text]}) == {"h": [expected]}

@@ -152,17 +152,18 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   moving `main` (pin `revision=`) and the base model behind a PEFT adapter folder.
 - **Cached results change for hosted APIs with extra kwargs (re-run once).** The same gap existed for `openai:`,
   `anthropic:`, `groq:`, `litellm:`, `openrouter:` and `lexsi:`: the fingerprint ignored the endpoint and the extra
-  kwargs, so a run with another `api_base` / `base_url`, `organization`, `project`, `default_query` (Azure
-  `api-version`), `reasoning_effort`, `thinking`, `response_format` or proxy headers was served another
-  deployment's cached outputs. These now enter the fingerprint, normalised (key order, a trailing slash). Credentials
-  never do, and the filter fails closed: anything under a secret-like name (`api_key`, `apiKey`, `accessToken`,
-  `x-api-key`, `Authorization`, `default_headers` entries given as a dict or as `(name, value)` pairs; counts such as
-  `max_tokens` and `budget_tokens` are kept), any key-looking value (`sk-`, `gsk_`, `ghp_`, `xox`, `eyJ` tokens,
-  `Bearer ...`, long mixed-case strings) and the `user:pass@`, fragment and non-version query values of a URL
-  (`&` or `;` separated) are kept out and only the name is recorded, so rotating a key does not invalidate the cache. Timeouts
-  and retry counts stay out, as `site_url`, `app_name` and `mlflow_*`. A default configuration keeps its fingerprint; only a run that passes
-  extra kwargs or a non-default endpoint gets a new one, once. The same filter now covers `api:` and `hf:`/`vllm:`.
-  Not covered: a base URL or key read from the environment.
+  kwargs, so a run with another `api_base` / `base_url`, `organization`, `project`, `api_version`, `reasoning_effort`,
+  `thinking` or `response_format` was served another deployment's cached outputs. The fingerprint now includes the
+  endpoint (scheme, host and path only, when it is not the backend's default) and an allowlist of kwargs that change
+  what answers (`response_format`, `reasoning_effort`, `thinking`, `tools`, `tool_choice`, `logprobs`, `service_tier`,
+  `api_version`, `organization`, `project`, `deployment`, `custom_llm_provider`, ...). Everything else, headers and
+  credentials included, stays out whatever its name or value, so a secret cannot reach the cache key and rotating a
+  key does not invalidate it. One warning names the kwargs left out; `identity_extra=[...]` on those backends adds
+  them (values that look like credentials are still redacted). Timeouts and retry counts stay out. A default
+  configuration keeps its fingerprint; a run with an allowlisted kwarg or a non-default endpoint gets a new one,
+  once. `api:` and `hf:`/`vllm:` keep every kwarg but redact secret-like names (`api_key`, `apiKey`, `x-api-key`,
+  header pairs), key-looking values (`sk-`, `ghp_`, JWTs, armoured `-----BEGIN` blocks) and URL userinfo, `;`
+  parameters, fragments and query values. Not covered: a base URL or key read from the environment.
 - Agent eval: a `final_state` dict attached to a recorded episode after import (`episode.final_state = {...}`,
   as the guide shows) was used by `FinalStateAssertion` while the row still reported `coverage["final_state"]`
   as `unavailable`. The row now reports it `observed`; an importer's `inferred` is kept (#44). The guide says how a

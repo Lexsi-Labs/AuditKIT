@@ -1,7 +1,7 @@
 """LiteLLM unified API backend (optional extra: auditkit[litellm])."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
@@ -29,16 +29,17 @@ class LiteLLMModel(Model):
     threadsafe = True
 
     def __init__(self, model: str = "gpt-4o-mini",
-                 name: str = "litellm", **kwargs: Any) -> None:
+                 name: str = "litellm",
+                 identity_extra: Sequence[str] = (), **kwargs: Any) -> None:
         reject_generation_kwargs(kwargs, "LiteLLMModel")
         self._model_name = model
         self._extra_kwargs = kwargs
+        self._identity_extra = tuple(identity_extra)
         self.name = name
 
     def identity(self) -> dict:
-        # api_base, custom_llm_provider, extra_headers ... change what answers; credentials
-        # (api_key, Authorization headers) are stripped (see remote_identity).
-        return {**super().identity(), **remote_identity(None, self._extra_kwargs)}
+        # api_base and an allowlist of extra kwargs (see remote_identity); the rest stay out.
+        return {**super().identity(), **remote_identity(self, None)}
 
     def generate(self, requests: list[Request]) -> list[Result_]:
         try:

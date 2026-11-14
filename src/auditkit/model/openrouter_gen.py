@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Any
+from typing import Any, Sequence
 
 from . import (
     Model, Request, Result_, Generated, resolve_params, resolve_messages,
@@ -70,6 +70,7 @@ class OpenRouterModel(Model):
         site_url: str | None = None,
         app_name: str | None = None,
         name: str = "openrouter",
+        identity_extra: Sequence[str] = (),
         **kwargs: Any,
     ) -> None:
         reject_generation_kwargs(kwargs, "OpenRouterModel")
@@ -83,12 +84,13 @@ class OpenRouterModel(Model):
         # OpenRouterModel(verify=False) actually disables TLS verification
         # instead of silently becoming an extra, ignored JSON field.
         self._session_kwargs, self._extra_kwargs = split_session_kwargs(kwargs)
+        self._identity_extra = tuple(identity_extra)
         self._session = None
         self.name = name
 
     def identity(self) -> dict:
         # site_url / app_name only label the caller on OpenRouter's dashboard
-        return {**super().identity(), **remote_identity(self._api_base, self._extra_kwargs, _DEFAULT_API_BASE)}
+        return {**super().identity(), **remote_identity(self, self._api_base, _DEFAULT_API_BASE)}
 
     def _ensure_session(self) -> None:
         if self._session is not None:

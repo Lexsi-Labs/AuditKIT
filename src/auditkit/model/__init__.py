@@ -449,12 +449,15 @@ _REDACTED = "<redacted>"
 # all hit.
 _SECRET_WORDS = ("key", "secret", "token", "password", "passwd", "passphrase", "credential",
                  "auth", "cookie", "bearer", "signature")
-# Names that contain a secret word but carry a count, a tokenizer setting or a name, not a
-# credential: ``max_tokens``, ``max_new_tokens``, ``budget_tokens``, ``tokenizer_kwargs``,
-# ``token_type_ids``, ``keyword``. They change outputs, so they must stay in the fingerprint.
-_SAFE_KEY = re.compile(r"tokens$|^tokenizer|tokentypeids$|^keyword|^keep|^authors?$")
+# Exactly these names contain a secret word but carry a count, a tokenizer setting or a name, not a
+# credential, and change outputs. Matched on the whole compact name, so ``access_tokens`` or
+# ``apiauthors`` are not exempt.
+_SAFE_KEYS = frozenset({
+    "maxtokens", "mintokens", "numtokens", "budgettokens", "maxnewtokens", "minnewtokens",
+    "maxcompletiontokens", "maxoutputtokens", "tokenizerkwargs", "tokentypeids",
+    "keyword", "keywords", "author", "authors"})
 # Keys whose values are identifiers, not credentials (a 40-hex commit would otherwise look like a key).
-_ID_KEY = re.compile(r"revision$|^(model|engine|deployment(id)?)$")
+_ID_KEY = re.compile(r"revision$|^(model|engine|deployment(id)?|organi[sz]ation|project|apiversion)$")
 # Query parameters whose values are settings, not credentials.
 _SAFE_QUERY = frozenset({"api-version", "api_version", "version", "deployment", "deployment_id",
                          "model", "region", "location"})
@@ -466,6 +469,8 @@ _SECRET_VALUE = re.compile(
     r"|eyJ[A-Za-z0-9_\-]{6,}\.[A-Za-z0-9_\-]{6,}"
     r"|^(?:Bearer|Basic)\s|\b(?i:bearer|basic)\s+\S{8,}"
     r"|-----BEGIN(?! CERTIFICATE)")           # any armoured block (PGP, RSA/EC/OPENSSH keys, odd or cut headers); a public certificate stays
+_HEADER_STRING = re.compile(r"\s*([^:=\s]{1,40})\s*([:=])\s*(\S.*)", re.S)
+_PLAIN_ID = re.compile(r"[A-Za-z0-9_.:\-]{1,64}")
 _KEYLIKE = re.compile(r"[A-Za-z0-9_\-+=.]{24,}")   # no "/" or spaces: model ids, paths and prose stay
 
 
@@ -476,7 +481,7 @@ def _compact(key: Any) -> str:
 
 def _secret_key(key: Any) -> bool:
     c = _compact(key)
-    return any(w in c for w in _SECRET_WORDS) and not _SAFE_KEY.search(c)
+    return any(w in c for w in _SECRET_WORDS) and c not in _SAFE_KEYS
 
 
 def _secret_value(text: str, key: Any = None) -> bool:
@@ -491,6 +496,11 @@ def _secret_value(text: str, key: Any = None) -> bool:
     return entropy >= 3.5
 
 
+def _bare_path(path: str) -> str:
+    """*path* without ``;name=value`` parameters (a credential can hide there) or a trailing slash."""
+    return re.sub(r";[^/]*", "", path).rstrip("/")
+
+
 def _scrub_url(url: str) -> str:
     """*url* without credentials: no ``user:pass@``, no fragment, every query value blanked
     (``&`` and ``;`` separated) except version-like settings, no trailing slash, so
@@ -499,9 +509,11 @@ def _scrub_url(url: str) -> str:
         parts = urlsplit(url)
         host = parts.netloc.rpartition("@")[2]
         pairs = [q.partition("=") for q in re.split(r"[&;]", parts.query) if q]
-        query = "&".join(f"{k}={v if k.lower() in _SAFE_QUERY and not _secret_value(v) else _REDACTED}"
-                         if sep else k for k, sep, v in pairs)
-        return urlunsplit((parts.scheme, host, parts.path.rstrip("/"), query, ""))
+        query = "&".join(
+            (f"{k}={v if k.lower() in _SAFE_QUERY and not _secret_value(v) else _REDACTED}" if sep
+             else (k if k.lower() in _SAFE_QUERY else _REDACTED))        # a bare ``?sk-abc`` or ``?token``
+            for k, sep, v in pairs)
+        return urlunsplit((parts.scheme, host, _bare_path(parts.path), query, ""))
     except ValueError:
         return _REDACTED
 
@@ -538,10 +550,9 @@ def _identity_value(value: Any, key: Any = None) -> Any:
             value = _scrub_url(value)     # first, so a key in the userinfo does not hide the host
         if _secret_value(value, key):
             return _REDACTED
-        name, sep, rest = value.partition(":") if ": " in value else value.partition("=")
-        if "://" not in value and sep and rest.strip() and len(name) <= 40 and " " not in name.strip() \
-                and _secret_key(name.strip()):
-            return f"{name.strip()}{sep} {_REDACTED}"                 # "Authorization: Bearer ...", "api_key=..."
+        header = _HEADER_STRING.match(value)      # the first of ":" / "=" splits name from value
+        if "://" not in value and header and _secret_key(header.group(1)):
+            return f"{header.group(1)}{header.group(2)} {_REDACTED}"   # "Authorization: Bearer ...", "api_key=..."
         return value.removeprefix("torch.")
     pairs = _pairs(value)
     if pairs is not None:
@@ -564,26 +575,67 @@ def _identity_value(value: Any, key: Any = None) -> Any:
 # Client settings that change how a call travels, never what the model answers.
 _TRANSPORT_ONLY = frozenset({"timeout", "request_timeout", "max_retries", "num_retries"})
 
+# Fail closed for hosted APIs: only these constructor kwargs (exact names) enter the fingerprint.
+# They change which model or deployment answers, or how. Everything else -- headers, auth,
+# client objects, unknown kwargs -- stays out, whatever its name or value, unless the caller lists
+# it in ``identity_extra=``. Generation settings (temperature, top_p, max_tokens, seed, stop) are
+# part of ``RunConfig`` and already in the fingerprint.
+_HOSTED_IDENTITY_KWARGS = frozenset({
+    "response_format", "reasoning_effort", "reasoning", "verbosity", "logprobs", "top_logprobs",
+    "logit_bias", "tools", "tool_choice", "parallel_tool_calls", "service_tier", "modalities",
+    "prediction", "thinking", "min_p", "repetition_penalty", "stop", "n", "max_completion_tokens",
+    "max_output_tokens", "api_version", "organization", "project", "deployment", "deployment_id",
+    "custom_llm_provider"})
+_URL_KWARGS = ("api_base", "base_url")
+_EXCLUDED_WARNED: set[tuple[str, tuple[str, ...]]] = set()
 
-def remote_identity(api_base: Optional[str], extra_kwargs: dict[str, Any],
-                    default_base: Optional[str] = None) -> dict[str, Any]:
-    """What a hosted-API backend adds to :meth:`Model.identity`.
 
-    The endpoint and the extra kwargs decide which deployment answers and how (``organization``,
-    ``project``, ``default_query={"api-version": ...}``, ``reasoning_effort``, ``thinking``,
-    ``response_format``, a proxy's routing headers ...), so they belong in the run fingerprint.
-    Everything goes through :func:`_identity_value`, so credentials (``api_key``, ``token``,
-    ``default_headers={"Authorization": ...}``, key-looking values, ``user:pass@`` in a URL) never
-    reach it. Left out: timeouts and retry counts. Keys appear only when set and ``api_base``
-    only when it is not the backend's own default, so a default configuration keeps its
-    fingerprint. Not covered: a base URL or key taken from the environment.
+def _url_base(url: str) -> str:
+    """scheme + host + path of *url*: no userinfo, ``;`` path parameters, query or fragment, no trailing slash."""
+    try:
+        parts = urlsplit(url)
+        return urlunsplit((parts.scheme, parts.netloc.rpartition("@")[2], _bare_path(parts.path), "", ""))
+    except ValueError:
+        return _REDACTED
+
+
+def remote_identity(model: "Model", api_base: Optional[str], default_base: Optional[str] = None) -> dict[str, Any]:
+    """What a hosted-API backend adds to :meth:`Model.identity`, from an allowlist.
+
+    Included: the endpoint (``api_base`` / ``base_url``, reduced to scheme, host and path) when it
+    is not the backend's default, the kwargs named in ``_HOSTED_IDENTITY_KWARGS`` and any the
+    caller lists in ``identity_extra=``. Every other kwarg is left out, whatever it is called or
+    holds, so a credential cannot reach the fingerprint through a header, an unusual name or an
+    odd encoding; one warning names the left-out keys (never their values) so they can be opted
+    in. Timeouts and retry counts are left out silently. Included values still pass
+    :func:`_identity_value`, which redacts anything that looks like a credential, and an
+    ``organization`` / ``project`` / ``deployment`` / ``api_version`` must be a plain id. A default
+    configuration keeps its fingerprint. Not covered: a base URL or key taken from the environment.
     """
+    extra = dict(getattr(model, "_extra_kwargs", None) or {})
+    opted = frozenset(getattr(model, "_identity_extra", ()) or ())
     out: dict[str, Any] = {}
-    if api_base and _scrub_url(str(api_base)) != (_scrub_url(default_base) if default_base else None):
-        out["api_base"] = _scrub_url(str(api_base))
-    extra = {k: v for k, v in extra_kwargs.items() if k not in _TRANSPORT_ONLY}
-    if extra:
-        out["extra"] = _identity_value(extra)
+    urls = {"api_base": api_base or extra.get("api_base"), "base_url": extra.get("base_url")}
+    for k, v in urls.items():
+        if v and (not default_base or _url_base(str(v)) != _url_base(default_base)):
+            out[k] = _url_base(str(v))
+    kept: dict[str, Any] = {}
+    for k, v in extra.items():
+        if k in _HOSTED_IDENTITY_KWARGS or k in opted:
+            plain_id = k in ("api_version", "organization", "project", "deployment", "deployment_id")
+            kept[k] = _REDACTED if plain_id and not (isinstance(v, str) and _PLAIN_ID.fullmatch(v)) \
+                else _identity_value(v, k)
+    if kept:
+        out["extra"] = dict(sorted(kept.items()))
+    left_out = tuple(sorted(k for k in extra if k not in _HOSTED_IDENTITY_KWARGS and k not in opted
+                            and k not in _URL_KWARGS and k not in _TRANSPORT_ONLY))
+    if left_out and (type(model).__name__, left_out) not in _EXCLUDED_WARNED:
+        _EXCLUDED_WARNED.add((type(model).__name__, left_out))
+        warnings.warn(
+            f"{type(model).__name__}: {list(left_out)} are not part of the run fingerprint, so a run that "
+            f"differs only there is served the earlier cached result. Pass identity_extra={list(left_out)} "
+            f"to include those that change outputs (credentials are redacted), or cache=False.",
+            stacklevel=3)
     return out
 
 
