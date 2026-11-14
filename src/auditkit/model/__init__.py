@@ -462,7 +462,7 @@ _SAFE_QUERY = frozenset({"api-version", "api_version", "version", "deployment", 
 _SECRET_VALUE = re.compile(
     r"(sk-|sk_|pk-|gsk_|hf_|ghp_|gho_|ghs_|github_pat_|xox[abprs]-|AKIA|ASIA|AIza)[A-Za-z0-9_\-]{8,}"
     r"|eyJ[A-Za-z0-9_\-]{6,}\.[A-Za-z0-9_\-]{6,}"
-    r"|(?i:bearer|basic)\s+\S{8,}|-----BEGIN[^\n]*PRIVATE KEY")
+    r"|(?i:bearer|basic)\s+\S{8,}|-----BEGIN[^\n]*KEY-----")
 _KEYLIKE = re.compile(r"[A-Za-z0-9_\-+=.]{24,}")   # no "/" or spaces: model ids, paths and prose stay
 
 
