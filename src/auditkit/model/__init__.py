@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from collections.abc import Mapping
 from typing import Any, Callable, Optional
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 from ..errors import AuditKitError, CapabilityError, ExtraNotInstalled
 from ..runspec import RunConfig
@@ -497,8 +497,16 @@ def _secret_value(text: str, key: Any = None) -> bool:
 
 
 def _bare_path(path: str) -> str:
-    """*path* without ``;name=value`` parameters (a credential can hide there) or a trailing slash."""
-    return re.sub(r";[^/]*", "", path).rstrip("/")
+    """*path* without ``;name=value`` parameters, a trailing slash, or any segment that could be a
+    credential (``/v1/sk-...``, ``/hf_...``, a JWT, a long hex or base64 token, or the segment after
+    ``/key/`` or ``/token/``): those become ``<redacted>``. Ordinary paths (``/v1``,
+    ``/openai/deployments/gpt-4o``) are kept as they are."""
+    out, prev = [], ""
+    for seg in re.sub(r";[^/]*", "", path).split("/"):
+        plain = unquote(seg)                                 # %73k-... is sk-...
+        out.append(_REDACTED if seg and (_secret_value(plain) or (prev and _secret_key(prev))) else seg)
+        prev = plain
+    return "/".join(out).rstrip("/")
 
 
 def _scrub_url(url: str) -> str:

@@ -365,3 +365,51 @@ def test_only_exact_count_names_are_exempt(key):
 ])
 def test_header_strings_split_on_the_first_delimiter(text, expected):
     assert _identity_value({"h": [text]}) == {"h": [expected]}
+
+
+# ---- credentials in a URL path ---------------------------------------------------------------
+
+JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r"
+PATH_SECRETS = [SECRET, "hf_AbCdEfGhIjKlMnOpQrSt", "ghp_abcdefghijklmnopqrstuvwx", JWT,
+                "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "dGhpcyBpcyBhIHNlY3JldCB0b2tlbiB2YWx1ZQ==", "%73k-live-0123456789abcdef"]
+
+
+@pytest.mark.parametrize("secret", PATH_SECRETS)
+@pytest.mark.parametrize("make", [
+    lambda u: OpenAIModel(api_base=u),
+    lambda u: LiteLLMModel(api_base=u),
+    lambda u: AnthropicModel(base_url=u),
+    lambda u: LiteLLMModel(base_url=u),
+    lambda u: GroqModel(api_base=u),
+    lambda u: OpenRouterModel(api_base=u),
+    lambda u: LexsiModel(api_base=u),
+])
+def test_a_credential_in_the_url_path_never_reaches_the_identity(make, secret):
+    for path in (f"/v1/{secret}/", f"/{secret}", f"/key/{secret}/v1", f"/v1/{secret}/chat"):
+        ident = make(f"https://host.example{path}").identity()
+        text = json.dumps(ident)
+        assert secret not in text and secret.lstrip("%73") not in text, path
+        assert ident["api_base" if "api_base" in ident else "base_url"].startswith("https://host.example")
+    assert make(f"https://host.example/v1/{secret}").identity() == make("https://host.example/v1/sk-rotated-9999999999999").identity()
+
+
+def test_a_short_token_after_a_key_segment_is_redacted():
+    assert OpenAIModel(api_base="https://h.example/key/abc/v1").identity()["api_base"] == "https://h.example/key/<redacted>/v1"
+    assert OpenAIModel(api_base="https://h.example/token/xyz").identity()["api_base"] == \
+        "https://h.example/token/<redacted>"
+
+
+@pytest.mark.parametrize("path", ["/v1", "/openai/deployments/gpt-4o", "/openai/deployments/gpt-4o-mini-2024-07-18/v1",
+                                  "/api/v1/chat", "/v1beta/models/gemini-2.5-pro"])
+def test_ordinary_paths_stay_intact(path):
+    assert OpenAIModel(api_base=f"https://host.example{path}/").identity()["api_base"] == f"https://host.example{path}"
+    assert OpenAIModel(api_base=f"https://host.example{path}").identity() != OpenAIModel(
+        api_base="https://host.example/other").identity()
+
+
+def test_urls_inside_proxies_and_the_api_backend_are_cleaned_too():
+    from auditkit.model.api_gen import APIModel
+    url = f"https://u:p@host.example/v1/{SECRET}/x"
+    assert _identity_value({"proxies": {"https": url}}) == {"proxies": {"https": "https://host.example/v1/<redacted>/x"}}
+    assert SECRET not in json.dumps(APIModel(model="m", api_base=url).identity())

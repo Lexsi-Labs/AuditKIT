@@ -154,7 +154,7 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
   `anthropic:`, `groq:`, `litellm:`, `openrouter:` and `lexsi:`: the fingerprint ignored the endpoint and the extra
   kwargs, so a run with another `api_base` / `base_url`, `organization`, `project`, `api_version`, `reasoning_effort`,
   `thinking` or `response_format` was served another deployment's cached outputs. The fingerprint now includes the
-  endpoint (scheme, host and path only, when it is not the backend's default) and an allowlist of kwargs that change
+  endpoint (scheme, host and path only, when it is not the backend's default; a path segment that looks like a credential, such as `/v1/sk-...` or `/key/<token>`, is redacted) and an allowlist of kwargs that change
   what answers (`response_format`, `reasoning_effort`, `thinking`, `tools`, `tool_choice`, `logprobs`, `service_tier`,
   `api_version`, `organization`, `project`, `deployment`, `custom_llm_provider`, ...). Everything else, headers and
   credentials included, stays out whatever its name or value, so a secret cannot reach the cache key and rotating a
