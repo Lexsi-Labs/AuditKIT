@@ -137,6 +137,7 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- `GuardJudge` uses text-part content for Llama Guard 3 1B so its chat template retains the conversation (#51).
 - `evaluate(scorers=...)`: a bare `(sample, output)` function raised
   `FunctionScorer.__init__() missing ... 'direction'` although the docstring and the guide said it was wrapped (#49).
   A scorer has no default direction, because a wrong one flips every comparison verdict, so it now raises a
