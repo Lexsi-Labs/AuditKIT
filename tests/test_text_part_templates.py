@@ -15,7 +15,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-from jinja2 import Environment
+from jinja2.sandbox import ImmutableSandboxedEnvironment
 
 from auditkit.metrics.guard import GuardJudge
 from auditkit.model import Generated, Request, Result_
@@ -41,7 +41,7 @@ class _JinjaTokenizer:
 
     def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=True, **kwargs):
         self.calls += 1
-        return Environment().from_string(self.chat_template).render(messages=messages, **kwargs)
+        return ImmutableSandboxedEnvironment().from_string(self.chat_template).render(messages=messages, **kwargs)
 
 
 def _hf(template: str) -> HFGenModel:
