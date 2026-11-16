@@ -7,7 +7,7 @@ from typing import Any
 
 from . import (
     Model, Request, Result_, Generated, LogLikelihood, resolve_params,
-    DEFAULT_TEMPERATURE, reject_generation_kwargs, _free_torch_memory, template_messages,
+    DEFAULT_TEMPERATURE, reject_generation_kwargs, _free_torch_memory, template_messages, render_chat_template,
     explain_unknown_architecture, weights_identity,
 )
 from ..errors import CapabilityError, ExtraNotInstalled
@@ -350,9 +350,8 @@ class HFGenModel(Model):
             self._template_kwargs(request, None)  # native tools with no template to take them: raises
             return text
         messages = template_messages(request.params.get("messages") or [{"role": "user", "content": text}])
-        return tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True,
-            **self._template_kwargs(request, tokenizer.chat_template))
+        return render_chat_template(tokenizer, messages,
+                                    **self._template_kwargs(request, tokenizer.chat_template))
 
     def _template_kwargs(self, request: Request, template: Any) -> dict[str, Any]:
         """Extra ``apply_chat_template`` kwargs for *request*: its native tool

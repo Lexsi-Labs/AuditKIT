@@ -258,8 +258,9 @@ class GuardJudge(Metric):
         ``"groq:llama-guard-3-8b"``, ...) resolved lazily, or any object with
         ``generate(list[Request]) -> list[Result_]``. Defaults to the profile's
         ``default_model`` (a local ``hf:`` guard).
-        With ``llama_guard``, specs ending in ``Llama-Guard-3-1B`` use text-part
-        content, as required by that model's chat template; other models use strings.
+        Turns are sent with string content. The ``hf:`` and ``vllm:`` backends
+        switch to text-part content for a template that reads only text parts
+        (Llama Guard 3 1B, Llama Guard 4), so any checkpoint path or name works.
     assess
         ``"response"`` (default) grades the model's output; ``"prompt"`` grades
         the input prompt (input screening).
@@ -370,11 +371,6 @@ class GuardJudge(Metric):
             # chat-template guard (e.g. Llama Guard): role-structured turns, the
             # backend applies the guard's own chat template.
             messages = self._profile["build_messages"](prompt, output, self._assess)
-            if (self._profile.get("id") == "llama_guard"
-                    and isinstance(self._spec, str)
-                    and re.search(r"(?:^|[:/])Llama-Guard-3-1B$", self._spec, re.IGNORECASE)):
-                messages = [{**m, "content": [{"type": "text", "text": m["content"]}]}
-                            for m in messages]
             params = {**base, "messages": messages}
             if self._single_message:
                 params["single_message"] = True
