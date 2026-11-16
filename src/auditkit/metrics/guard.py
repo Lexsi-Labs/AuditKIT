@@ -258,6 +258,9 @@ class GuardJudge(Metric):
         ``"groq:llama-guard-3-8b"``, ...) resolved lazily, or any object with
         ``generate(list[Request]) -> list[Result_]``. Defaults to the profile's
         ``default_model`` (a local ``hf:`` guard).
+        Turns are sent with string content. The ``hf:`` and ``vllm:`` backends
+        switch to text-part content for a template that reads only text parts
+        (Llama Guard 3 1B, Llama Guard 4), so any checkpoint path or name works.
     assess
         ``"response"`` (default) grades the model's output; ``"prompt"`` grades
         the input prompt (input screening).

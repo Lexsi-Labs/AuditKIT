@@ -137,6 +137,11 @@ All notable changes to AuditKIT. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- `GuardJudge` with Llama Guard 3 1B or Llama Guard 4 classified an empty conversation: their chat templates read only
+  text parts and rendered the prompt and response as nothing (#51, reported and first fixed in #52 by observer04).
+  The `hf:` and `vllm:` backends now render string content first and, when the template dropped it, render the turns
+  again as text parts. Templates that need strings (Llama Guard 3 8B, ShieldGemma, Granite Guardian) render as before,
+  and the fix holds for any checkpoint name or local path and for every chat request, not only `GuardJudge`.
 - `evaluate(scorers=...)`: a bare `(sample, output)` function raised
   `FunctionScorer.__init__() missing ... 'direction'` although the docstring and the guide said it was wrapped (#49).
   A scorer has no default direction, because a wrong one flips every comparison verdict, so it now raises a

@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 from . import (
     Capability, Model, Request, Result_, Generated, resolve_params, DEFAULT_TEMPERATURE,
-    reject_generation_kwargs, _free_torch_memory, template_messages, explain_unknown_architecture,
+    reject_generation_kwargs, _free_torch_memory, template_messages, render_chat_template, explain_unknown_architecture,
     weights_identity,
 )
 from ..errors import CapabilityError, ExtraNotInstalled
@@ -407,8 +407,7 @@ class VLLMModel(Model):
                     f"Use ToolCallAdapter(mode='prompt') to describe the tools in the prompt instead.")
             return text
         messages = template_messages(request.params.get("messages") or [{"role": "user", "content": text}])
-        return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True,
-                                             **self._template_kwargs(request, tokenizer))
+        return render_chat_template(tokenizer, messages, **self._template_kwargs(request, tokenizer))
 
     def generate(self, requests: list[Request]) -> list[Result_]:
         self._ensure_llm()

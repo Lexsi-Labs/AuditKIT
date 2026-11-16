@@ -215,6 +215,29 @@ def template_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def render_chat_template(tokenizer: Any, messages: list[dict[str, Any]], **kwargs: Any) -> str:
+    """*messages* rendered by ``tokenizer.apply_chat_template`` as a prompt string.
+
+    Some templates read only text parts (``{"type": "text", "text": ...}``) and
+    render a plain-string ``content`` as nothing: Llama Guard 3 1B and Llama
+    Guard 4 then classify an empty conversation. Others (Llama Guard 3 8B,
+    ShieldGemma, Granite Guardian, most chat models) need a string and fail on a
+    list. So strings go first; when the render lost one of them, the turns are
+    rendered again with text parts, and that render is kept only if it has them all.
+    """
+    rendered = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, **kwargs)
+    texts = [m["content"].strip() for m in messages if isinstance(m.get("content"), str)]
+    if all(t in rendered for t in texts):
+        return rendered
+    parts = [{**m, "content": [{"type": "text", "text": m["content"]}]} if isinstance(m.get("content"), str) else m
+             for m in messages]
+    try:
+        retry = tokenizer.apply_chat_template(parts, tokenize=False, add_generation_prompt=True, **kwargs)
+    except Exception:   # a template that cannot take parts: keep its own render
+        return rendered
+    return retry if all(t in retry for t in texts) else rendered
+
+
 def resolve_messages(request: "Request") -> list[dict[str, str]]:
     """The role-tagged chat turns for *request*, for backends with a real
     ``messages``-based API (OpenAI, Anthropic, Groq, LiteLLM, chat-mode
